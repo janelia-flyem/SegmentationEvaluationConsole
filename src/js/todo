@@ -1,0 +1,4 @@
+-Add dvid search, dropdown in master
+-Retrieve object in master and provide option for changing comparison type
+-Provide ability to select which modules to see in master
+-create components for the main table, stack viewer, body table, connection viewer?

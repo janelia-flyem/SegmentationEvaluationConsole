@@ -1,0 +1,37 @@
+{
+  "name": "segmentation-evaluation",
+  "version": "0.0.0",
+  "description": "Application to view EM segmentation results",
+  "main": "./src/js/app.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/janelia-flyem/SegmentationEvaluationConsole.git"
+  },
+  "author": "Stephen Plaza",
+  "license": "Janelia",
+  "homepage": "https://github.com/janelia-flyem/SegmentationEvaluationConsole",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-react": "^0.12.2",
+    "grunt-browserify": "^3.8.0",
+    "grunt-contrib-uglify": "^0.9.1",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-contrib-copy": "^0.7.0",
+    "grunt-contrib-less": "latest",
+    "grunt-contrib-jasmine": "latest",
+    "jit-grunt": "latest",
+    "grunt-contrib-cssmin": "latest",
+    "grunt-jslint": "latest"
+  },
+  "dependencies": {
+    "react": "^0.13.3",
+    "react-router": "^0.13.3",
+    "bootstrap": "^3.3.4",
+    "dvid": "latest",
+    "stack3d": "JaneliaSciComp/stack3D#react",
+    "jquery": "^2.1.4"
+    }
+}
