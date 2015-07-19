@@ -8,20 +8,20 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     less: {
-      build: {
-        options: {
-            paths: ['node_modules/bootstrap/less']
+        build: {
+            options: {
+                paths: ['node_modules/bootstrap/less']
+            },
+            files: { 'build/css/main.css': 'src/less/main.less'}
         },
-        files: { 'build/css/main.css': 'src/less/main.less'}
-      }
     },
     cssmin: {
-          build: {
+          dist: {
               files: [{
                   expand: true,
                   cwd: 'build/css',
                   src: ['*.css', '!*.min.css'],
-                  dest: 'build/css',
+                  dest: 'dist/css',
                   ext: '.min.css'
               }]
           }
@@ -50,9 +50,9 @@ module.exports = function(grunt) {
       options: {
         banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
       },
-      build: {
+      dist: {
         src: 'build/js/bundle.js',
-        dest: 'build/js/bundle.min.js'
+        dest: 'dist/js/bundle.min.js'
       }
     },
     jasmine: {
@@ -65,11 +65,19 @@ module.exports = function(grunt) {
         }
     },
     copy: {
-        main: {
+        build: {
                 files: [
                     {
                         src: 'src/application.html',
                         dest: 'build/application.html'
+                    },
+                    {
+                        src: 'build/css/main.css',
+                        dest: 'build/css/main.min.css',
+                    },
+                    {
+                        src: 'build/js/bundle.js',
+                        dest: 'build/js/bundle.min.js',
                     },
                     {
                         expand: "true",
@@ -78,7 +86,21 @@ module.exports = function(grunt) {
                         dest: 'build/'
                     }
                 ]
-        }
+        },
+        dist: {
+                files: [
+                    {
+                        expand: "true",
+                        cwd: 'node_modules/bootstrap/',
+                        src: 'fonts/*',
+                        dest: 'dist/'
+                    },
+                    {
+                        src: 'src/application.html',
+                        dest: 'dist/application.html'
+                    }
+                ]
+        },
     },
     jslint: {
         client: {
@@ -97,14 +119,15 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['src/application.html', 'src/js/app.js', 'src/js/**/*.js'],
-        tasks: ['browserify', 'less', 'uglify', 'cssmin', 'copy']
+        files: ['src/index.html', 'src/js/app.js', 'src/js/**/*.js'],
+        tasks: ['browserify', 'copy:dist']
       }
     }
   });
 
   // Default task(s).
-  grunt.registerTask('default', ['browserify:app', 'less', 'uglify', 'copy', 'cssmin', 'watch']);
+  grunt.registerTask('default', ['browserify:app', 'less', 'copy:build', 'watch']);
+  grunt.registerTask('dist', ['browserify:app', 'less:build', 'uglify', 'copy:dist', 'cssmin']);
   grunt.registerTask('lint', 'Running lint', ['jslint']);
   grunt.registerTask('test', ["browserify:specs", "jasmine"]);
 
