@@ -1,6 +1,8 @@
 "use strict";
 
 var React = require('react');
+var MetricSearch = require('./MetricSearch.React');
+
 window.$ = window.jQuery = require('jquery');
 
 /*
@@ -11,8 +13,12 @@ window.$ = window.jQuery = require('jquery');
 var Master = React.createClass({
     getInitialState: function () {
         return {
+            metric_results: null
         };
 
+    },
+    loadData: function (data) {
+        setState({metric_results: data});
     },
     render: function () {
         return (
@@ -20,6 +26,7 @@ var Master = React.createClass({
                     <div className="page-header">
                     <h1>EM Segmentation Evaluation</h1>
                     </div>
+                    <MetricSearch callback={this.loadData} />
                 </div>
         );
         // add tabs
