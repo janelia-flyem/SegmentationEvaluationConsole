@@ -18,15 +18,17 @@ var Master = React.createClass({
 
     },
     loadData: function (data) {
-        setState({metric_results: data});
+        this.setState({metric_results: data});
     },
     render: function () {
         return (
-                <div className="container">
+                <div className="container-fluid">
                     <div className="page-header">
                     <h1>EM Segmentation Evaluation</h1>
                     </div>
+                    <div className="row">
                     <MetricSearch callback={this.loadData} />
+                    </div>
                 </div>
         );
         // add tabs

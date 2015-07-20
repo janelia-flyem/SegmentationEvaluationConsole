@@ -11,23 +11,35 @@ var MetricSearch = React.createClass({
     getInitialState: function () {
         return {
             dvid_server: null,
+            uuid: null,
             exp_name: null,
             exp_list: [],
             ds_error: false,
             du_error: false
         };
     },
+    loadExperiment: function(ev) {
+        ev.target.value
+
+        $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + ev.target.value,
+            function (data) { this.props.callback(data); }.bind(this) );
+
+    },
     retrieveExpListActual: function(server, uuid) {
-        alert(server + APIPrefix + uuid + ExpsLocation + "keyrange/0/z");
-        
         $.ajax({
             url: server + APIPrefix + uuid + ExpsLocation + "keyrange/0/z",
             success: function (data) {
-                alert("bladfsad");
-                this.setState({ds_error: false, du_error: false, exp_list: data});
+                var explist = []
+                for (var i = 0; i < data.length; i++) {
+                    var filename = data[i].replace('__', '.');
+                    var filearr = filename.split('--');
+                    var formatted_name = filearr[0] + " (" + filearr[1] + ") -- " + filearr[2];
+                    explist.push([formatted_name, data[i]]);
+                }
+                
+                this.setState({ds_error: false, du_error: false, exp_list: explist});
             }.bind(this),
             error: function (data) {
-                alert("and 2");
                 this.setState({ds_error: false, du_error: true});
             }.bind(this),
             dataType: "json"
@@ -59,13 +71,11 @@ var MetricSearch = React.createClass({
            
         dvid_connection.serverInfo({
             callback: function (data) {
-                alert(dvidserver);
-                this.setState({dvid_server: dvidserver});
+                this.setState({dvid_server: dvidserver, uuid: uuid});
                 // call list query
                 this.retrieveExpListActual(dvidserver, uuid);
             }.bind(this),
             error: function (err) {
-                alert("bad1!");
                 this.setState({ds_error: true, du_error: false});
             }.bind(this)
         });
@@ -75,30 +85,9 @@ var MetricSearch = React.createClass({
     render: function () {
         var uuid_err = <div />;
         var server_err = <div />;
-        /* 
-        if (this.state.du_error) {
-            uuid_err = (
-                    <div>
-                    <span className="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
-                    <span id="uuiderr" className="sr-only">(error)</span>
-                    </div>
-                );
-        }
-        if (this.state.ds_error) {
-            server_err = (
-                    <div>
-                    <span className="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
-                    <span id="servererr" className="sr-only">(error)</span>
-                    </div>
-                );
-        }*/
-
-
-        //<form className="form-inline has-error has-feedback">
-        //<label for="dvidserver">DVID Server</label>
+        
         return (
-            <div className="container-fluid">
-                <form className="form-inline">
+                <div className="form-inline">
                     <div className="form-group">
                         <input type="text" className="form-control" id="dvidserver" ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
                         {server_err}
@@ -107,15 +96,14 @@ var MetricSearch = React.createClass({
                         <input type="text" className="form-control" id="dviduuid" ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
                         {uuid_err}
                     </div>
-                    <button type="submit" className="btn btn-default" onClick={this.retrieveExpList}>Load Experiments</button>
+                    <button type="button" className="btn btn-default" onClick={this.retrieveExpList}>Load Experiments</button>
                     <select className="form-control" onChange={this.loadExperiment}>
                         <option value="default">Choose Experiment</option>;
                         {this.state.exp_list.map(function (val) {
-                            return <option key={val} value={val}>{val}</option>;
+                            return <option key={val[1]} value={val[1]}>{val[0]}</option>;
                         })}   
                     </select>    
-                </form>
-            </div>   
+                </div>
         ); 
 
     } 
