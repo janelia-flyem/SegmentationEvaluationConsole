@@ -9,15 +9,20 @@ var StackViewer = React.createClass({
     getInitialState: function () {
          return {
              fmergefsplit: "both", // fmerge, fsplit, or both
+             metric: "VI", // VI or rand
              viewer: null
          };
     },
     getStat : function (substack) {
-        var fmerge = substack["types"][this.props.comptype][this.props.metric][0];
-        var fsplit = substack["types"][this.props.comptype][this.props.metric][1];
+        var fmerge = substack["types"][this.props.comptype][this.state.metric][0];
+        var fsplit = substack["types"][this.props.comptype][this.state.metric][1];
         var total = fmerge;
         if (this.state.fmergefsplit === "both") {
-            total = fmerge + fsplit; 
+            total = fmerge + fsplit;
+            if (this.state.metric == "rand") {
+                // ?! compute real fscore instead of average
+                total = (fmerge + fsplit) / 2;
+            } 
         } else if (this.state.fmergefsplit === "fsplit") {
             total = fsplit;
         }
@@ -40,6 +45,15 @@ var StackViewer = React.createClass({
         var incr = (maxval - minval)/NumColors;
 
         return [minval, maxval, incr]; 
+    },
+    getROIStats : function (substack) {
+        //return JSON.stringify(substack["types"][this.props.comptype], null, 4);
+        var output_str = "<br>"
+        for (var stat in substack["types"][this.props.comptype]) {
+             output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][this.props.comptype][stat]) + "<br>");
+        }
+        
+        return output_str;
     },
     loadColors: function() {
         var colors = {
@@ -114,7 +128,8 @@ var StackViewer = React.createClass({
             subobj["id"] = String(sid);
             
             // !! hacks into annotations for now
-            //subobj["annotations"] = ""; // ?! add stats
+            //subobj["annotations"] = this.getROIStats(substacks[sid]);
+            subobj["annotations"] = this.getROIStats(substacks[sid]);
 
             // !! hacks into proofreader status for now
             var valstat = this.getStat(substacks[sid]);
@@ -122,7 +137,7 @@ var StackViewer = React.createClass({
             if (colorrange[2] > 0.000001) {
                 statusval = Math.floor((valstat - colorrange[0])/colorrange[2]);
             }
-            if (this.props.metric == "rand") {
+            if (this.state.metric == "rand") {
                 statusval = NumColors - statusval;
             }
             if (statusval == NumColors) {
@@ -138,7 +153,8 @@ var StackViewer = React.createClass({
 
         // make dimensions larger by 2x to zoom out
         payload["stackDimensions"] = [(maxx-minx)*2,(maxy-miny)*2,(maxz-minz)*2];
-        //payload["canvasDimenstions"] = [300, 300];
+        var cwidth = $("#stack_roi").width(); 
+        payload["canvasDimenstions"] = [cwidth, cwidth];
 
         if (this.state.viewer != null) {
             // ?! properly delete previous viewer
@@ -156,9 +172,69 @@ var StackViewer = React.createClass({
     componentDidMount: function () {
         this.loadSubstacks(this.props.substacks);
     },
+    useVI : function () {
+        this.setState({metric: "VI"});
+        this.loadSubstacks(this.props.substacks);
+    },
+    useRand : function () {
+        this.setState({metric: "rand"});
+        this.loadSubstacks(this.props.substacks);
+    },
+    useCombined : function () {
+        this.setState({fmergefsplit: "both"});
+        this.loadSubstacks(this.props.substacks);
+    },
+    useFmerge : function () {
+        this.setState({fmergefsplit: "fmerge"});
+        this.loadSubstacks(this.props.substacks);
+    },
+    useFsplit : function () {
+        this.setState({fmergefsplit: "fsplit"});
+        this.loadSubstacks(this.props.substacks);
+    },
     render: function () {
+        var typename = this.props.comptype.split(':')[1];
+
+        // set active buttons
+        var randsel = "btn btn-default";
+        var visel = "btn btn-default";
+        if (this.state.metric == "VI") {
+            visel = "btn btn-default active";
+        } else {
+            randsel = "btn btn-default active";
+        }
+    
+        var fmsel = "btn btn-default";
+        var fssel = "btn btn-default";
+        var cosel = "btn btn-default";
+        if (this.state.fmergefsplit == "both") {
+            cosel = "btn btn-default active";
+        } else if (this.state.fmergefsplit == "fmerge") {
+            fmsel = "btn btn-default active";
+        } else {
+            fssel = "btn btn-default active";
+        }
+
         return (
-            <div id="stack_roi"></div>
+            <div className="panel panel-info" id="stack_roi">
+                <div className="panel-heading">Subvolume Stats ({typename})</div>
+                <div className="panel-body row">
+                    <div className="col-md-6">
+                        <div className="btn-group" role="group" aria-label="metricsel">
+                            <button type="button" className={visel} onClick={this.useVI}>VI</button>
+                            <button type="button" className={randsel} onClick={this.useRand}>rand</button>
+                        </div>
+                    </div>
+                    <div className="col-md-6">
+                        <div className="btn-group" role="group2" aria-label="decompsel">
+                            <button type="button" className={cosel} onClick={this.useCombined}>Combined</button>
+                            <button type="button" className={fmsel} onClick={this.useFmerge}>False Merge</button>
+                            <button type="button" className={fssel} onClick={this.useFsplit}>False Split</button>
+                        </div>
+                    </div>
+                </div>
+                <div className="panel-body" id="stack_roi"></div>
+            </div>
         );
     }
 });

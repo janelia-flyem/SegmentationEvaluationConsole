@@ -53,7 +53,7 @@ var MetricSearch = React.createClass({
         var dvidserver = el_server.value;
         if (dvidserver === "") {
             this.setState({ds_error: true});
-            return null;
+            return;
         }
         if (uuid === "") {
             this.setState({du_error: true});
@@ -80,8 +80,6 @@ var MetricSearch = React.createClass({
                 this.setState({ds_error: true, du_error: false});
             }.bind(this)
         });
-
-        return null;
     },
     render: function () {
         var uuid_err = <div />;

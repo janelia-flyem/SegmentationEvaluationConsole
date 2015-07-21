@@ -32,7 +32,7 @@ var Master = React.createClass({
             );
             substack_component = (
                 <div className="col-md-6">
-                <StackViewer metric="VI" comptype="voxels:voxels" substacks={this.state.metric_results["subvolumes"]["ids"]} />
+                <StackViewer comptype="voxels:voxels" substacks={this.state.metric_results["subvolumes"]["ids"]} />
                 </div>
             );
         }
