@@ -20,10 +20,10 @@ var MetricSearch = React.createClass({
             metric_results: null
         };
     },
-    loadExperiment: function(ev) {
-        ev.target.value
-
-        $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + ev.target.value,
+    loadExperiment: function() {
+        var value = $("#selectexp option:selected").val();
+        
+        $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + value,
             function (data) { 
                 this.props.callback(data);
                 this.setState({metric_results: data})
@@ -104,7 +104,7 @@ var MetricSearch = React.createClass({
         var modalinfo = (
                 <div>
 
-                <div className="modal fade" tabindex="-1" id="dvidQuery" role="dialog" aria-labelledby="dvidQueryTitle">
+                <div className="modal fade" tabIndex="-1" id="dvidQuery" role="dialog" aria-labelledby="dvidQueryTitle">
                 <div className="modal-dialog" role="document">
                 <div className="modal-content">
                 <div className="modal-header">
@@ -129,7 +129,7 @@ var MetricSearch = React.createClass({
                         </div>
                         
                         <div className="form-group">
-                        <select className="form-control" onChange={this.loadExperiment}>
+                        <select id="selectexp" className="form-control">
                             <option value="default">Choose Experiment</option>;
                             {this.state.exp_list.map(function (val) {
                                 return <option key={val[1]} value={val[1]}>{val[0]}</option>;
@@ -141,7 +141,7 @@ var MetricSearch = React.createClass({
                 </div>
                 <div className="modal-footer">
                     <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" className="btn btn-primary">Load Experiment</button>
+                <button type="button" className="btn btn-primary" data-dismiss="modal"  onClick={this.loadExperiment}>Load Experiment</button>
                 </div>
                 
                 </div>
@@ -155,9 +155,9 @@ var MetricSearch = React.createClass({
 
         if (this.state.metric_results !== null) {
             jobinfo_component = (
-                <div className="nav navbar-nav">
+                <ul className="nav navbar-nav">
                     <JobInfo metric_data={this.state.metric_results} />
-                </div>
+                </ul>
             );
         }
 
@@ -167,10 +167,10 @@ var MetricSearch = React.createClass({
                 {jobinfo_component}
                 <form className="navbar-form navbar-right">
                     <div className="form-group">
-                        <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery">from DVID</button>
+                        <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery" style={{marginRight: "1em"}}>from DVID</button>
                     </div>
                     <div className="form-group">
-                        <label className="btn btn-primary" onChange={this.uploadFile}>
+                        <label className="btn btn-primary" onChange={this.uploadFile} htmlFor="choosefile">
                             <input id="choosefile" type="file" style={{display:"none"}} />
                             from File
                         </label>
