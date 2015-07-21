@@ -216,7 +216,7 @@ var StackViewer = React.createClass({
         }
 
         return (
-            <div className="panel panel-info" id="stack_roi">
+            <div className="panel panel-info">
                 <div className="panel-heading">Subvolume Stats ({typename})</div>
                 <div className="panel-body row">
                     <div className="col-md-6">
@@ -226,7 +226,7 @@ var StackViewer = React.createClass({
                         </div>
                     </div>
                     <div className="col-md-6">
-                        <div className="btn-group" role="group2" aria-label="decompsel">
+                        <div className="btn-group" role="group" aria-label="decompsel">
                             <button type="button" className={cosel} onClick={this.useCombined}>Combined</button>
                             <button type="button" className={fmsel} onClick={this.useFmerge}>False Merge</button>
                             <button type="button" className={fssel} onClick={this.useFsplit}>False Split</button>

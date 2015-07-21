@@ -97,7 +97,8 @@ var MetricSearch = React.createClass({
         var server_err = <div />;
         
         return (
-                <form className="form-inline">
+                <div>
+                <form className="navbar-form navbar-left">
                     <div className="form-group">
                         <input type="text" className="form-control" id="dvidserver" ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
                         {server_err}
@@ -113,7 +114,8 @@ var MetricSearch = React.createClass({
                             return <option key={val[1]} value={val[1]}>{val[0]}</option>;
                         })}   
                     </select>
-                    or
+                </form>
+                <form className="navbar-form navbar-right">
                     <div className="form-group">
                         <label className="btn btn-primary" onChange={this.uploadFile}>
                             <input id="choosefile" type="file" style={{display:"none"}} />
@@ -121,17 +123,10 @@ var MetricSearch = React.createClass({
                         </label>
                     </div>
                 </form>
+                </div>
         ); 
 
     } 
-
-
-
-
-
-
-
-
 });
 
 
