@@ -45,8 +45,19 @@ var MetricSearch = React.createClass({
             dataType: "json"
         });
     },
+    uploadFile: function(ev) {
+        ev.preventDefault();
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var data = JSON.parse(reader.result);
+            this.props.callback(data);
+        }.bind(this);
+        reader.readAsText(ev.target.files[0]);
+    },   
     retrieveExpList: function(ev) {
         ev.preventDefault();
+
         var el_server= React.findDOMNode(this.refs.dvidserver);
         var el_uuid = React.findDOMNode(this.refs.dviduuid);
         var uuid = el_uuid.value;
@@ -95,13 +106,20 @@ var MetricSearch = React.createClass({
                         <input type="text" className="form-control" id="dviduuid" ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
                         {uuid_err}
                     </div>
-                    <button type="submit" className="btn btn-default" onClick={this.retrieveExpList}>Load Experiments</button>
+                    <button type="submit" className="btn btn-primary" onClick={this.retrieveExpList}>Load Experiments</button>
                     <select className="form-control" onChange={this.loadExperiment}>
                         <option value="default">Choose Experiment</option>;
                         {this.state.exp_list.map(function (val) {
                             return <option key={val[1]} value={val[1]}>{val[0]}</option>;
                         })}   
-                    </select>    
+                    </select>
+                    or
+                    <div className="form-group">
+                        <label className="btn btn-primary" onChange={this.uploadFile}>
+                            <input id="choosefile" type="file" style={{display:"none"}} />
+                            Upload
+                        </label>
+                    </div>
                 </form>
         ); 
 
