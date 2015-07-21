@@ -2,6 +2,7 @@
 
 var React = require('react');
 var MetricSearch = require('./MetricSearch.React');
+var StackViewer = require('./StackViewer.React');
 
 window.$ = window.jQuery = require('jquery');
 
@@ -21,6 +22,21 @@ var Master = React.createClass({
         this.setState({metric_results: data});
     },
     render: function () {
+        var tableview_component = <div />; 
+        var substack_component = <div />;
+
+        if (this.state.metric_results !== null) {
+            tableview_component = (
+                <div className="col-md-6">
+                </div>
+            );
+            substack_component = (
+                <div className="col-md-6">
+                <StackViewer metric="VI" comptype="voxels:voxels" substacks={this.state.metric_results["subvolumes"]["ids"]} />
+                </div>
+            );
+        }
+                
         return (
                 <div className="container-fluid">
                     <div className="page-header">
@@ -28,6 +44,10 @@ var Master = React.createClass({
                     </div>
                     <div className="row">
                     <MetricSearch callback={this.loadData} />
+                    </div>
+                    <div className="row">
+                    {tableview_component}
+                    {substack_component}
                     </div>
                 </div>
         );
