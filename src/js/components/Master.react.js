@@ -3,7 +3,6 @@
 var React = require('react');
 var MetricSearch = require('./MetricSearch.React');
 var StackViewer = require('./StackViewer.React');
-var JobInfo = require('./JobInfo.React');
 var BodyTable = require('./BodyTable.React');
 var MainTable = require('./MainTable.React');
 
@@ -26,7 +25,6 @@ var Master = React.createClass({
     },
     render: function () {
         var substack_component = <div />;
-        var jobinfo_component = <div />;
         var maintable_component = <div />;
         var bodytable_component = <div />;
 
@@ -34,11 +32,6 @@ var Master = React.createClass({
             substack_component = (
                 <div className="col-md-6">
                 <StackViewer comptype="voxels:voxels" substacks={this.state.metric_results["subvolumes"]["ids"]} />
-                </div>
-            );
-            jobinfo_component = (
-                <div className="col-md-12">
-                <JobInfo metric_data={this.state.metric_results} />
                 </div>
             );
             maintable_component = (
@@ -57,7 +50,8 @@ var Master = React.createClass({
         return (
             <div>
                 <nav className="navbar navbar-default">
-                    <div className="container-fluid">                                                           <div className="navbar-header">
+                    <div clasName="container-fluid">
+                        <div className="navbar-header">
                             <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
                             <span className="sr-only">Toggle navigation</span>
                             <span className="icon-bar"></span>
@@ -66,13 +60,12 @@ var Master = React.createClass({
                             </button>
                             <a className="navbar-brand" href="#">EM Segmentation Evaluation</a>
                         </div>
-                        <MetricSearch callback={this.loadData} />
+                         <div className="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                            <MetricSearch callback={this.loadData} />
+                        </div>
                     </div>
                 </nav>
                 <div className="container-fluid">
-                    <div className="row">
-                    {jobinfo_component}
-                    </div>
                     <div className="row">
                     {maintable_component}
                     {bodytable_component}

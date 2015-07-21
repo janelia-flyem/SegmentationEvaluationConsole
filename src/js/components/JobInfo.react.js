@@ -39,13 +39,10 @@ var JobInfo = React.createClass({
         var seg_uuid = this.props.metric_data["config-file"]["dvid-info-comp"].uuid.slice(0,6);
 
         return (
-            <div>
-            <p>{gt_seg + "#" + gt_uuid} Test: {test_seg + "#" + seg_uuid + "  "}
+            <h5>GT: {gt_seg + "#" + gt_uuid} Test: {test_seg + "#" + seg_uuid + "  "}
             <button type="button" className="btn btn-default" data-toggle="popover" data-html="true" data-trigger="focus" title="Comparison Configuration" data-content={this.writeConfig()}>
             <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
-            </button></p>
-
-            </div>
+            </button></h5>
         );
     }
 });

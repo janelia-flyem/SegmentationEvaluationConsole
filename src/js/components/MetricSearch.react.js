@@ -3,6 +3,7 @@
 var React = require('react');
 var dvid = require('dvid');
 window.$ = window.jQuery = require('jquery');
+var JobInfo = require('./JobInfo.React');
 
 var ExpsLocation = "/seg-metrics/";
 var APIPrefix = "/api/node/";
@@ -15,15 +16,18 @@ var MetricSearch = React.createClass({
             exp_name: null,
             exp_list: [],
             ds_error: false,
-            du_error: false
+            du_error: false,
+            metric_results: null
         };
     },
     loadExperiment: function(ev) {
         ev.target.value
 
         $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + ev.target.value,
-            function (data) { this.props.callback(data); }.bind(this) );
-
+            function (data) { 
+                this.props.callback(data);
+                this.setState({metric_results: data})
+            }.bind(this) );
     },
     retrieveExpListActual: function(server, uuid) {
         $.ajax({
@@ -52,6 +56,7 @@ var MetricSearch = React.createClass({
         reader.onload = function (e) {
             var data = JSON.parse(reader.result);
             this.props.callback(data);
+            this.setState({metric_results: data})
         }.bind(this);
         reader.readAsText(ev.target.files[0]);
     },   
@@ -95,31 +100,79 @@ var MetricSearch = React.createClass({
     render: function () {
         var uuid_err = <div />;
         var server_err = <div />;
+
+        var modalinfo = (
+                <div>
+
+                <div className="modal fade" tabindex="-1" id="dvidQuery" role="dialog" aria-labelledby="dvidQueryTitle">
+                <div className="modal-dialog" role="document">
+                <div className="modal-content">
+                <div className="modal-header">
+                <button type="button" className="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">{String.fromCharCode(215)}</span></button>
+                <h4 className="modal-title" id="dvidQueryTitle">Load Evaluation Experiment</h4>
+                </div>
+
+                <div className="modal-body">
+                    <form className="form">
+                        <div className="form-group">
+                            <input type="text" className="form-control" id="dvidserver" ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
+                            {server_err}
+                        </div>
+                        
+                        <div className="form-group">
+                            <input type="text" className="form-control" id="dviduuid" ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
+                            {uuid_err}
+                        </div>
+                        
+                        <div className="form-group">
+                        <button type="submit" className="btn btn-primary" onClick={this.retrieveExpList}>Search</button>
+                        </div>
+                        
+                        <div className="form-group">
+                        <select className="form-control" onChange={this.loadExperiment}>
+                            <option value="default">Choose Experiment</option>;
+                            {this.state.exp_list.map(function (val) {
+                                return <option key={val[1]} value={val[1]}>{val[0]}</option>;
+                            })}   
+                        </select>
+                        </div>
+
+                    </form>
+                </div>
+                <div className="modal-footer">
+                    <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" className="btn btn-primary">Load Experiment</button>
+                </div>
+                
+                </div>
+                </div>
+                </div>
+
+                </div>
+        );
         
+        var jobinfo_component = <div />;
+
+        if (this.state.metric_results !== null) {
+            jobinfo_component = (
+                <div className="nav navbar-nav">
+                    <JobInfo metric_data={this.state.metric_results} />
+                </div>
+            );
+        }
+
         return (
                 <div>
-                <form className="navbar-form navbar-left">
-                    <div className="form-group">
-                        <input type="text" className="form-control" id="dvidserver" ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
-                        {server_err}
-                    </div>
-                    <div className="form-group">
-                        <input type="text" className="form-control" id="dviduuid" ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
-                        {uuid_err}
-                    </div>
-                    <button type="submit" className="btn btn-primary" onClick={this.retrieveExpList}>Load Experiments</button>
-                    <select className="form-control" onChange={this.loadExperiment}>
-                        <option value="default">Choose Experiment</option>;
-                        {this.state.exp_list.map(function (val) {
-                            return <option key={val[1]} value={val[1]}>{val[0]}</option>;
-                        })}   
-                    </select>
-                </form>
+                {modalinfo}
+                {jobinfo_component}
                 <form className="navbar-form navbar-right">
+                    <div className="form-group">
+                        <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery">from DVID</button>
+                    </div>
                     <div className="form-group">
                         <label className="btn btn-primary" onChange={this.uploadFile}>
                             <input id="choosefile" type="file" style={{display:"none"}} />
-                            Upload
+                            from File
                         </label>
                     </div>
                 </form>
