@@ -156,6 +156,7 @@ var StackViewer = React.createClass({
 
         payload["colors"] = this.loadColors(colorrange, comptype);
 	payload["element"] = '#stack_roi';
+        payload["modal"] = true;
 
         // make dimensions larger by 2x to zoom out
         payload["stackDimensions"] = [(maxx-minx)*2,(maxy-miny)*2,(maxz-minz)*2];
