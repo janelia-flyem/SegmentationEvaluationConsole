@@ -4,6 +4,7 @@ var React = require('react');
 var dvid = require('dvid');
 window.$ = window.jQuery = require('jquery');
 var JobInfo = require('./JobInfo.React');
+var SegMetrics = require('../helpers/SegMetrics');
 
 var ExpsLocation = "/seg-metrics/";
 var APIPrefix = "/api/node/";
@@ -25,8 +26,9 @@ var MetricSearch = React.createClass({
         
         $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + value,
             function (data) { 
-                this.props.callback(data);
-                this.setState({metric_results: data})
+                var metric_data = new SegMetrics(data);
+                this.props.callback(metric_data);
+                this.setState({metric_results: metric_data})
             }.bind(this) );
     },
     retrieveExpListActual: function(server, uuid) {
@@ -55,8 +57,9 @@ var MetricSearch = React.createClass({
         var reader = new FileReader();
         reader.onload = function (e) {
             var data = JSON.parse(reader.result);
-            this.props.callback(data);
-            this.setState({metric_results: data})
+            var metric_data = new SegMetrics(data);
+            this.props.callback(metric_data);
+            this.setState({metric_results: metric_data})
         }.bind(this);
         reader.readAsText(ev.target.files[0]);
     },   
@@ -115,11 +118,13 @@ var MetricSearch = React.createClass({
                 <div className="modal-body">
                     <form className="form">
                         <div className="form-group">
+                            <label className="sr-only" htmlFor="dvidserver">DVID Server</label>
                             <input type="text" className="form-control" id="dvidserver" ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
                             {server_err}
                         </div>
                         
                         <div className="form-group">
+                            <label className="sr-only" htmlFor="dviduuid">DVID UUID</label>
                             <input type="text" className="form-control" id="dviduuid" ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
                             {uuid_err}
                         </div>
@@ -155,9 +160,7 @@ var MetricSearch = React.createClass({
 
         if (this.state.metric_results !== null) {
             jobinfo_component = (
-                <ul className="nav navbar-nav">
-                    <JobInfo metric_data={this.state.metric_results} />
-                </ul>
+                <JobInfo metric_data={this.state.metric_results} />
             );
         }
 

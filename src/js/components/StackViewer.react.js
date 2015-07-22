@@ -157,10 +157,7 @@ var StackViewer = React.createClass({
         payload["canvasDimenstions"] = [cwidth, cwidth];
 
         if (this.state.viewer != null) {
-            // ?! properly delete previous viewer
-            //this.state.viewer.scene = null;
-            this.setState({viewer: null}); 
-            //$( ".stack_roi" ).empty();
+            this.state.viewer.destroy();
         }
         var s = new StackViewerLib(payload);
         this.setState({viewer: s});

@@ -50,7 +50,7 @@ var Master = React.createClass({
         return (
             <div>
                 <nav className="navbar navbar-default">
-                    <div clasName="container-fluid">
+                    <div className="container-fluid">
                         <div className="navbar-header">
                             <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
                             <span className="sr-only">Toggle navigation</span>
@@ -60,7 +60,7 @@ var Master = React.createClass({
                             </button>
                             <a className="navbar-brand" href="#">EM Segmentation Evaluation</a>
                         </div>
-                         <div className="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                         <div className="collapse navbar-collapse" id="bs-navbar-collapse-1">
                             <MetricSearch callback={this.loadData} />
                         </div>
                     </div>
