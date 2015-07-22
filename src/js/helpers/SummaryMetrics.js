@@ -18,9 +18,10 @@ var VIStats = function (data, comptype) {
         return null;
     }
     this.payload = data["types"][comptype.toKey()]["VI"];
-    var fmerge = this.payload[0];
-    var fsplit = this.payload[1];
-    var total = fmerge + fsplit;
+    this.comptype = comptype;
+    this.fmerge = this.payload[0];
+    this.fsplit = this.payload[1];
+    this.total = this.fmerge + this.fsplit;
     var that = this;
 
     this.toStringArr = function () {
@@ -51,10 +52,11 @@ var RandStats = function (data, comptype) {
         return null;
     }
     this.payload = data["types"][comptype.toKey()]["rand"];
+    this.comptype = comptype;
 
-    var fmerge = this.payload[0];
-    var fsplit = this.payload[1];
-    var total = (fmerge+fsplit)/2.0; // just average for now
+    this.fmerge = this.payload[0];
+    this.fsplit = this.payload[1];
+    this.total = (this.fmerge+this.fsplit)/2.0; // just average for now
     var that = this;
 
     this.toStringArr = function () {
@@ -86,18 +88,19 @@ var EditStats = function (data, comptype) {
         return null;
     }
     this.payload = data["types"][comptype.toKey()]["edit-distance"];
+    this.comptype = comptype;
 
-    var fmerge = this.payload[0];
-    var fsplit = this.payload[1];
-    var total = (fmerge+fsplit)/2.0; // just average for now
+    this.fmerge = this.payload[0];
+    this.fsplit = this.payload[1];
+    this.total = (this.fmerge+this.fsplit)/2.0; // just average for now
     var that = this;
 
     this.toStringArr = function () {
         return [
-            {name: "Split (1:1)", value: String(that.data["1"][1])},
-            {name: "Merge (1:1)", value: String(that.data["1"][0])},
-            {name: "Edit (5:1)", value: String(that.data["5"][0] + that.data["5"][1])},
-            {name: "Edit (10:1)", value: String(that.data["10"][0] + that.data["10"][1])}
+            {name: "Split (1:1)", value: String(that.payload["1"][1])},
+            {name: "Merge (1:1)", value: String(that.payload["1"][0])},
+            {name: "Edit (5:1)", value: String(that.payload["5"][0] + that.payload["5"][1])},
+            {name: "Edit (10:1)", value: String(that.payload["10"][0] + that.payload["10"][1])}
         ];
     };
     this.toJSON = function () {
@@ -105,10 +108,10 @@ var EditStats = function (data, comptype) {
     };
     this.worseThan = function(otherstat) {
         return [
-            that.data["1"][1] > otherstat.data["1"][1],
-            that.data["1"][0] > otherstat.data["1"][0],
-            (that.data["5"][0] + that.data["5"][1]) > (that.data["5"][0] + that.data["5"][1]),
-            (that.data["10"][0] + that.data["10"][1]) > (that.data["10"][0] + that.data["10"][1])
+            that.payload["1"][1] > otherstat.payload["1"][1],
+            that.payload["1"][0] > otherstat.payload["1"][0],
+            (that.payload["5"][0] + that.payload["5"][1]) > (that.payload["5"][0] + that.payload["5"][1]),
+            (that.payload["10"][0] + that.payload["10"][1]) > (that.payload["10"][0] + that.payload["10"][1])
         ];
     }
 };
@@ -126,13 +129,16 @@ var ConnectivityStats = function (data, comptype) {
     if (!("connection-matrix" in data["types"])) {
         return null;
     }
+    this.comptype = comptype;
     this.payload = data["types"]["connection-matrix"];
     var that = this;
 
+    // 0 thresholds will still be given as long as there as a qualifying
+    // comparison type
     this.toStringArr = function () {
         return [
-            {name: "False Connections (10)", value: String(that.payload[2][0])},
-            {name: "True Connections (10)", value: String(that.payload[2][1])}
+            {name: "False Connections (10)", value: String(that.payload["thresholds"][2][0])},
+            {name: "True Connections (10)", value: String(that.payload["thresholds"][2][1])}
         ];
     };
 
@@ -155,6 +161,7 @@ var BodyStats = function (data, comptype) {
     if (!("worst-vi" in data["types"][comptype.toKey()])) {
         return null;
     }
+    this.comptype = comptype;
     this.payload = {}
     this.payload["worst-vi"] = data["types"][comptype.toKey()]["worst-vi"];
     this.payload["worst-fmerge"] = data["types"][comptype.toKey()]["worst-fmerge"];
@@ -202,6 +209,7 @@ var VISubvolumeStats = function (data, comptype) {
     if (!("VI" in data["subvolumes"]["types"][comptype.toKey()])) {
         return null;
     }
+    this.comptype = comptype;
     this.payload = data["subvolumes"]["types"][comptype.toKey()]["VI"];
 
     this.fmergew = this.payload["fmerge-worst"][0]; 
@@ -241,6 +249,7 @@ var RandSubvolumeStats = function (data, comptype) {
     if (!("rand" in data["subvolumes"]["types"][comptype.toKey()])) {
         return null;
     }
+    this.comptype = comptype;
     this.payload = data["subvolumes"]["types"][comptype.toKey()]["rand"];
 
     this.fmergew = this.payload["fmerge-worst"][0]; 

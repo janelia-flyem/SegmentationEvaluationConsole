@@ -21,6 +21,9 @@ var MetricSearch = React.createClass({
             metric_results: null
         };
     },
+    changeType: function (compType) {
+        this.props.typeCallback(compType);
+    },
     loadExperiment: function() {
         var value = $("#selectexp option:selected").val();
         
@@ -160,25 +163,25 @@ var MetricSearch = React.createClass({
 
         if (this.state.metric_results !== null) {
             jobinfo_component = (
-                <JobInfo metric_data={this.state.metric_results} />
+                <JobInfo callback={this.changeType} metric_data={this.state.metric_results} />
             );
         }
 
         return (
                 <div>
                 {modalinfo}
-                {jobinfo_component}
                 <form className="navbar-form navbar-right">
                     <div className="form-group">
-                        <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery" style={{marginRight: "1em"}}>from DVID</button>
+                        <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery" style={{marginRight: "1em"}}>DVID</button>
                     </div>
                     <div className="form-group">
                         <label className="btn btn-primary" onChange={this.uploadFile} htmlFor="choosefile">
                             <input id="choosefile" type="file" style={{display:"none"}} />
-                            from File
+                            File
                         </label>
                     </div>
                 </form>
+                {jobinfo_component}
                 </div>
         ); 
 

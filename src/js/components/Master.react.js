@@ -5,6 +5,7 @@ var MetricSearch = require('./MetricSearch.React');
 var StackViewer = require('./StackViewer.React');
 var BodyTable = require('./BodyTable.React');
 var MainTable = require('./MainTable.React');
+var CompType = require('../helpers/CompType');
 
 window.$ = window.jQuery = require('jquery');
 
@@ -16,12 +17,16 @@ window.$ = window.jQuery = require('jquery');
 var Master = React.createClass({
     getInitialState: function () {
         return {
-            metric_results: null
+            metric_results: null,
+            compType: new CompType()
         };
 
     },
     loadData: function (data) {
         this.setState({metric_results: data});
+    },
+    handleType: function (data) {
+        this.setState({compType: data});
     },
     render: function () {
         var substack_component = <div />;
@@ -31,7 +36,7 @@ var Master = React.createClass({
         if (this.state.metric_results !== null) {
             substack_component = (
                 <div className="col-md-6">
-                <StackViewer comptype="voxels:voxels" substacks={this.state.metric_results["subvolumes"]["ids"]} />
+                <StackViewer comptype={this.state.compType.toKey()} substacks={this.state.metric_results.subvolumes["ids"]} />
                 </div>
             );
             maintable_component = (
@@ -41,7 +46,7 @@ var Master = React.createClass({
             );
             bodytable_component = (
                 <div className="col-md-3">
-                <BodyTable comptype="voxels:voxels" metric_data={this.state.metric_results} />
+                <BodyTable comptype={this.state.compType} metric_data={this.state.metric_results} />
                 </div>
             );
         }
@@ -61,7 +66,7 @@ var Master = React.createClass({
                             <a className="navbar-brand" href="#">EM Segmentation Evaluation</a>
                         </div>
                          <div className="collapse navbar-collapse" id="bs-navbar-collapse-1">
-                            <MetricSearch callback={this.loadData} />
+                            <MetricSearch typeCallback={this.handleType} callback={this.loadData} />
                         </div>
                     </div>
                 </nav>

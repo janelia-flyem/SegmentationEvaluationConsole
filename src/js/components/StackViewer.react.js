@@ -13,9 +13,9 @@ var StackViewer = React.createClass({
              viewer: null
          };
     },
-    getStat : function (substack) {
-        var fmerge = substack["types"][this.props.comptype][this.state.metric][0];
-        var fsplit = substack["types"][this.props.comptype][this.state.metric][1];
+    getStat : function (substack, comptype) {
+        var fmerge = substack["types"][comptype][this.state.metric][0];
+        var fsplit = substack["types"][comptype][this.state.metric][1];
         var total = fmerge;
         if (this.state.fmergefsplit === "both") {
             total = fmerge + fsplit;
@@ -28,12 +28,12 @@ var StackViewer = React.createClass({
         }
         return total;
     },
-    getColorRange: function(substacks) {
+    getColorRange: function(substacks, comptype) {
         var minval = 1000000000;
         var maxval = 0;
 
         for (var sid in substacks) {
-            var total = this.getStat(substacks[sid]);
+            var total = this.getStat(substacks[sid], comptype);
             if (total < minval) {
                 minval = total;
             }
@@ -46,10 +46,9 @@ var StackViewer = React.createClass({
 
         return [minval, maxval, incr]; 
     },
-    getROIStats : function (substack) {
-        //return JSON.stringify(substack["types"][this.props.comptype], null, 4);
+    getROIStats : function (substack, comptype) {
         var output_str = "<br>"
-        for (var stat in substack["types"][this.props.comptype]) {
+        for (var stat in substack["types"][comptype]) {
              output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][this.props.comptype][stat]) + "<br>");
         }
         
@@ -72,7 +71,7 @@ var StackViewer = React.createClass({
         return colors;
 
     },
-    loadSubstacks: function(substacks) {
+    loadSubstacks: function(substacks, comptype) {
         var payload = {};
         payload["substacks"] = [];
         
@@ -84,7 +83,7 @@ var StackViewer = React.createClass({
         var maxz = 0;
         var minz = 100000000;
 
-        var colorrange = this.getColorRange(substacks);
+        var colorrange = this.getColorRange(substacks, comptype);
 
         for (var sid in substacks) {
             var subobj = {};
@@ -129,10 +128,10 @@ var StackViewer = React.createClass({
             
             // !! hacks into annotations for now
             //subobj["annotations"] = this.getROIStats(substacks[sid]);
-            subobj["annotations"] = this.getROIStats(substacks[sid]);
+            subobj["annotations"] = this.getROIStats(substacks[sid], comptype);
 
             // !! hacks into proofreader status for now
-            var valstat = this.getStat(substacks[sid]);
+            var valstat = this.getStat(substacks[sid], comptype);
             var statusval = 0;
             if (colorrange[2] > 0.000001) {
                 statusval = Math.floor((valstat - colorrange[0])/colorrange[2]);
@@ -164,33 +163,33 @@ var StackViewer = React.createClass({
         s.init();
     },
     componentWillReceiveProps: function (nextprops) {
-        this.loadSubstacks(nextprops.substacks);
+        this.loadSubstacks(nextprops.substacks, nextprops.comptype);
     },
     componentDidMount: function () {
-        this.loadSubstacks(this.props.substacks);
+        this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
     useVI : function () {
         this.setState({metric: "VI"});
-        this.loadSubstacks(this.props.substacks);
+        this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
     useRand : function () {
         this.setState({metric: "rand"});
-        this.loadSubstacks(this.props.substacks);
+        this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
     useCombined : function () {
         this.setState({fmergefsplit: "both"});
-        this.loadSubstacks(this.props.substacks);
+        this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
     useFmerge : function () {
         this.setState({fmergefsplit: "fmerge"});
-        this.loadSubstacks(this.props.substacks);
+        this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
     useFsplit : function () {
         this.setState({fmergefsplit: "fsplit"});
-        this.loadSubstacks(this.props.substacks);
+        this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
     render: function () {
-        var typename = this.props.comptype.split(':')[1];
+        var typename = this.props.comptype;
 
         // set active buttons
         var randsel = "btn btn-default";
@@ -214,7 +213,7 @@ var StackViewer = React.createClass({
 
         return (
             <div className="panel panel-info">
-                <div className="panel-heading">Subvolume Stats ({typename})</div>
+                <div className="panel-heading">Subvolume Stats -- {typename}</div>
                 <div className="panel-body row">
                     <div className="col-md-6">
                         <div className="btn-group" role="group" aria-label="metricsel">

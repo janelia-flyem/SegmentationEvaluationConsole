@@ -11,6 +11,15 @@ var JobInfo = React.createClass({
     componentDidMount: function () {
         $('[data-toggle="popover"]').popover();
     },
+    changeType: function(ev) {
+        var compKey = ev.target.value;
+        if (compKey == this.state.compType.toKey()) {
+            return;
+        }
+        var newComp = new CompType(compKey);
+        this.props.callback(newComp); 
+        this.setState({compType: newComp});
+    },
     writeConfig: function () {
         var config = this.props.metric_data.getConfig();
         
@@ -44,7 +53,7 @@ var JobInfo = React.createClass({
 
         var comptypes = this.props.metric_data.getCompTypes();
         return (
-            <form className="navbar-form">
+            <form className="navbar-form navbar-right">
                 <div className="form-group">
                 <label>GT: {gt_seg + "#" + gt_uuid} Test: {test_seg + "#" + seg_uuid + "  "}
                 </label></div> 
@@ -56,7 +65,7 @@ var JobInfo = React.createClass({
                 </div>
                 
                 <div className="form-group">
-                <select id="compSel" className="form-control" style={{marginLeft: "1em", marginRight: "1em"}}>
+                <select id="compSel" className="form-control" style={{marginLeft: "1em", marginRight: "1em"}} onChange={this.changeType}>
                 <option value={comptypes[0].toKey()}>{comptypes[0].toString()}</option>;
                 {comptypes.slice(1,comptypes.length).map(function (val) {
                     return <option value={val.toKey()}>{val.toString()}</option>;

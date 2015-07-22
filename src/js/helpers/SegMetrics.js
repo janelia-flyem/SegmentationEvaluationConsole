@@ -43,7 +43,7 @@ var SegMetrics = function (jsondata) {
         for (var metricType in SummaryMetrics) {
             var fn = eval("SummaryMetrics." + metricType);
             var stats = new fn(this.data, type);
-            if (stats) {
+            if (stats.comptype) {
                 this.flatstats.push(stats);
             }
         } 
