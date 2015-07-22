@@ -54,22 +54,29 @@ var StackViewer = React.createClass({
         
         return output_str;
     },
-    loadColors: function() {
+    loadColors: function(colorrange, comptype) {
         var colors = {
-            0: {"name": "0", "color": "#79C9D8"},
-            1: {"name": "1", "color": "#86C2D1"},
-            2: {"name": "2", "color": "#93BBCA"},
-            3: {"name": "3", "color": "#A0B4C3"},
-            4: {"name": "4", "color": "#ADADBC"},
-            5: {"name": "5", "color": "#BAA7B5"},
-            6: {"name": "6", "color": "#C7A0AE"},
-            7: {"name": "7", "color": "#D499A7"},
-            8: {"name": "8", "color": "#E192A0"},
-            9: {"name": "9", "color": "#EE8C99"}
+            0: {"name": "0", "color": "#043CDC"},
+            1: {"name": "1", "color": "#1F3AC4"},
+            2: {"name": "2", "color": "#3B38AD"},
+            3: {"name": "3", "color": "#573696"},
+            4: {"name": "4", "color": "#73347E"},
+            5: {"name": "5", "color": "#8F3367"},
+            6: {"name": "6", "color": "#AB3150"},
+            7: {"name": "7", "color": "#C72F38"},
+            8: {"name": "8", "color": "#E32D21"},
+            9: {"name": "9", "color": "#FF2C0A"}
         };
 
+        for (var i = 0; i < NumColors; i++) {
+            var val = colorrange[0]+i*colorrange[2];
+            if (comptype == "rand") {
+                val = colorrange[1]-val;
+            }
+            colors[i]["name"] = val.toFixed(2);
+        }
+       
         return colors;
-
     },
     loadSubstacks: function(substacks, comptype) {
         var payload = {};
@@ -147,7 +154,7 @@ var StackViewer = React.createClass({
             payload["substacks"].push(subobj);
         }
 
-        payload["colors"] = this.loadColors();
+        payload["colors"] = this.loadColors(colorrange, comptype);
 	payload["element"] = '#stack_roi';
 
         // make dimensions larger by 2x to zoom out
