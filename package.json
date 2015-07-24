@@ -31,7 +31,7 @@
     "react-router": "^0.13.3",
     "bootstrap": "^3.3.4",
     "dvid": "latest",
-    "stack3d": "JaneliaSciComp/stack3D",
+    "stack3d": "janelia-flyem/stack3D",
     "jquery": "^2.1.4"
     }
 }
