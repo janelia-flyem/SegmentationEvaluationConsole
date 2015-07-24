@@ -99,7 +99,7 @@ var SegMetrics = function (jsondata) {
     };
 
     // grab stats for body type
-    this.getBodyStats = function (comptype, stattype) {
+    this.getBodyStats = function (comptype, statype) {
         if (statype == TestFrag) {
             return BodyMetrics.TestFrag(that.data, comptype);
         }

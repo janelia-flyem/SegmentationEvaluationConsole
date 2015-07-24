@@ -22,7 +22,6 @@ var TableRow = React.createClass({
 var TableInt = React.createClass({
     render: function () {
         var globalcnt = 0
-        var count = this.props.tableinfo.length 
         return (
                 <table className="table table-responsive table-condensed table-responsive">
                    <thead> <tr><th><b>Stat</b></th><th><b>Value</b></th></tr> </thead>
