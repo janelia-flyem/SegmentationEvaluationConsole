@@ -146,24 +146,28 @@ var StackViewer = React.createClass({
 
             // !! hacks into proofreader status for now
             var valstat = this.getStat(substacks[sid], comptype);
-            var statusval = 0;
-            if (colorrange[2] > 0.000001) {
-                statusval = Math.floor((valstat - colorrange[0])/colorrange[2]);
-            }
-            if (this.state.metric == "rand") {
-                statusval = NumColors - statusval;
-            }
-            if (statusval == NumColors) {
-                statusval -= 1;
-            }
+            // var statusval = 0;
+            // if (colorrange[2] > 0.000001) {
+            //     statusval = Math.floor((valstat - colorrange[0])/colorrange[2]);
+            // }
+            // if (this.state.metric == "rand") {
+            //     statusval = NumColors - statusval;
+            // }
+            // if (statusval == NumColors) {
+            //     statusval -= 1;
+            // }
 
-            subobj["status"] = statusval;
+            // subobj["status"] = statusval;
+            subobj["status"] = valstat;
             payload["substacks"].push(subobj);
         }
 
         payload["colors"] = this.loadColors(colorrange, comptype);
-	payload["element"] = '#stack_roi';
+	    payload["element"] = '#stack_roi';
         payload["modal"] = true;
+        payload["metadataTop"] = true;
+        payload["colorInterpolate"] = ['White', 'Yellow', 'aquamarine', 'deepskyblue', 'mediumorchid'];
+
 
         // make dimensions larger by 2x to zoom out
         payload["stackDimensions"] = [(maxx-minx)*2,(maxy-miny)*2,(maxz-minz)*2];
