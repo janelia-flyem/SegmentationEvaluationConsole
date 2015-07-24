@@ -7,7 +7,7 @@ var SelectBodyFilter = React.createClass({
         return (
             <select onChange={this.props.callback} className="form-control">
             <option value={this.props.bodymodes[0]}>{this.props.bodymodes[0]}</option>
-            {this.props.bodymodes.slice(1, 100).map(function (val) {
+            {this.props.bodymodes.slice(1, this.props.bodymodes.length).map(function (val) {
                 return <option key={val} value={val}>{val}</option>;
             })} 
             </select>
@@ -31,11 +31,16 @@ var TableRow = React.createClass({
 var TableInt = React.createClass({
     render: function () {
         var globalcnt = 0
+        var tablelimit = 100;
+
+        if (this.props.tableinfo.length < tablelimit) {
+            tablelimit = this.props.tableinfo;
+        }
         return (
                 <table className="table table-responsive table-condensed table-responsive">
                    <thead> <tr><th><b>Body ID</b></th><th><b>Value</b></th></tr> </thead>
                    <tbody> 
-                   {this.props.tableinfo.map(function(val) {
+                   {this.props.tableinfo.slice(0,tablelimit).map(function(val) {
                         globalcnt += 1
                         return <TableRow key={"bodytable-"+String(globalcnt)} rowinfo={val} />
                     })}
