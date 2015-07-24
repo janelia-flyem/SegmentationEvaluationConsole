@@ -26,6 +26,9 @@ var SegMetrics = function (jsondata) {
     this.config = jsondata["config-file"];
     this.timestamp = jsondata["time-analyzed"];
 
+    var default_comp = new CompType();
+    this.comptypes.push(default_comp);
+
     // load comparison types
     // eventually should have separately ??
     for (var type in this.data.types) {
@@ -34,7 +37,9 @@ var SegMetrics = function (jsondata) {
         if (type == "connection-matrix") {
             continue;
         }
-        this.comptypes.push(new CompType(type));
+        if (type != default_comp.toKey()) {
+            this.comptypes.push(new CompType(type));
+        }
     }
 
     // load all stats

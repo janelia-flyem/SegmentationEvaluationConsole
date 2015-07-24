@@ -47,15 +47,15 @@ var StackViewer = React.createClass({
         return [minval, maxval, incr]; 
     },
     getROIStats : function (substack, comptype) {
-        var output_str = "<br>"
+        var output_str = "<br>";
         for (var stat in substack["types"][comptype]) {
              if (stat == "VI" || stat == "rand") {
-                 var res = substack["types"][this.props.comptype][stat];
+                 var res = substack["types"][comptype][stat];
 
                  output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + res[0].toFixed(2) + " (false merge), " + res[1].toFixed(2) + " (false split) <br>");
 
              } else {
-                 output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][this.props.comptype][stat]) + "<br>");
+                 output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][comptype][stat]) + "<br>");
              }
         }
         
@@ -183,25 +183,25 @@ var StackViewer = React.createClass({
     componentDidMount: function () {
         this.loadSubstacks(this.props.substacks, this.props.comptype);
     },
+    componentWillUnmount: function () {
+        if (this.state.viewer != null) {
+            this.state.viewer.destroy();
+        }
+    },
     useVI : function () {
-        this.setState({metric: "VI"});
-        this.loadSubstacks(this.props.substacks, this.props.comptype);
+        this.setState({metric: "VI"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     useRand : function () {
-        this.setState({metric: "rand"});
-        this.loadSubstacks(this.props.substacks, this.props.comptype);
+        this.setState({metric: "rand"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     useCombined : function () {
-        this.setState({fmergefsplit: "both"});
-        this.loadSubstacks(this.props.substacks, this.props.comptype);
+        this.setState({fmergefsplit: "both"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     useFmerge : function () {
-        this.setState({fmergefsplit: "fmerge"});
-        this.loadSubstacks(this.props.substacks, this.props.comptype);
+        this.setState({fmergefsplit: "fmerge"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     useFsplit : function () {
-        this.setState({fmergefsplit: "fsplit"});
-        this.loadSubstacks(this.props.substacks, this.props.comptype);
+        this.setState({fmergefsplit: "fsplit"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     render: function () {
         var typename = this.props.comptype;
