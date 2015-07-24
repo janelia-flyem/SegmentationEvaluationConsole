@@ -49,7 +49,14 @@ var StackViewer = React.createClass({
     getROIStats : function (substack, comptype) {
         var output_str = "<br>"
         for (var stat in substack["types"][comptype]) {
-             output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][this.props.comptype][stat]) + "<br>");
+             if (stat == "VI" || stat == "rand") {
+                 var res = substack["types"][this.props.comptype][stat];
+
+                 output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + res[0].toFixed(2) + " (false merge), " + res[1].toFixed(2) + " (false split) <br>");
+
+             } else {
+                 output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][this.props.comptype][stat]) + "<br>");
+             }
         }
         
         return output_str;

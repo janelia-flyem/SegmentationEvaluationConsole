@@ -136,10 +136,20 @@ var ConnectivityStats = function (data, comptype) {
     // 0 thresholds will still be given as long as there as a qualifying
     // comparison type
     this.toStringArr = function () {
-        return [
-            {name: "False Connections (10)", value: String(that.payload["thresholds"][2][0])},
-            {name: "True Connections (10)", value: String(that.payload["thresholds"][2][1])}
-        ];
+        // connectivity information will be empty if no connections
+        // were found -- just write 0 to indicate this
+        if (that.payload["thresholds"].length > 0) {
+            return [
+                {name: "False Connections (10)", value: String(that.payload["thresholds"][2][0])},
+                {name: "True Connections (10)", value: String(that.payload["thresholds"][2][1])}
+            ];
+        } else {
+            return [
+                {name: "False Connections (10)", value: "0"},
+                {name: "True Connections (10)", value: "0"}
+            ];
+
+        }
     };
 
     this.toJSON = function () {

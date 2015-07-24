@@ -67,8 +67,8 @@ var SegMetrics = function (jsondata) {
     // assume first synapse is the one for now
     for (var i = 0; i < this.comptypes.length; i++) {
         var type = this.comptypes[i];
-        var res = SummaryMetrics.ConnectivityStats(this.data, type);
-        if (res) {
+        var res = new SummaryMetrics.ConnectivityStats(this.data, type);
+        if (res.comptype) {
             this.synapse_info = res;
             break;
         }
