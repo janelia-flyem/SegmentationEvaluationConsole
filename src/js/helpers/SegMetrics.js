@@ -16,7 +16,7 @@ var BestTest = "Best Test";
 var SegMetrics = function (jsondata) {
     this.data = jsondata;
     this.comptypes = [];
-    this.bodymetrictypes = [TestFrag, GTFrag, WorstGT, BestTest];
+    this.bodymetrictypes = [WorstGT, BestTest, TestFrag, GTFrag];
     this.flatstats = [];
 
     // let stack viewer handle for now
