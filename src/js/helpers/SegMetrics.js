@@ -125,8 +125,18 @@ var SegMetrics = function (jsondata) {
     }
 
     // get stat array
-    this.getAllStats = function () {
-        return that.flatstats;
+    this.getAllStats = function (comptype) {
+        if (comptype) {
+            var res = []
+            for (var i = 0; i < that.flatstats.length; i++) {
+                if (that.flatstats[i].comptype.toKey() == comptype.toKey()) {
+                    res.push(that.flatstats[i]);
+                }
+            }
+            return res;
+        } else {
+            return that.flatstats;
+        }
     }
 };
 

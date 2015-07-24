@@ -32,6 +32,7 @@
     "bootstrap": "^3.3.4",
     "dvid": "latest",
     "stack3d": "janelia-flyem/stack3D",
-    "jquery": "^2.1.4"
+    "jquery": "^2.1.4",
+    "react-bootstrap": "^0.23.7"
     }
 }

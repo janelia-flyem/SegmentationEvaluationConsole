@@ -41,7 +41,7 @@ var Master = React.createClass({
             );
             maintable_component = (
                 <div className="col-md-3">
-                <MainTable metric_data={this.state.metric_results} />
+                <MainTable comptype={this.state.compType} metric_data={this.state.metric_results} />
                 </div>
             );
             bodytable_component = (

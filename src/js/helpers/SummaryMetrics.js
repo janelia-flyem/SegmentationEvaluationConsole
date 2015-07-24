@@ -26,10 +26,18 @@ var VIStats = function (data, comptype) {
 
     this.toStringArr = function () {
         return [
-            {name: "False Merge VI", value: that.fmerge.toFixed(2)},
-            {name: "False Split VI", value: that.fsplit.toFixed(2)},
-            {name: "Total VI", value: that.total.toFixed(2)}
+            {name: "FM-VI", value: that.fmerge.toFixed(2)},
+            {name: "FS-VI", value: that.fsplit.toFixed(2)},
+            {name: "VI", value: that.total.toFixed(2)}
         ];
+    };
+
+    this.toDescArr = function () {
+        return [
+            "False Merge VI",
+            "False Split VI",
+            "Total VI"
+        ]
     };
 
     this.toJSON = function () {
@@ -61,9 +69,17 @@ var RandStats = function (data, comptype) {
 
     this.toStringArr = function () {
         return [
-            {name: "False Merge Rand", value: that.fmerge.toFixed(2)},
-            {name: "False Split Rand", value: that.fsplit.toFixed(2)},
+            {name: "FM-RD", value: that.fmerge.toFixed(2)},
+            {name: "FS-RD", value: that.fsplit.toFixed(2)},
             {name: "Rand", value: that.total.toFixed(2)}
+        ];
+    };
+
+    this.toDescArr = function () {
+        return [
+            "False Merge Rand",
+            "False Split Rand",
+            "Rand"
         ];
     };
 
@@ -97,10 +113,18 @@ var EditStats = function (data, comptype) {
 
     this.toStringArr = function () {
         return [
-            {name: "Split (1:1)", value: String(that.payload["1"][1])},
-            {name: "Merge (1:1)", value: String(that.payload["1"][0])},
-            {name: "Edit (5:1)", value: String(that.payload["5"][0] + that.payload["5"][1])},
-            {name: "Edit (10:1)", value: String(that.payload["10"][0] + that.payload["10"][1])}
+            {name: "Splits", value: String(that.payload["1"][1])},
+            {name: "Merges", value: String(that.payload["1"][0])},
+            {name: "Nuis(5:1)", value: String(that.payload["5"][0] + 5*that.payload["5"][1])},
+            {name: "Nuis(10:1)", value: String(that.payload["10"][0] + 10*that.payload["10"][1])}
+        ];
+    };
+    this.toDescArr = function () {
+        return [
+            "# Split Edits (1 split = 1 merge)",
+            "# Merge Edits (1 split = 1 merge)",
+            "# Total Edits (nuisance) in merger units (1 split = 5 merges)",
+            "# Total Edits (nuisance) in merger units (1 split = 10 merges)"
         ];
     };
     this.toJSON = function () {
@@ -140,17 +164,25 @@ var ConnectivityStats = function (data, comptype) {
         // were found -- just write 0 to indicate this
         if (that.payload["thresholds"].length > 0) {
             return [
-                {name: "False Connections (10)", value: String(that.payload["thresholds"][2][0])},
-                {name: "True Connections (10)", value: String(that.payload["thresholds"][2][1])}
+                {name: "F-Conn", value: String(that.payload["thresholds"][2][0])},
+                {name: "T-Conn", value: String(that.payload["thresholds"][2][1])}
             ];
         } else {
             return [
-                {name: "False Connections (10)", value: "0"},
-                {name: "True Connections (10)", value: "0"}
+                {name: "F-Conn", value: "0"},
+                {name: "T-Conn", value: "0"}
             ];
 
         }
     };
+
+    this.toDescArr = function () {
+        return [
+            "False Connections (>10)",
+            "True Connections (>10)"
+        ];
+    };
+
 
     this.toJSON = function () {
         return that.payload;
@@ -193,12 +225,23 @@ var BodyStats = function (data, comptype) {
 
     this.toStringArr = function () {
         return [
-            {name: "Body: Worst GT ("+ that.payload["worst-vi"][1] + ")" , value: that.vi.toFixed(2)},
-            {name: "Body: Frag Test ("+ that.payload["worst-fmerge"][1] + ")", value: that.fmerge.toFixed(2)},
-            {name: "Body: Frag GT ("+ that.payload["worst-fsplit"][1] + ")", value: that.fsplit.toFixed(2)},
-            {name: "Body: Best Seg ("+ that.goodbody + ")", value: String(that.goodoverlap)}
+            {name: "B-WRST-GT-VI" , value: that.vi.toFixed(2)},
+            {name: "B-WRST-TST-FR", value: that.fmerge.toFixed(2)},
+            {name: "B-WRST-GT-FR", value: that.fsplit.toFixed(2)},
+            {name: "B-BST-TST-OV", value: String(that.goodoverlap)}
         ];
     };
+    
+    this.toDescArr = function () {
+        return [
+            "Worst body VI.  GT body ID = "+ that.payload["worst-vi"][1],
+            "Worst body fragmentation VI.  Test body ID = " + that.payload["worst-fmerge"][1],
+            "Worst body fragmentation VI.  GT body ID = " + that.payload["worst-fsplit"][1],
+            "Segmentation with greatest (best) correct overlap. Test body ID = " + that.goodbody 
+        ];
+    };
+
+    
     this.toJSON = function () {
         return that.payload;
     };
@@ -231,13 +274,25 @@ var VISubvolumeStats = function (data, comptype) {
 
     this.toStringArr = function () {
         return [
-            {name: "Subvolume: Worst VI False Merge ("+ that.payload["fmerge-worst"][1] + ")" , value: that.fmergew.toFixed(2)},
-            {name: "Subvolume: Worst VI False Split ("+ that.payload["fsplit-worst"][1] + ")" , value: that.fsplitw.toFixed(2)},
-            {name: "Subvolume: Average VI", value: that.average.toFixed(2)},
-            {name: "Subvolume: Best VI False Merge ("+ that.payload["fmerge-best"][1] + ")" , value: that.fmergeb.toFixed(2)},
-            {name: "Subvolume: Best VI False Merge ("+ that.payload["fmerge-best"][1] + ")" , value: that.fsplitb.toFixed(2)}
+            {name: "S-WRST-FM-VI" , value: that.fmergew.toFixed(2)},
+            {name: "S-WRST-FS-VI" , value: that.fsplitw.toFixed(2)},
+            {name: "S-AVE-VI" , value: that.average.toFixed(2)},
+            {name: "S-BST-FM-VI" , value: that.fmergeb.toFixed(2)},
+            {name: "S-BST-FS-VI" , value: that.fsplitb.toFixed(2)}
         ];
     };
+  
+    this.toDescArr = function () {
+        return [
+            "Worst False Merge VI for a Subvolume. Subvolume=" + that.payload["fmerge-worst"][1],
+            "Worst False Split VI for a Subvolume. Subvolume=" + that.payload["fsplit-worst"][1],
+            "Average Substack VI",
+            "Best False Merge VI for a Subvolume. Subvolume=" + that.payload["fmerge-best"][1],
+            "Best False Split VI for a Subvolume. Subvolume=" + that.payload["fsplit-best"][1] 
+        ];
+    };
+
+  
     this.toJSON = function () {
         return that.payload;
     };
@@ -271,13 +326,23 @@ var RandSubvolumeStats = function (data, comptype) {
 
     this.toStringArr = function () {
         return [
-            {name: "Subvolume: Worst Rand False Merge ("+ that.payload["fmerge-worst"][1] + ")" , value: that.fmergew.toFixed(2)},
-            {name: "Subvolume: Worst Rand False Split ("+ that.payload["fsplit-worst"][1] + ")" , value: that.fsplitw.toFixed(2)},
-            {name: "Subvolume: Average Rand", value: that.average.toFixed(2)},
-            {name: "Subvolume: Best Rand False Merge ("+ that.payload["fmerge-best"][1] + ")" , value: that.fmergeb.toFixed(2)},
-            {name: "Subvolume: Best Rand False Merge ("+ that.payload["fmerge-best"][1] + ")" , value: that.fsplitb.toFixed(2)}
+            {name: "S-WRST-FM-RD" , value: that.fmergew.toFixed(2)},
+            {name: "S-WRST-FS-RD" , value: that.fsplitw.toFixed(2)},
+            {name: "S-AVE-RD", value: that.average.toFixed(2)},
+            {name: "S-BST-FM-RD" , value: that.fmergeb.toFixed(2)},
+            {name: "S-BST-FS-VI" , value: that.fsplitb.toFixed(2)}
         ];
     };
+    this.toDescArr = function () {
+        return [
+            "Worst False Merge Rand for a Subvolume. Subvolume=" + that.payload["fmerge-worst"][1],
+            "Worst False Split Rand for a Subvolume. Subvolume=" + that.payload["fsplit-worst"][1],
+            "Average Substack Rand",
+            "Best False Merge Rand for a Subvolume. Subvolume=" + that.payload["fmerge-best"][1],
+            "Best False Split Rand for a Subvolume. Subvolume=" + that.payload["fsplit-best"][1] 
+        ];
+    };
+
     this.toJSON = function () {
         return that.payload;
     };
