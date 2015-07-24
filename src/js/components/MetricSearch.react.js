@@ -5,9 +5,13 @@ var dvid = require('dvid');
 window.$ = window.jQuery = require('jquery');
 var JobInfo = require('./JobInfo.React');
 var SegMetrics = require('../helpers/SegMetrics');
+var WaitDialog = require('./WaitDialog.React');
+
 
 var ExpsLocation = "/seg-metrics/";
 var APIPrefix = "/api/node/";
+
+
 
 var MetricSearch = React.createClass({
     getInitialState: function () {
@@ -18,6 +22,7 @@ var MetricSearch = React.createClass({
             exp_list: [],
             ds_error: false,
             du_error: false,
+            waiting: false,
             metric_results: null
         };
     },
@@ -26,12 +31,13 @@ var MetricSearch = React.createClass({
     },
     loadExperiment: function() {
         var value = $("#selectexp option:selected").val();
-        
+        this.setState({waiting: true});
+
         $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + value,
             function (data) { 
                 var metric_data = new SegMetrics(data);
                 this.props.callback(metric_data);
-                this.setState({metric_results: metric_data})
+                this.setState({waiting: false, metric_results: metric_data})
             }.bind(this) );
     },
     retrieveExpListActual: function(server, uuid) {
@@ -56,13 +62,14 @@ var MetricSearch = React.createClass({
     },
     uploadFile: function(ev) {
         ev.preventDefault();
+        this.setState({waiting: true});
 
         var reader = new FileReader();
         reader.onload = function (e) {
             var data = JSON.parse(reader.result);
             var metric_data = new SegMetrics(data);
             this.props.callback(metric_data);
-            this.setState({metric_results: metric_data})
+            this.setState({waiting: false, metric_results: metric_data})
         }.bind(this);
         reader.readAsText(ev.target.files[0]);
     },   
@@ -110,7 +117,7 @@ var MetricSearch = React.createClass({
         var modalinfo = (
                 <div>
 
-                <div className="modal fade" tabIndex="-1" id="dvidQuery" role="dialog" aria-labelledby="dvidQueryTitle">
+                <div className="modal fade" tabIndex="-1" id="dvidQuery" data-keyboard="false" data-backdrop="static" role="dialog" aria-labelledby="dvidQueryTitle">
                 <div className="modal-dialog" role="document">
                 <div className="modal-content">
                 <div className="modal-header">
@@ -166,10 +173,16 @@ var MetricSearch = React.createClass({
                 <JobInfo callback={this.changeType} metric_data={this.state.metric_results} />
             );
         }
+        
+        var wait_component = <div />
+        if (this.state.waiting) {
+            wait_component = <WaitDialog />;
+        }
 
         return (
                 <div>
                 {modalinfo}
+                {wait_component}
                 <form className="navbar-form navbar-right">
                     <div className="form-group">
                         <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery" style={{marginRight: "1em"}}>DVID</button>
