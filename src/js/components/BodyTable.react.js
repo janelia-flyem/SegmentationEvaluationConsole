@@ -7,7 +7,7 @@ var SelectBodyFilter = React.createClass({
         return (
             <select onChange={this.props.callback} className="form-control">
             <option value={this.props.bodymodes[0]}>{this.props.bodymodes[0]}</option>
-            {this.props.bodymodes.slice(1, this.props.bodymodes.length).map(function (val) {
+            {this.props.bodymodes.slice(1, 100).map(function (val) {
                 return <option key={val} value={val}>{val}</option>;
             })} 
             </select>
