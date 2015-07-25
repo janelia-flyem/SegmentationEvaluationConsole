@@ -188,10 +188,18 @@ var ConnectivityStats = function (data, comptype) {
         return that.payload;
     };
     this.worseThan = function(otherstat) {
-        return [
-            that.payload[2][0] > otherstat.payload[2][0], // worse if more false
-            that.payload[2][1] < otherstat.payload[2][1] // worse if fewer true
-        ];
+        if (that.payload["thresholds"].length > 0) {
+            return [
+                that.payload[2][0] > otherstat.payload[2][0], // worse if more false
+                that.payload[2][1] < otherstat.payload[2][1] // worse if fewer true
+            ] 
+
+        } else {
+            return [
+                    false,
+                    false    
+                ];
+        }
     }
 };
 module.exports.ConnectivityStats = ConnectivityStats;
