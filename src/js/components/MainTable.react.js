@@ -6,6 +6,51 @@ var Popover = require('react-bootstrap/lib/Popover');
 var RetrieveExp2 = require('./RetrieveExp2.react.js');
 var JobInfo = require('./JobInfo.react.js');
 
+var CompInfo = React.createClass({
+    writeConfig: function () {
+        var config = this.props.metric_data.getConfig();
+        
+        // write main options out
+        var output = "<p>";
+        for (var element in config["dvid-info"]) {
+            output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info"][element]) + "<br>");
+        }
+
+        // write test seg config
+        output += "<br><i>Test Seg Config</i><br>";
+        for (var element in config["dvid-info-comp"]) {
+            output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info-comp"][element]) + "<br>");
+        }
+
+        // write options
+        output += "<br><i>Options</i><br>";
+        for (var element in config["options"]) {
+            output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["options"][element]) + "<br>");
+        }
+
+        output += "</p>";
+        return output;
+    },
+    componentDidMount: function () {
+        $('[data-toggle="popover"]').popover();
+    },
+    render: function () {
+        var configfile = this.props.metric_data.getConfig();
+        var expname = configfile["dvid-info"]["stats-location"];
+        var configdata = this.writeConfig();
+
+        return (
+            <div >
+                <h5>2nd Comparison: {expname}</h5>
+                <button type="button" className="btn btn-default" data-toggle="popover" data-html="true" data-trigger="focus" title="Comparison Configuration" data-content={configdata}>
+                <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
+                </button>
+            </div>
+        );
+    }
+});
+
+
 var TableRow = React.createClass({
     render: function () {
         var comptd = <td />
@@ -125,7 +170,7 @@ var MainTable = React.createClass({
                 }
             }
 
-            jobinfo =  <JobInfo callback={null} metric_data={this.state.metricComp} />;
+            jobinfo =  <CompInfo metric_data={this.state.metricComp} />;
         } 
 
 
@@ -138,22 +183,10 @@ var MainTable = React.createClass({
             <div className="panel panel-info">
                 <div className="panel-heading"> Summary Stats -- {typename}</div>
                 <div className="panel-body stats" >
-                    <div className="row">
-                        <div className="col-md-6">
-                            <p>Compare To</p>
-                        </div>
-                        <div className="col-md-6">
-                            <RetrieveExp2 caller="MAIN" callback={this.updateComp} />
-                        </div>
-                    </div>
-                    <div className="row">
-                    
-                    {jobinfo}
+                    <RetrieveExp2 callback={this.updateComp} />
 
-                    </div>
-                    <div className="row">
-                        {comparable}
-                    </div>
+                    {jobinfo}
+                    {comparable}
                     <TableInt tableinfo={master_list} compinfo={comp_list}/> 
                 </div>
             </div>

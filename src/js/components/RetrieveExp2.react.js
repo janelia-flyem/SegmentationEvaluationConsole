@@ -33,25 +33,20 @@ var RetrieveExp2 = React.createClass({
     render: function() {
         var wait_component = <div />
         if (this.state.waiting) {
-            wait_component = <WaitDialog />
+            wait_component = <WaitDialog />;
         }
          
         return (
             <div>
-            {wait_component}
-            <form>
-            <div className="form-group">
-            <label className="btn btn-primary" onChange={this.uploadFile} htmlFor="choosefileComp">
-            <input id="choosefileComp" type="file" style={{display:"none"}} />
-            File
-            </label>
-            </div>
-            </form>
+                {wait_component}
+                <label className="btn btn-primary" onChange={this.uploadFile} htmlFor="choosefileComp">
+                <input id="choosefileComp" type="file" style={{display:"none"}} />
+                Compare
+                </label>
             </div>
         );
 
     }
-
 });
 
 module.exports = RetrieveExp2;

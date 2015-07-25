@@ -196,7 +196,7 @@ var StackViewer = React.createClass({
         this.setState({metric: "VI"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     useRand : function () {
-        this.setState({metric: "rand"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
+                  this.setState({metric: "rand"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     useCombined : function () {
         this.setState({fmergefsplit: "both"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
@@ -207,8 +207,14 @@ var StackViewer = React.createClass({
     useFsplit : function () {
         this.setState({fmergefsplit: "fsplit"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
+    downloadScreenshot: function () {
+        if (this.state.viewer) {
+            this.state.viewer.screenshot();
+        }
+    },
+
     render: function () {
-        var typename = this.props.comptype;
+        var typename = this.props.rcomptype.toString();
 
         // set active buttons
         var randsel = "btn btn-default";
@@ -232,7 +238,13 @@ var StackViewer = React.createClass({
 
         return (
             <div className="panel panel-info">
-                <div className="panel-heading">Subvolume Stats -- {typename}</div>
+                <div className="panel-heading">
+                Subvolume Stats -- {typename}
+                <button type="button" className="btn btn-default pull-right" onClick={this.downloadScreenshot}>
+                <span className="glyphicon glyphicon-download-alt" aria-hidden="true" ></span>
+                </button>
+                </div>
+               
                 <div className="panel-body row">
                     <div className="col-md-6">
                         <div className="btn-group" role="group" aria-label="metricsel">

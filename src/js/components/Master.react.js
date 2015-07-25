@@ -36,7 +36,7 @@ var Master = React.createClass({
         if (this.state.metric_results !== null) {
             substack_component = (
                 <div className="col-md-6">
-                <StackViewer comptype={this.state.compType.toKey()} substacks={this.state.metric_results.subvolumes["ids"]} />
+                <StackViewer rcomptype={this.state.compType} comptype={this.state.compType.toKey()} substacks={this.state.metric_results.subvolumes["ids"]} />
                 </div>
             );
             maintable_component = (

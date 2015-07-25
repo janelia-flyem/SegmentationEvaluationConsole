@@ -68,6 +68,15 @@ var JobInfo = React.createClass({
             );
         }
 
+        var sizediv = <div />;
+        if (this.props.callback) {
+            sizediv = (
+                    <div className="form-group">
+                    <label> {"Size:" + String(this.props.metric_data.getTypeSize(this.state.compType))}</label> 
+                    </div>
+                );
+        }
+
         return (
             <form className="navbar-form navbar-right">
                 <div className="form-group">
@@ -82,10 +91,7 @@ var JobInfo = React.createClass({
                 
                 {seldiv}
 
-                <div className="form-group">
-                <label> {"Size:" + String(this.props.metric_data.getTypeSize(this.state.compType))}</label> 
-                </div>
-         </form>    
+             </form>    
             
         );
     }
