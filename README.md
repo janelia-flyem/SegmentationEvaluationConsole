@@ -8,7 +8,7 @@ by [DVIDSparkServices](https://github.com/janelia-flyem/DVIDSparkServices) that 
 ![Picture](https://raw.githubusercontent.com/janelia-flyem/SegmentationEvaluationConsole/master/tutorial/overallview.png)
 
 
-The goal of this app is to provide insight into the places where segmentation succeeds and fails.  To this end, it shows information as a function of both the segmented body and the X,Y,Z location, not just as a summary stat.  It also shows many summary stats to provide a better basis of a comparison between segmentations.
+The goal of this app is to provide insight into the places where segmentation succeeds and fails.  To this end, it shows information as a function of both the segmented body and the X,Y,Z location, not just as a summary stat.  It also shows many summary stats to provide a better basis of a comparison between segmentations.  The target domain is to analyze segmentation for EM connectomics (see the [Fly EM project](https://www.janelia.org/project-team/fly-em)).  While some of the terminology and application are geared to this domain, some of this effort could be reused in a more general sense.
 
 ##Installation and Usage
 
