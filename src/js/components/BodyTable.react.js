@@ -37,7 +37,7 @@ var TableInt = React.createClass({
             tablelimit = this.props.tableinfo;
         }
         return (
-                <table className="table table-responsive table-condensed table-responsive">
+                <table className="table table-responsive table-condensed table-responsive table-striped">
                    <thead> <tr><th><b>Body ID</b></th><th><b>Value</b></th></tr> </thead>
                    <tbody> 
                    {this.props.tableinfo.slice(0,tablelimit).map(function(val) {

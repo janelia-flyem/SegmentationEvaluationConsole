@@ -134,8 +134,8 @@ var EditStats = function (data, comptype) {
         return [
             that.payload["1"][1] > otherstat.payload["1"][1],
             that.payload["1"][0] > otherstat.payload["1"][0],
-            (that.payload["5"][0] + that.payload["5"][1]) > (that.payload["5"][0] + that.payload["5"][1]),
-            (that.payload["10"][0] + that.payload["10"][1]) > (that.payload["10"][0] + that.payload["10"][1])
+            (that.payload["5"][0] + that.payload["5"][1]) > (otherstat.payload["5"][0] + otherstat.payload["5"][1]),
+            (that.payload["10"][0] + that.payload["10"][1]) > (otherstat.payload["10"][0] + otherstat.payload["10"][1])
         ];
     }
 };

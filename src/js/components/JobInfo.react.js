@@ -52,6 +52,22 @@ var JobInfo = React.createClass({
         var seg_uuid = config["dvid-info-comp"].uuid.slice(0,6);
 
         var comptypes = this.props.metric_data.getCompTypes();
+
+        var seldiv = <div />;
+
+        if (this.props.callback) {
+            seldiv = (
+                <div className="form-group">
+                <select id="compSel" className="form-control" style={{marginLeft: "1em", marginRight: "1em"}} onChange={this.changeType}>
+                <option value={comptypes[0].toKey()}>{comptypes[0].toString()}</option>;
+                {comptypes.slice(1,comptypes.length).map(function (val) {
+                                                                            return <option value={val.toKey()}>{val.toString()}</option>;
+                                                                        })}   
+                </select>
+                </div>
+            );
+        }
+
         return (
             <form className="navbar-form navbar-right">
                 <div className="form-group">
@@ -64,14 +80,7 @@ var JobInfo = React.createClass({
                 </button>
                 </div>
                 
-                <div className="form-group">
-                <select id="compSel" className="form-control" style={{marginLeft: "1em", marginRight: "1em"}} onChange={this.changeType}>
-                <option value={comptypes[0].toKey()}>{comptypes[0].toString()}</option>;
-                {comptypes.slice(1,comptypes.length).map(function (val) {
-                    return <option value={val.toKey()}>{val.toString()}</option>;
-                })}   
-                </select>
-                </div>
+                {seldiv}
 
                 <div className="form-group">
                 <label> {"Size:" + String(this.props.metric_data.getTypeSize(this.state.compType))}</label> 
