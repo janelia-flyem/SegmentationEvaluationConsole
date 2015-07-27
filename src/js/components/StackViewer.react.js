@@ -117,6 +117,13 @@ var StackViewer = React.createClass({
             subobj["y"] = y1;
             subobj["z"] = z1;
 
+            var volume = subobj["width"]*subobj["height"]*subobj["length"];
+
+            // ignore small volumes
+            //if (substacks[sid]["types"]["voxels:voxels"]["size"] < (volume/2)) {
+            //    continue;
+            //}
+
             // get stack extents
             if (x1 < minx) {
                 minx = x1;

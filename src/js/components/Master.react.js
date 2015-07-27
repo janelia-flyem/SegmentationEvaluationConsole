@@ -6,6 +6,7 @@ var StackViewer = require('./StackViewer.React');
 var BodyTable = require('./BodyTable.React');
 var MainTable = require('./MainTable.React');
 var CompType = require('../helpers/CompType');
+var Help = require('./Help.React');
 
 window.$ = window.jQuery = require('jquery');
 
@@ -18,7 +19,8 @@ var Master = React.createClass({
     getInitialState: function () {
         return {
             metric_results: null,
-            compType: new CompType()
+            compType: new CompType(),
+            helpMode: false
         };
 
     },
@@ -28,12 +30,19 @@ var Master = React.createClass({
     handleType: function (data) {
         this.setState({compType: data});
     },
+    toMain: function () {
+        this.setState({helpMode: false});
+    },
+    toHelp: function () {
+        this.setState({helpMode: true});
+    },
     render: function () {
         var substack_component = <div />;
         var maintable_component = <div />;
         var bodytable_component = <div />;
+        var help_component = <div />;
 
-        if (this.state.metric_results !== null) {
+        if ((!this.state.helpMode) && (this.state.metric_results !== null)) {
             substack_component = (
                 <div className="col-md-6">
                 <StackViewer rcomptype={this.state.compType} comptype={this.state.compType.toKey()} substacks={this.state.metric_results.subvolumes["ids"]} />
@@ -50,7 +59,14 @@ var Master = React.createClass({
                 </div>
             );
         }
-                
+              
+        var metric_comp = <MetricSearch typeCallback={this.handleType} callback={this.loadData} />;
+
+        if (this.state.helpMode) {
+            help_component = <Help />;
+            metric_comp = <ul className="nav navbar-nav navbar-right"><li>Help</li></ul>
+        }
+
         //<a className="navbar-brand" href="#"><img alt="Brand" src="https://raw.github.com/janelia-flyem/janelia-flyem.github.com/master/images/HHMI_Janelia_Color_Alternate_180x40.png" /></a>
         return (
             <div>
@@ -63,10 +79,11 @@ var Master = React.createClass({
                             <span className="icon-bar"></span>
                             <span className="icon-bar"></span>
                             </button>
-                            <a className="navbar-brand" href="#">EM Segmentation Evaluation</a>
+                            <a className="navbar-brand" onClick={this.toMain}>EM Segmentation Evaluation</a>
+                            <a className="navbar-brand" onClick={this.toHelp}><span className="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>
                         </div>
                          <div className="collapse navbar-collapse" id="bs-navbar-collapse-1">
-                            <MetricSearch typeCallback={this.handleType} callback={this.loadData} />
+                            {metric_comp} 
                         </div>
                     </div>
                 </nav>
@@ -75,6 +92,7 @@ var Master = React.createClass({
                     {maintable_component}
                     {bodytable_component}
                     {substack_component}
+                    {help_component}
                     </div>
                 </div>
             </div>
