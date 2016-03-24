@@ -20,8 +20,8 @@ var StackViewer = React.createClass({
         if (this.state.fmergefsplit === "both") {
             total = fmerge + fsplit;
             if (this.state.metric == "rand") {
-                // ?! compute real fscore instead of average
-                total = (fmerge + fsplit) / 2;
+                // compute unweighted fscore
+                total = (fmerge*split) / (fmerge + fsplit);
             } 
         } else if (this.state.fmergefsplit === "fsplit") {
             total = fsplit;

@@ -64,7 +64,7 @@ var RandStats = function (data, comptype) {
 
     this.fmerge = this.payload[0];
     this.fsplit = this.payload[1];
-    this.total = (this.fmerge+this.fsplit)/2.0; // just average for now
+    this.total = (this.fmerge*this.fsplit)/(this.fmerge+this.fsplit); // just average for now
     var that = this;
 
     this.toStringArr = function () {
