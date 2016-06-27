@@ -84,6 +84,10 @@ module.exports = function(grunt) {
                         cwd: 'node_modules/bootstrap/',
                         src: 'fonts/*',
                         dest: 'build/'
+                    },
+                    {
+                        src: 'neuroglancer/*',
+                        dest: 'build/'
                     }
                 ]
         },
@@ -119,7 +123,7 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['src/index.html', 'src/js/app.js', 'src/js/**/*.js', 'src/less/*.less'],
+        files: ['src/application.html', 'src/js/app.js', 'src/js/**/*.js', 'src/less/*.less', 'neuroglancer/*'],
         tasks: ['browserify', 'less', 'copy:build']
       }
     }
