@@ -59,7 +59,7 @@ var JobInfo = React.createClass({
             seldiv = (
                 <div className="form-group">
                 <select id="compSel" className="form-control" style={{marginLeft: "1em", marginRight: "1em"}} onChange={this.changeType}>
-                <option value={comptypes[0].toKey()}>{comptypes[0].toString()}</option>;
+                <option value={comptypes[0].toKey()}>{comptypes[0].toString()}</option>
                 {comptypes.slice(1,comptypes.length).map(function (val) {
                                                                             return <option value={val.toKey()}>{val.toString()}</option>;
                                                                         })}   

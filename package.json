@@ -27,12 +27,15 @@
     "grunt-jslint": "latest"
   },
   "dependencies": {
-    "react": "^0.13.3",
-    "react-router": "^0.13.3",
     "bootstrap": "^3.3.4",
     "dvid": "latest",
-    "stack3d": "janelia-flyem/stack3D",
     "jquery": "^2.1.4",
-    "react-bootstrap": "^0.23.7"
+    "react": "^0.14",
+    "react-bootstrap": "^0.29.5",
+    "react-dom": "^0.14.5",
+    "react-redux": "^4.4.5",
+    "react-router": "^0.13.3",
+    "redux": "^3.5.0",
+    "stack3d": "janelia-flyem/stack3D"
   }
 }

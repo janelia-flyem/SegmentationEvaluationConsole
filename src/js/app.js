@@ -2,6 +2,7 @@
 
 var Master = require('./components/Master.react');
 var React = require('react');
+var ReactDOM = require('react-dom')
 
 // load css that contains bootstrap
 var filename = "css/main.min.css";
@@ -20,7 +21,7 @@ document.getElementsByTagName("head")[0].appendChild(fileref);
 function loadInterface() {
     var serviceloc,
         element = document.getElementById("segeval");
-    React.render(<Master />, element);
+    ReactDOM.render(<Master />, element);
 }
 
 // do not render component until

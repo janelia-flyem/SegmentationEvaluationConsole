@@ -144,7 +144,7 @@ var RetrieveExp = React.createClass({
                         
                         <div className="form-group">
                         <select id="selectexp" className="form-control">
-                            <option value="default">Choose Experiment</option>;
+                            <option value="default">Choose Experiment</option>
                             {this.state.exp_list.map(function (val) {
                                 return <option key={val[1]} value={val[1]}>{val[0]}</option>;
                             })}   
