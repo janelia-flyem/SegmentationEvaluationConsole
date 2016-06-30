@@ -21,7 +21,7 @@ var StackViewer = React.createClass({
             total = fmerge + fsplit;
             if (this.state.metric == "rand") {
                 // compute unweighted fscore
-                total = (fmerge*split) / (fmerge + fsplit);
+                total = (fmerge*fsplit) / (fmerge + fsplit);
             } 
         } else if (this.state.fmergefsplit === "fsplit") {
             total = fsplit;
