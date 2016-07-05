@@ -2,11 +2,10 @@
 
 var React = require('react');
 var MetricSearch = require('./MetricSearch.React');
-var StackViewer = require('./StackViewer.React');
-var BodyTable = require('./BodyTable.React');
-var MainTable = require('./MainTable.React');
-var CompType = require('../helpers/CompType');
 var Help = require('./Help.React');
+var MetricViewer = require('./MetricViewer.react.js')
+var ReactRedux = require('react-redux')
+var connect = ReactRedux.connect
 
 window.$ = window.jQuery = require('jquery');
 
@@ -16,58 +15,8 @@ window.$ = window.jQuery = require('jquery');
  * evaluation experiment. 
 */
 var Master = React.createClass({
-    getInitialState: function () {
-        return {
-            metric_results: null,
-            compType: new CompType(),
-            helpMode: false
-        };
-
-    },
-    loadData: function (data) {
-        this.setState({metric_results: data});
-    },
-    handleType: function (data) {
-        this.setState({compType: data});
-    },
-    toMain: function () {
-        this.setState({helpMode: false});
-    },
-    toHelp: function () {
-        this.setState({helpMode: true});
-    },
     render: function () {
-        var substack_component = <div />;
-        var maintable_component = <div />;
-        var bodytable_component = <div />;
-        var help_component = <div />;
 
-        if ((!this.state.helpMode) && (this.state.metric_results !== null)) {
-            substack_component = (
-                <div className="col-md-6">
-                <StackViewer rcomptype={this.state.compType} comptype={this.state.compType.toKey()} substacks={this.state.metric_results.subvolumes["ids"]} />
-                </div>
-            );
-            maintable_component = (
-                <div className="col-md-3">
-                <MainTable comptype={this.state.compType} metric_data={this.state.metric_results} />
-                </div>
-            );
-            bodytable_component = (
-                <div className="col-md-3">
-                <BodyTable comptype={this.state.compType} metric_data={this.state.metric_results} />
-                </div>
-            );
-        }
-              
-        var metric_comp = <MetricSearch typeCallback={this.handleType} callback={this.loadData} />;
-
-        if (this.state.helpMode) {
-            help_component = <Help />;
-            metric_comp = <ul className="nav navbar-nav navbar-right"><li>Help</li></ul>
-        }
-
-        //<a className="navbar-brand" href="#"><img alt="Brand" src="https://raw.github.com/janelia-flyem/janelia-flyem.github.com/master/images/HHMI_Janelia_Color_Alternate_180x40.png" /></a>
         return (
             <div>
                 <nav className="navbar navbar-default">
@@ -79,27 +28,41 @@ var Master = React.createClass({
                             <span className="icon-bar"></span>
                             <span className="icon-bar"></span>
                             </button>
-                            <a className="navbar-brand" onClick={this.toMain}>EM Segmentation Evaluation</a>
-                            <a className="navbar-brand" onClick={this.toHelp}><span className="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>
+                            <a className="navbar-brand">EM Segmentation Evaluation</a>
+                            <a className="navbar-brand" onClick={this.props.toHelp}><span className="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>
                         </div>
                          <div className="collapse navbar-collapse" id="bs-navbar-collapse-1">
-                            {metric_comp} 
+                          <MetricSearch />
                         </div>
                     </div>
                 </nav>
-                <div className="container-fluid">
-                    <div className="row">
-                    {maintable_component}
-                    {bodytable_component}
-                    {substack_component}
-                    {help_component}
-                    </div>
+                <div style={this.props.ViewHelp ? {} : {display:'none'}}>
+                    <Help />
                 </div>
+                <MetricViewer />
             </div>
         );
         // add tabs
     }
 });
 
+var MasterState = function(state){
+    return {
+        ViewHelp: state.ViewHelp
+    }
+};
+
+var MasterDispatch = function(dispatch){
+    return {
+        toHelp: function() {
+            dispatch({
+                type: 'TOGGLE_HELP',
+            });
+        }
+
+    }
+};
+
+Master = connect(MasterState, MasterDispatch)(Master)
 
 module.exports = Master;

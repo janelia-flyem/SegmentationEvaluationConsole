@@ -2,6 +2,8 @@
 
 window.$ = window.jQuery = require('jquery');
 var React = require('react');
+var ReactRedux = require('react-redux')
+var connect = ReactRedux.connect
 var JobInfo = require('./JobInfo.React');
 var RetrieveExp = require('./RetrieveExp.React');
 
@@ -18,31 +20,50 @@ var MetricSearch = React.createClass({
             metric_results: null
         };
     },
-    changeType: function (compType) {
-        this.props.typeCallback(compType);
-    },
-    changeMetric: function (metric_data) {
-        this.setState({metric_results: metric_data});
-        this.props.callback(metric_data);
-    },
     render: function () {
         var jobinfo_component = <div />;
 
-        if (this.state.metric_results !== null) {
+        if (this.props.metric_results !== null) {
             jobinfo_component = (
-                <JobInfo callback={this.changeType} metric_data={this.state.metric_results} />
+                <JobInfo callback={this.props.handleType} metric_data={this.props.metric_results} />
             );
         }
         
         return (
             <div>
-            <RetrieveExp callback={this.changeMetric} /> 
+            <RetrieveExp callback={this.props.loadData} />
             {jobinfo_component}
             </div>
         ); 
 
     } 
 });
+
+var MetricSearchState = function(state){
+    return {
+        compType: state.compType,
+        metric_results: state.metric_results
+    }
+};
+
+var MetricSearchDispatch = function(dispatch){
+    return {
+        loadData: function(data) {
+            dispatch({
+                type: 'LOAD_DATA',
+                data: data
+            });
+        },
+        handleType: function(data) {
+            dispatch({
+                type: 'HANDLE_TYPE',
+                data: data
+            });
+        }
+    }
+};
+
+MetricSearch = connect(MetricSearchState, MetricSearchDispatch)(MetricSearch)
 
 
 module.exports = MetricSearch;
