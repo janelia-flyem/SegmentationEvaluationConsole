@@ -30,7 +30,10 @@ var MetricViewer = React.createClass({
             </div>);
           }
           else {
-            return (<div />);
+            return (
+            <div className="container-fluid">
+                <p className="alert alert-info">Please select 'DVID' or 'File' to load data</p>
+            </div>);
 
           }
     }

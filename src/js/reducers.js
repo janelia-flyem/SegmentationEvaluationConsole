@@ -5,7 +5,8 @@ var CompType = require('./helpers/CompType');
 var initialState = {
     ViewHelp: false,
     compType: new CompType(),
-    metric_results: null
+    metric_results: null,
+    ActiveTab: 1
 }
 
 var ConsoleReducers = function(state, action){
@@ -18,7 +19,8 @@ var ConsoleReducers = function(state, action){
             return {
                 ViewHelp: !state.ViewHelp,
                 compType: state.compType,
-                metric_results: state.metric_results
+                metric_results: state.metric_results,
+                ActiveTab: state.ActiveTab
             }
         }
         case 'LOAD_DATA':{
@@ -26,6 +28,7 @@ var ConsoleReducers = function(state, action){
                 ViewHelp: state.ViewHelp,
                 compType: state.compType,
                 metric_results: action.data,
+                ActiveTab: state.ActiveTab
             }
         }
        case 'HANDLE_TYPE':{
@@ -33,6 +36,15 @@ var ConsoleReducers = function(state, action){
                 ViewHelp: state.ViewHelp,
                 compType: action.data,
                 metric_results: state.metric_results,
+                ActiveTab: state.ActiveTab
+            }
+        }
+        case 'CHANGE_TAB':{
+            return {
+                ViewHelp: state.ViewHelp,
+                compType: state.compType,
+                metric_results: state.metric_results,
+                ActiveTab: action.tabnum
             }
         }
 

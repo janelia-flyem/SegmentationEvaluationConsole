@@ -3,8 +3,8 @@
 var React = require('react');
 var MetricSearch = require('./MetricSearch.React');
 var Help = require('./Help.React');
-var MetricViewer = require('./MetricViewer.react.js')
 var ReactRedux = require('react-redux')
+var DisplayTabs = require('./DisplayTabs.react.js')
 var connect = ReactRedux.connect
 
 window.$ = window.jQuery = require('jquery');
@@ -39,7 +39,7 @@ var Master = React.createClass({
                 <div style={this.props.ViewHelp ? {} : {display:'none'}}>
                     <Help />
                 </div>
-                <MetricViewer />
+                <DisplayTabs />
             </div>
         );
         // add tabs
