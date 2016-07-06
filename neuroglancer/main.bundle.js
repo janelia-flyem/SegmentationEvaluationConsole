@@ -16835,10 +16835,8 @@ var x = 0;
 
 var default_viewer_1 = __webpack_require__(77);
 var default_key_bindings_1 = __webpack_require__(135);
-window.addEventListener('DOMContentLoaded', () => {
-  var viewer = window['viewer'] = default_viewer_1.makeDefaultViewer();
-  default_key_bindings_1.makeDefaultKeyBindings(viewer.keyMap);
-});
+var viewer = window['viewer'] = default_viewer_1.makeDefaultViewer();
+default_key_bindings_1.makeDefaultKeyBindings(viewer.keyMap);
 
 /***/ },
 /* 77 */

@@ -15,8 +15,8 @@ var DisplayTabs = React.createClass({
         </Tab>
         <Tab eventKey={2}
             title="Neuroglancer"
-             disabled={this.props.metric_results ? false : true}>
-            <Neuroglancer />
+             disabled={ this.props.metric_results ? false : true}>
+            <Neuroglancer active={ this.props.ActiveTab==2 ? true : false} />
         </Tab>
       </Tabs>
     );
