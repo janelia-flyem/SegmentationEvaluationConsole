@@ -18218,9 +18218,9 @@ var Viewer = function (_disposable_1$RefCoun3) {
         });
         // This needs to happen after the global keyboard shortcut handler for the viewer has been
         // registered, so that it has priority.
-        if (_this3.layerManager.managedLayers.length === 0) {
-            new layer_dialog_1.LayerDialog(_this3.layerSpecification);
-        }
+//        if (_this3.layerManager.managedLayers.length === 0) {
+//            new layer_dialog_1.LayerDialog(_this3.layerSpecification);
+//        }
         return _this3;
     }
 
