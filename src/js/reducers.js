@@ -6,7 +6,8 @@ var initialState = {
     ViewHelp: false,
     compType: new CompType(),
     metric_results: null,
-    ActiveTab: 1
+    ActiveTab: 1,
+    position: null
 }
 
 var ConsoleReducers = function(state, action){
@@ -16,36 +17,30 @@ var ConsoleReducers = function(state, action){
 
     switch(action.type){
         case 'TOGGLE_HELP':{
-            return {
+            return Object.assign({}, state, {
                 ViewHelp: !state.ViewHelp,
-                compType: state.compType,
-                metric_results: state.metric_results,
-                ActiveTab: state.ActiveTab
-            }
+            });
         }
         case 'LOAD_DATA':{
-            return {
-                ViewHelp: state.ViewHelp,
-                compType: state.compType,
+            return Object.assign({}, state, {
                 metric_results: action.data,
-                ActiveTab: state.ActiveTab
-            }
+            });
         }
        case 'HANDLE_TYPE':{
-            return {
-                ViewHelp: state.ViewHelp,
+            return Object.assign({}, state, {
                 compType: action.data,
-                metric_results: state.metric_results,
-                ActiveTab: state.ActiveTab
-            }
+            });
         }
         case 'CHANGE_TAB':{
-            return {
-                ViewHelp: state.ViewHelp,
-                compType: state.compType,
-                metric_results: state.metric_results,
+            return Object.assign({}, state, {
                 ActiveTab: action.tabnum
-            }
+            });
+        }
+        case 'UPDATE_POSITION':{
+            return Object.assign({}, state, {
+                ActiveTab: 2,
+                position: action.position
+            });
         }
 
     }

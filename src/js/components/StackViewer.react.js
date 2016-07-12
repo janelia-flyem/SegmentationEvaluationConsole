@@ -1,9 +1,13 @@
 "use strict"
 
 var React = require('react');
+var ReactRedux = require('react-redux');
+var connect = ReactRedux.connect;
 var StackViewerLib = require('stack3d');
+var ReactDOM = require('react-dom');
+var _ = require('underscore')
 
-var NumColors = 10; 
+var NumColors = 10;
 
 var StackViewer = React.createClass({
     getInitialState: function () {
@@ -149,7 +153,9 @@ var StackViewer = React.createClass({
             
             // !! hacks into annotations for now
             //subobj["annotations"] = this.getROIStats(substacks[sid]);
-            subobj["annotations"] = this.getROIStats(substacks[sid], comptype);
+            subobj["annotations"] = this.getROIStats(substacks[sid], comptype)
+            // !! hack footer container into annotations for now as well
+            subobj["annotations"] += '<div class="modal-footer"></div>'
 
             // !! hacks into proofreader status for now
             var valstat = this.getStat(substacks[sid], comptype);
@@ -170,7 +176,7 @@ var StackViewer = React.createClass({
         }
 
         payload["colors"] = this.loadColors(colorrange, comptype);
-	    payload["element"] = '#stack_roi';
+        payload["element"] = '#stack_roi';
         payload["modal"] = true;
         payload["metadataTop"] = true;
         payload["colorInterpolate"] = ['White', 'Yellow', 'aquamarine', 'deepskyblue', 'mediumorchid'];
@@ -187,6 +193,37 @@ var StackViewer = React.createClass({
         var s = new StackViewerLib(payload);
         this.setState({viewer: s});
         s.init();
+        var stackviewer_el = $('#stack_roi')[0]
+        stackviewer_el.addEventListener('mouseup', this.addNavButton, false)
+    },
+    addNavButton: function (event){
+        //event handler registered to the stack_roi element. Adds the neuroglancer
+        //navigation button to the modal if it's open
+        var modalOpen = !!$('#stack3d_stats_modal')[0]
+        var btnAdded = !!$('#nav_Neurog_btn')[0]
+        if(modalOpen && !btnAdded){
+            var modal_body_el = $('#stack3d_stats_modal .modal-footer')[0]
+
+            var button_dom = (
+               <button type="button" className="btn btn-primary" onClick={this.handleNeurogNav}>
+                    View Location in Neuroglancer
+               </button>
+            );
+            ReactDOM.render(button_dom, modal_body_el);
+        }
+    },
+    handleNeurogNav: function(event){
+
+        $('#stack3d_stats_modal').modal('hide')
+        //get xyz coordinates from the modal dom
+        var stack_info_divs = $('#stack3d_stats_modal .modal-body')[0].childNodes
+        var coord_divs = [...stack_info_divs].slice(1,4);
+        var coords = _.map(coord_divs, function(div){
+            var coord = div.innerHTML.split(':')[1]
+            return parseInt(coord)
+        });
+
+        this.props.updateNeurogPos(new Float32Array(coords))
     },
     componentWillReceiveProps: function (nextprops) {
         this.loadSubstacks(nextprops.substacks, nextprops.comptype);
@@ -272,5 +309,22 @@ var StackViewer = React.createClass({
         );
     }
 });
+
+var StackViewerState = function(state){
+    return {}
+};
+
+var StackViewerDispatch = function(dispatch){
+    return {
+        updateNeurogPos: function(position) {
+            dispatch({
+                type: 'UPDATE_POSITION',
+                position: position
+            });
+        }
+    }
+};
+
+StackViewer = connect(StackViewerState, StackViewerDispatch)(StackViewer)
 
 module.exports = StackViewer;

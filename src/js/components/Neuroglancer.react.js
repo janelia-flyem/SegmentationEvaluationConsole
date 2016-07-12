@@ -22,7 +22,7 @@ var NeuroglancerTab = React.createClass({
 
         );
     },
-    componentDidUpdate: function(){
+    componentDidUpdate: function(prevProps, prevState){
         //don't draw anything unless neuroglancer tab is visible
         if(this.props.active){
             //check to see if any layers need to be added
@@ -46,6 +46,12 @@ var NeuroglancerTab = React.createClass({
                         this.addLayers(_.difference(layer_names,loaded_layer_names), server, fulluuid)
                     }.bind(this))
             }
+            //update neuroglancer position, if needed
+            if(this.props.position !== null && prevProps.position !== this.props.position){
+                this.updateCoordinates(this.props.position)
+                //trigger a redraw
+                window.viewer.display.onResize()
+            }
 
         }
     },
@@ -54,6 +60,7 @@ var NeuroglancerTab = React.createClass({
         //will be set to nonzero size and layers can load
         window.viewer.display.onResize()
 
+        //munge configs so they can be used to build layers
         var ground_config = this.props.metric_results.config['dvid-info']
         //make a config for the grayscale image. ASSUMPTION: image will be called 'grayscale' on dvid
         var ground_config_img = Object.assign({}, ground_config, {'type': 'image', 'label-name': 'grayscale'})
@@ -85,7 +92,7 @@ var NeuroglancerTab = React.createClass({
     },
     getFullUUID_Promise: function(server,uuid){
         /**
-           Creates a promise that resolves to the uuid using the dvid API
+           Creates a promise that resolves to the full uuid using the dvid API
         **/
         var headers = new Headers({
            'Content-Type': 'text/plain'
@@ -116,15 +123,19 @@ var NeuroglancerTab = React.createClass({
         //necessary for testing locally in chrome
         var body = $('body')
         body.append('<script src="neuroglancer/main.bundle.js"></script>')
+    },
+    updateCoordinates(position){
+        // position: Float32Array
+        window.viewer.navigationState.pose.position.setVoxelCoordinates(position)
     }
 });
 
-module.exports = NeuroglancerTab;
 
 var NeuroglancerState = function(state){
     return {
         metric_results: state.metric_results,
-        active: (state.ActiveTab==2 ? true : false)
+        active: (state.ActiveTab==2 ? true : false),
+        position: state.position
     }
 };
 
