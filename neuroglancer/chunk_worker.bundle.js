@@ -46,12 +46,13 @@
 
 __webpack_require__(1);
 __webpack_require__(4);
-__webpack_require__(11);
-__webpack_require__(27);
-__webpack_require__(68);
-__webpack_require__(71);
-__webpack_require__(73);
-module.exports = __webpack_require__(74);
+__webpack_require__(12);
+__webpack_require__(29);
+__webpack_require__(70);
+__webpack_require__(74);
+__webpack_require__(76);
+__webpack_require__(77);
+module.exports = __webpack_require__(79);
 
 
 /***/ },
@@ -119,6 +120,7 @@ function registerRPC(key, handler) {
 }
 exports.registerRPC = registerRPC;
 ;
+var INITIAL_RPC_ID = IS_WORKER ? -1 : 0;
 
 var RPC = function () {
     function RPC(target) {
@@ -126,7 +128,7 @@ var RPC = function () {
 
         this.target = target;
         this.objects = new Map();
-        this.nextId = IS_WORKER ? -1 : 0;
+        this.nextId = INITIAL_RPC_ID;
         target.onmessage = e => {
             var data = e.data;
             if (DEBUG_MESSAGES) {
@@ -224,6 +226,7 @@ var SharedObject = function (_disposable_1$RefCoun) {
             this.referencedGeneration = 0;
             this.isOwner = true;
             options['id'] = this.rpcId;
+            options['type'] = this.RPC_TYPE_ID;
             rpc.invoke('SharedObject.new', options);
         }
     }, {
@@ -335,8 +338,30 @@ registerRPC('SharedObject.refCountReachedZero', function (x) {
     obj.counterpartRefCountReachedZero(generation);
 });
 var sharedObjectConstructors = new Map();
-function registerSharedObject(name, constructorFunction) {
-    sharedObjectConstructors.set(name, constructorFunction);
+/**
+ * Register a class as a SharedObject owner type under the specified identifier.
+ *
+ * This is intended to be used as a decorator.
+ */
+function registerSharedObjectOwner(identifier) {
+    return constructorFunction => {
+        constructorFunction.prototype.RPC_TYPE_ID = identifier;
+    };
+}
+exports.registerSharedObjectOwner = registerSharedObjectOwner;
+/**
+ * Register a class as a SharedObject counterpart type under the specified identifier.
+ *
+ * This is intended to be used as a decorator.
+ *
+ * Also register the type as a SharedObject owner, which is useful if this type is also used as a
+ * SharedObject owner.
+ */
+function registerSharedObject(identifier) {
+    return constructorFunction => {
+        sharedObjectConstructors.set(identifier, constructorFunction);
+        constructorFunction.prototype.RPC_TYPE_ID = identifier;
+    };
 }
 exports.registerSharedObject = registerSharedObject;
 registerRPC('SharedObject.new', function (x) {
@@ -410,7 +435,7 @@ var RefCounted = function () {
                         disposer.call(this);
                     }
                 }
-                this.disposers = null;
+                this.disposers = undefined;
             }
         }
     }, {
@@ -489,6 +514,14 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var base_1 = __webpack_require__(5);
 var worker_rpc_1 = __webpack_require__(2);
 var signals_1 = __webpack_require__(6);
@@ -497,6 +530,7 @@ var pairing_heap_1_1 = __webpack_require__(8);
 var linked_list_0_1 = __webpack_require__(9);
 var linked_list_1_1 = __webpack_require__(10);
 var worker_rpc_context_1 = __webpack_require__(1);
+var promise_1 = __webpack_require__(11);
 var DEBUG_CHUNK_UPDATES = false;
 
 var Chunk = function () {
@@ -529,10 +563,14 @@ var Chunk = function () {
          */
         this.newPriorityTier = base_1.ChunkPriorityTier.RECENT;
         this.backendOnly = false;
+        /**
+         * Must be set to a non-null value by ChunkSource.prototype.download.
+         */
+        this.cancelDownload = null;
     }
 
     _createClass(Chunk, [{
-        key: 'initialize',
+        key: "initialize",
         value: function initialize(key) {
             this.key = key;
             this.state = base_1.ChunkState.NEW;
@@ -549,7 +587,7 @@ var Chunk = function () {
          */
 
     }, {
-        key: 'updatePriorityProperties',
+        key: "updatePriorityProperties",
         value: function updatePriorityProperties() {
             this.priorityTier = this.newPriorityTier;
             this.priority = this.newPriority;
@@ -557,55 +595,52 @@ var Chunk = function () {
             this.newPriority = Number.NEGATIVE_INFINITY;
         }
     }, {
-        key: 'dispose',
+        key: "dispose",
         value: function dispose() {
             this.source = null;
         }
     }, {
-        key: 'downloadFailed',
+        key: "downloadFailed",
         value: function downloadFailed() {
             this.queueManager.updateChunkState(this, base_1.ChunkState.FAILED);
         }
     }, {
-        key: 'downloadSucceeded',
+        key: "downloadSucceeded",
         value: function downloadSucceeded() {
             this.queueManager.updateChunkState(this, base_1.ChunkState.SYSTEM_MEMORY_WORKER);
         }
     }, {
-        key: 'freeSystemMemory',
+        key: "freeSystemMemory",
         value: function freeSystemMemory() {}
     }, {
-        key: 'cancelDownload',
-        value: function cancelDownload() {}
-    }, {
-        key: 'serialize',
+        key: "serialize",
         value: function serialize(msg, transfers) {
             msg['id'] = this.key;
             msg['source'] = this.source.rpcId;
             msg['new'] = true;
         }
     }, {
-        key: 'toString',
+        key: "toString",
         value: function toString() {
             return this.key;
         }
     }, {
-        key: 'chunkManager',
+        key: "chunkManager",
         get: function () {
             return this.source.chunkManager;
         }
     }, {
-        key: 'queueManager',
+        key: "queueManager",
         get: function () {
             return this.source.chunkManager.queueManager;
         }
     }], [{
-        key: 'priorityLess',
+        key: "priorityLess",
         value: function priorityLess(a, b) {
             return a.priority < b.priority;
         }
     }, {
-        key: 'priorityGreater',
+        key: "priorityGreater",
         value: function priorityGreater(a, b) {
             return a.priority > b.priority;
         }
@@ -634,7 +669,7 @@ var ChunkSource = function (_worker_rpc_1$SharedO) {
     }
 
     _createClass(ChunkSource, [{
-        key: 'getNewChunk_',
+        key: "getNewChunk_",
         value: function getNewChunk_(chunkType) {
             var freeChunks = this.freeChunks;
             var freeChunksLength = freeChunks.length;
@@ -649,7 +684,7 @@ var ChunkSource = function (_worker_rpc_1$SharedO) {
             return chunk;
         }
     }, {
-        key: 'download',
+        key: "download",
         value: function download(chunk) {}
         /**
          * Adds the specified chunk to the chunk cache.
@@ -659,7 +694,7 @@ var ChunkSource = function (_worker_rpc_1$SharedO) {
          */
 
     }, {
-        key: 'addChunk',
+        key: "addChunk",
         value: function addChunk(chunk) {
             var chunks = this.chunks;
 
@@ -675,7 +710,7 @@ var ChunkSource = function (_worker_rpc_1$SharedO) {
          */
 
     }, {
-        key: 'removeChunk',
+        key: "removeChunk",
         value: function removeChunk(chunk) {
             var chunks = this.chunks;
             var freeChunks = this.freeChunks;
@@ -697,7 +732,7 @@ exports.ChunkSource = ChunkSource;
 function handleChunkDownloadPromise(chunk, promise, chunkDecoder) {
     chunk.cancelDownload = function () {
         chunk.cancelDownload = null;
-        promise.cancel();
+        promise_1.cancelPromise(promise);
     };
     promise.then(response => {
         if (chunk.cancelDownload === null) {
@@ -749,7 +784,7 @@ var ChunkPriorityQueue = function () {
     }
 
     _createClass(ChunkPriorityQueue, [{
-        key: 'add',
+        key: "add",
         value: function add(chunk) {
             var priorityTier = chunk.priorityTier;
             if (priorityTier === base_1.ChunkPriorityTier.RECENT) {
@@ -761,7 +796,7 @@ var ChunkPriorityQueue = function () {
             }
         }
     }, {
-        key: 'candidates',
+        key: "candidates",
         value: function* candidates() {
             if (this.heapOperations.compare === Chunk.priorityLess) {
                 // Start with least-recently used RECENT chunk.
@@ -819,7 +854,7 @@ var ChunkPriorityQueue = function () {
          */
 
     }, {
-        key: 'delete',
+        key: "delete",
         value: function _delete(chunk) {
             var priorityTier = chunk.priorityTier;
             if (priorityTier === base_1.ChunkPriorityTier.RECENT) {
@@ -860,7 +895,6 @@ function tryToFreeCapacity(size, capacity, priorityTier, priority, evictionCandi
     }
     return true;
 }
-
 var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
     _inherits(ChunkQueueManager, _worker_rpc_1$SharedO2);
 
@@ -901,14 +935,14 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
     }
 
     _createClass(ChunkQueueManager, [{
-        key: 'scheduleUpdate',
+        key: "scheduleUpdate",
         value: function scheduleUpdate() {
             if (this.updatePending === null) {
                 this.updatePending = setTimeout(this.process.bind(this), 0);
             }
         }
     }, {
-        key: 'chunkQueuesForChunk',
+        key: "chunkQueuesForChunk",
         value: function* chunkQueuesForChunk(chunk) {
             switch (chunk.state) {
                 case base_1.ChunkState.QUEUED:
@@ -932,7 +966,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'adjustCapacitiesForChunk',
+        key: "adjustCapacitiesForChunk",
         value: function adjustCapacitiesForChunk(chunk, add) {
             var factor = add ? -1 : 1;
             switch (chunk.state) {
@@ -957,7 +991,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'removeChunkFromQueues_',
+        key: "removeChunkFromQueues_",
         value: function removeChunkFromQueues_(chunk) {
             for (var queue of this.chunkQueuesForChunk(chunk)) {
                 queue.delete(chunk);
@@ -966,11 +1000,12 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
         // var freedChunks = 0;
 
     }, {
-        key: 'addChunkToQueues_',
+        key: "addChunkToQueues_",
         value: function addChunkToQueues_(chunk) {
             if (chunk.state === base_1.ChunkState.QUEUED && chunk.priorityTier === base_1.ChunkPriorityTier.RECENT) {
                 // Delete this chunk.
                 var source = chunk.source;
+
                 source.removeChunk(chunk);
                 this.adjustCapacitiesForChunk(chunk, false);
                 return false;
@@ -982,7 +1017,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'performChunkPriorityUpdate',
+        key: "performChunkPriorityUpdate",
         value: function performChunkPriorityUpdate(chunk) {
             if (chunk.priorityTier === chunk.newPriorityTier && chunk.priority === chunk.newPriority) {
                 chunk.newPriorityTier = base_1.ChunkPriorityTier.RECENT;
@@ -1001,7 +1036,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             this.addChunkToQueues_(chunk);
         }
     }, {
-        key: 'updateChunkState',
+        key: "updateChunkState",
         value: function updateChunkState(chunk, newState) {
             if (newState === chunk.state) {
                 return;
@@ -1017,7 +1052,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             this.scheduleUpdate();
         }
     }, {
-        key: 'processGPUPromotions_',
+        key: "processGPUPromotions_",
         value: function processGPUPromotions_() {
             var queueManager = this;
             function evictFromGPUMemory(chunk) {
@@ -1047,12 +1082,12 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'freeChunkGPUMemory',
+        key: "freeChunkGPUMemory",
         value: function freeChunkGPUMemory(chunk) {
             worker_rpc_context_1.rpc.invoke('Chunk.update', { 'id': chunk.key, 'state': base_1.ChunkState.SYSTEM_MEMORY, 'source': chunk.source.rpcId });
         }
     }, {
-        key: 'freeChunkSystemMemory',
+        key: "freeChunkSystemMemory",
         value: function freeChunkSystemMemory(chunk) {
             if (chunk.state === base_1.ChunkState.SYSTEM_MEMORY_WORKER) {
                 worker_rpc_context_1.rpc.invoke('Chunk.update', { 'id': chunk.key, 'state': base_1.ChunkState.EXPIRED, 'source': chunk.source.rpcId });
@@ -1061,7 +1096,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'copyChunkToGPU',
+        key: "copyChunkToGPU",
         value: function copyChunkToGPU(chunk) {
             if (chunk.state === base_1.ChunkState.SYSTEM_MEMORY) {
                 worker_rpc_context_1.rpc.invoke('Chunk.update', { 'id': chunk.key, 'source': chunk.source.rpcId, 'state': base_1.ChunkState.GPU_MEMORY });
@@ -1074,7 +1109,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'processQueuePromotions_',
+        key: "processQueuePromotions_",
         value: function processQueuePromotions_() {
             var queueManager = this;
             function evict(chunk) {
@@ -1118,7 +1153,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             }
         }
     }, {
-        key: 'process',
+        key: "process",
         value: function process() {
             if (!this.updatePending) {
                 return;
@@ -1129,7 +1164,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
             this.logStatistics();
         }
     }, {
-        key: 'logStatistics',
+        key: "logStatistics",
         value: function logStatistics() {
             if (DEBUG_CHUNK_UPDATES) {
                 console.log(`[Chunk status] QUEUED: ${ this.numQueued }, FAILED: ${ this.numFailed }, DOWNLOAD: ${ this.downloadCapacity }, MEM: ${ this.systemMemoryCapacity }, GPU: ${ this.gpuMemoryCapacity }`);
@@ -1139,11 +1174,9 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO2) {
 
     return ChunkQueueManager;
 }(worker_rpc_1.SharedObjectCounterpart);
-
+ChunkQueueManager = __decorate([worker_rpc_1.registerSharedObject(base_1.CHUNK_QUEUE_MANAGER_RPC_ID)], ChunkQueueManager);
 exports.ChunkQueueManager = ChunkQueueManager;
 ;
-worker_rpc_1.registerSharedObject('ChunkQueueManager', ChunkQueueManager);
-
 var ChunkManager = function (_worker_rpc_1$SharedO3) {
     _inherits(ChunkManager, _worker_rpc_1$SharedO3);
 
@@ -1175,21 +1208,21 @@ var ChunkManager = function (_worker_rpc_1$SharedO3) {
     }
 
     _createClass(ChunkManager, [{
-        key: 'scheduleUpdateChunkPriorities',
+        key: "scheduleUpdateChunkPriorities",
         value: function scheduleUpdateChunkPriorities() {
             if (this.updatePending === null) {
                 this.updatePending = setTimeout(this.recomputeChunkPriorities_.bind(this), 0);
             }
         }
     }, {
-        key: 'recomputeChunkPriorities_',
+        key: "recomputeChunkPriorities_",
         value: function recomputeChunkPriorities_() {
             this.updatePending = null;
             this.recomputeChunkPriorities.dispatch();
             this.updateQueueState([base_1.ChunkPriorityTier.VISIBLE]);
         }
     }, {
-        key: 'requestChunk',
+        key: "requestChunk",
 
         /**
          * @param chunk
@@ -1210,7 +1243,7 @@ var ChunkManager = function (_worker_rpc_1$SharedO3) {
          */
 
     }, {
-        key: 'updateQueueState',
+        key: "updateQueueState",
         value: function updateQueueState(tiers) {
             var existingTierChunks = this.existingTierChunks;
             var queueManager = this.queueManager;
@@ -1239,10 +1272,25 @@ var ChunkManager = function (_worker_rpc_1$SharedO3) {
 
     return ChunkManager;
 }(worker_rpc_1.SharedObjectCounterpart);
-
+ChunkManager = __decorate([worker_rpc_1.registerSharedObject(base_1.CHUNK_MANAGER_RPC_ID)], ChunkManager);
 exports.ChunkManager = ChunkManager;
 ;
-worker_rpc_1.registerSharedObject('ChunkManager', ChunkManager);
+/**
+ * Decorates final subclasses of ChunkSource.
+ *
+ * Defines the toString method based on the stringify method of the specified Parameters class.
+ *
+ * Calls registerSharedObject using parametersConstructor.RPC_ID.
+ */
+function registerChunkSource(parametersConstructor) {
+    return target => {
+        worker_rpc_1.registerSharedObject(parametersConstructor.RPC_ID)(target);
+        target.prototype.toString = function () {
+            return parametersConstructor.stringify(this.parameters);
+        };
+    };
+}
+exports.registerChunkSource = registerChunkSource;
 
 /***/ },
 /* 5 */
@@ -1287,7 +1335,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
     ChunkState[ChunkState["EXPIRED"] = 7] = "EXPIRED";
 })(exports.ChunkState || (exports.ChunkState = {}));
 var ChunkState = exports.ChunkState;
-;
 (function (ChunkPriorityTier) {
     ChunkPriorityTier[ChunkPriorityTier["FIRST_TIER"] = 0] = "FIRST_TIER";
     ChunkPriorityTier[ChunkPriorityTier["FIRST_ORDERED_TIER"] = 0] = "FIRST_ORDERED_TIER";
@@ -1298,7 +1345,6 @@ var ChunkState = exports.ChunkState;
     ChunkPriorityTier[ChunkPriorityTier["LAST_TIER"] = 2] = "LAST_TIER";
 })(exports.ChunkPriorityTier || (exports.ChunkPriorityTier = {}));
 var ChunkPriorityTier = exports.ChunkPriorityTier;
-;
 
 var AvailableCapacity = function () {
     function AvailableCapacity(maxItems, maxSize) {
@@ -1355,6 +1401,8 @@ var AvailableCapacity = function () {
 AvailableCapacity.INFINITE = new AvailableCapacity(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
 exports.AvailableCapacity = AvailableCapacity;
 ;
+exports.CHUNK_QUEUE_MANAGER_RPC_ID = 'ChunkQueueManager';
+exports.CHUNK_MANAGER_RPC_ID = 'ChunkManager';
 
 /***/ },
 /* 6 */
@@ -1944,11 +1992,11 @@ var Implementation = function () {
             if (next !== null) {
                 next.prev0 = prev;
             }
-            root = this.meld(root, this.combineChildren(node));
+            var newRoot = this.meld(root, this.combineChildren(node));
             node.next0 = null;
             node.prev0 = null;
             node.child0 = null;
-            return root;
+            return newRoot;
         }
         /**
          * Returns a new iterator over the entries in the heap.
@@ -2137,11 +2185,11 @@ var Implementation = function () {
             if (next !== null) {
                 next.prev1 = prev;
             }
-            root = this.meld(root, this.combineChildren(node));
+            var newRoot = this.meld(root, this.combineChildren(node));
             node.next1 = null;
             node.prev1 = null;
             node.child1 = null;
-            return root;
+            return newRoot;
         }
         /**
          * Returns a new iterator over the entries in the heap.
@@ -2407,6 +2455,205 @@ exports.default = default_1;
 
 /***/ },
 /* 11 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var CancellationError = function () {
+    function CancellationError() {
+        _classCallCheck(this, CancellationError);
+    }
+
+    _createClass(CancellationError, [{
+        key: "toString",
+        value: function toString() {
+            return 'CancellationError';
+        }
+    }]);
+
+    return CancellationError;
+}();
+
+exports.CancellationError = CancellationError;
+;
+/**
+ * Value thrown to indicate cancellation.
+ */
+exports.CANCELLED = new CancellationError();
+/**
+ * Create a new promise capable of receiving notification of cancellation.
+ *
+ * This extends the interface of the Promise consructor with an additional onCancel argument passed
+ * to the executor function.  It is used for specifying a callback function to be invoked when
+ * cancelPromise is called.
+ *
+ * onCancel may be invoked to set the cancellation callback any number of times, either
+ * synchronously from within the executor or asynchronously.
+ *
+ * The effect of invoking onCancel depends on whether the promise is pending (i.e. not yet resolved,
+ * rejected, or cancelled):
+ *
+ * - If at the time onCancel is invoked the promise is still pending, the stored cancellation
+ *   callback is replaced with the supplied callback.  The supplied callback may be undefined to
+ *   specify that no callback should be invoked.
+ *
+ * - If at the time onCancel is invoked the promise is not still pending, the supplied callback, if
+ *   not undefined, is invoked synchronously.
+ *
+ * WARNING: Because they may be invoked either synchronously or asynchronously, great care must be
+ * taken in writing callbacks to be supplied to onCancel,
+ */
+function makeCancellablePromise(executor) {
+    var finished = false;
+    var cancelHandler = void 0;
+    var cancelFunction = void 0;
+    var promise = new Promise((resolve, reject) => {
+        function resolver(value) {
+            if (!finished) {
+                finished = true;
+                cancelHandler = undefined;
+                // This can't throw.
+                resolve(value);
+            }
+        }
+        function rejecter(value) {
+            if (!finished) {
+                finished = true;
+                cancelHandler = undefined;
+                // This can't throw.
+                reject(value);
+            }
+        }
+        function setCancelHandler(newCancelHandler) {
+            if (finished) {
+                try {
+                    if (newCancelHandler !== undefined) {
+                        newCancelHandler();
+                    }
+                } catch (ignoredError) {}
+            } else {
+                cancelHandler = newCancelHandler;
+            }
+        }
+        try {
+            executor(resolver, rejecter, setCancelHandler);
+        } catch (executorError) {
+            rejecter(executorError);
+        }
+        cancelFunction = () => {
+            if (!finished) {
+                finished = true;
+                if (cancelHandler !== undefined) {
+                    try {
+                        cancelHandler();
+                    } catch (ignoredError) {}
+                    cancelHandler = undefined;
+                }
+                reject(exports.CANCELLED);
+            }
+        };
+    });
+    promise.cancel = cancelFunction;
+    return promise;
+}
+exports.makeCancellablePromise = makeCancellablePromise;
+/**
+ * Try to cancel a promise.
+ *
+ * If the promise has a cancel method, invoke it synchronously.  For promises created by
+ * makeCancellablePromise, this has the effect of synchronously invoking the most recently set
+ * cancellation callback, if defined, and rejecting the promise with the error value CANCELLED.
+ *
+ * If the promise has no cancel method, or is null or undefined, do nothing.
+ */
+function cancelPromise(promise) {
+    if (promise != null) {
+        var cancel = promise.cancel;
+
+        if (cancel !== undefined) {
+            cancel.call(promise);
+        }
+    }
+}
+exports.cancelPromise = cancelPromise;
+/**
+ * Schedule a call to handler when promise is either fulfilled or rejected.  If the handler throws
+ * an error, the returned promise is rejected with it.  Otherwise, the returned promise has the same
+ * state as the original promise.
+ *
+ * If the returned promise is cancelled before the inputPromise is finished, the inputPromise is
+ * cancelled.
+ */
+function callFinally(inputPromise, handler) {
+    return makeCancellablePromise((resolve, reject, onCancel) => {
+        onCancel(() => {
+            cancelPromise(inputPromise);
+        });
+        inputPromise.then(value => {
+            onCancel(undefined);
+            Promise.resolve(handler(onCancel)).then(() => {
+                resolve(value);
+            });
+        }, reason => {
+            onCancel(undefined);
+            try {
+                Promise.resolve(handler(onCancel)).then(() => {
+                    reject(reason);
+                }, reject);
+            } catch (otherError) {
+                reject(otherError);
+            }
+        });
+    });
+}
+exports.callFinally = callFinally;
+/**
+ * Schedule a call to onFulfilled as soon as the promise is fulfilled.
+ *
+ * A cancellation handler may be set, which is called if the returned promise is cancelled afer
+ * inputPromise is fulfilled.  If the returned promise is cancelled before inputPromise is
+ * fulfilled, inputPromise is cancelled if it supports it.
+ */
+function cancellableThen(inputPromise, onFulfilled) {
+    return makeCancellablePromise((resolve, reject, onCancel) => {
+        var cancelled = false;
+        onCancel(() => {
+            cancelled = true;
+            cancelPromise(inputPromise);
+        });
+        inputPromise.then(value => {
+            if (cancelled) {
+                reject(exports.CANCELLED);
+            } else {
+                onCancel(undefined);
+                resolve(onFulfilled(value, onCancel));
+            }
+        });
+    });
+}
+exports.cancellableThen = cancellableThen;
+
+/***/ },
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -2436,19 +2683,26 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var base_1 = __webpack_require__(12);
-var worker_rpc_1 = __webpack_require__(2);
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var backend_1 = __webpack_require__(4);
-var geom_1 = __webpack_require__(14);
-var base_2 = __webpack_require__(5);
+var base_1 = __webpack_require__(5);
+var base_2 = __webpack_require__(13);
+var geom_1 = __webpack_require__(15);
+var worker_rpc_1 = __webpack_require__(2);
 var signals_1 = __webpack_require__(6);
 var SCALE_PRIORITY_MULTIPLIER = 1e5;
 // Temporary values used by SliceView.updateVisibleChunk and VolumeChunkSource.computeChunkPosition.
 var tempChunkPosition = geom_1.vec3.create();
 var tempChunkDataSize = geom_1.vec3.create();
-
-var SliceView = function (_base_1$SliceViewBase) {
-    _inherits(SliceView, _base_1$SliceViewBase);
+var SliceView = function (_base_2$SliceViewBase) {
+    _inherits(SliceView, _base_2$SliceViewBase);
 
     function SliceView(rpc, options) {
         _classCallCheck(this, SliceView);
@@ -2462,19 +2716,19 @@ var SliceView = function (_base_1$SliceViewBase) {
     }
 
     _createClass(SliceView, [{
-        key: 'onViewportChanged',
+        key: "onViewportChanged",
         value: function onViewportChanged() {
             this.chunkManager.scheduleUpdateChunkPriorities();
         }
     }, {
-        key: 'handleLayerChanged',
+        key: "handleLayerChanged",
         value: function handleLayerChanged() {
             if (this.hasValidViewport) {
                 this.chunkManager.scheduleUpdateChunkPriorities();
             }
         }
     }, {
-        key: 'updateVisibleChunks',
+        key: "updateVisibleChunks",
         value: function updateVisibleChunks() {
             var center = this.centerDataPosition;
             var chunkManager = this.chunkManager;
@@ -2488,13 +2742,13 @@ var SliceView = function (_base_1$SliceViewBase) {
                 for (var source of visibleSources) {
                     var priorityIndex = sources.get(source);
                     var chunk = source.getChunk(positionInChunks);
-                    chunkManager.requestChunk(chunk, base_2.ChunkPriorityTier.VISIBLE, priority - SCALE_PRIORITY_MULTIPLIER * priorityIndex);
+                    chunkManager.requestChunk(chunk, base_1.ChunkPriorityTier.VISIBLE, priority - SCALE_PRIORITY_MULTIPLIER * priorityIndex);
                 }
             }
             this.computeVisibleChunks(getLayoutObject, addChunk);
         }
     }, {
-        key: 'removeVisibleLayer',
+        key: "removeVisibleLayer",
         value: function removeVisibleLayer(layer) {
             this.visibleLayers.delete(layer);
             layer.layerChanged.remove(this.handleLayerChanged, this);
@@ -2504,7 +2758,7 @@ var SliceView = function (_base_1$SliceViewBase) {
             }
         }
     }, {
-        key: 'disposed',
+        key: "disposed",
         value: function disposed() {
             for (var layer of this.visibleLayers.keys()) {
                 this.removeVisibleLayer(layer);
@@ -2513,11 +2767,10 @@ var SliceView = function (_base_1$SliceViewBase) {
     }]);
 
     return SliceView;
-}(base_1.SliceViewBase);
-
+}(base_2.SliceViewBase);
+SliceView = __decorate([worker_rpc_1.registerSharedObject(base_2.SLICEVIEW_RPC_ID)], SliceView);
 exports.SliceView = SliceView;
 ;
-worker_rpc_1.registerSharedObject('SliceView', SliceView);
 worker_rpc_1.registerRPC('SliceView.updateView', function (x) {
     var obj = this.get(x.id);
     if (x.width) {
@@ -2557,9 +2810,9 @@ var VolumeChunk = function (_backend_1$Chunk) {
     }
 
     _createClass(VolumeChunk, [{
-        key: 'initializeVolumeChunk',
+        key: "initializeVolumeChunk",
         value: function initializeVolumeChunk(key, chunkGridPosition) {
-            _get(Object.getPrototypeOf(VolumeChunk.prototype), 'initialize', this).call(this, key);
+            _get(Object.getPrototypeOf(VolumeChunk.prototype), "initialize", this).call(this, key);
             var source = this.source;
             /**
              * Grid position within chunk layout (coordinates are in units of chunks).
@@ -2571,9 +2824,9 @@ var VolumeChunk = function (_backend_1$Chunk) {
             this.data = null;
         }
     }, {
-        key: 'serialize',
+        key: "serialize",
         value: function serialize(msg, transfers) {
-            _get(Object.getPrototypeOf(VolumeChunk.prototype), 'serialize', this).call(this, msg, transfers);
+            _get(Object.getPrototypeOf(VolumeChunk.prototype), "serialize", this).call(this, msg, transfers);
             var data = msg['data'] = this.data;
             var chunkDataSize = this.chunkDataSize;
             if (chunkDataSize !== this.source.spec.chunkDataSize) {
@@ -2586,18 +2839,18 @@ var VolumeChunk = function (_backend_1$Chunk) {
             // chunkDataSize = ${this.chunkDataSize}`);
         }
     }, {
-        key: 'downloadSucceeded',
+        key: "downloadSucceeded",
         value: function downloadSucceeded() {
             this.systemMemoryBytes = this.gpuMemoryBytes = this.data.byteLength;
-            _get(Object.getPrototypeOf(VolumeChunk.prototype), 'downloadSucceeded', this).call(this);
+            _get(Object.getPrototypeOf(VolumeChunk.prototype), "downloadSucceeded", this).call(this);
         }
     }, {
-        key: 'freeSystemMemory',
+        key: "freeSystemMemory",
         value: function freeSystemMemory() {
             this.data = null;
         }
     }, {
-        key: 'toString',
+        key: "toString",
         value: function toString() {
             return this.source.toString() + ':' + geom_1.vec3Key(this.chunkGridPosition);
         }
@@ -2617,21 +2870,12 @@ var VolumeChunkSource = function (_backend_1$ChunkSourc) {
 
         var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, rpc, options));
 
-        _this3.baseVoxelOffset = geom_1.vec3.create();
-        var spec = _this3.spec = base_1.VolumeChunkSpecification.fromObject(options['spec']);
-        var baseVoxelOffset = _this3.baseVoxelOffset;
-
-        var chunkOffset = spec.chunkLayout.offset;
-        var voxelSize = spec.voxelSize;
-
-        for (var i = 0; i < 3; ++i) {
-            baseVoxelOffset[i] = Math.round(chunkOffset[i] / voxelSize[i]);
-        }
+        _this3.spec = base_2.VolumeChunkSpecification.fromObject(options['spec']);
         return _this3;
     }
 
     _createClass(VolumeChunkSource, [{
-        key: 'getChunk',
+        key: "getChunk",
         value: function getChunk(chunkGridPosition) {
             var key = geom_1.vec3Key(chunkGridPosition);
             var chunk = this.chunks.get(key);
@@ -2659,7 +2903,7 @@ var VolumeChunkSource = function (_backend_1$ChunkSourc) {
          */
 
     }, {
-        key: 'computeChunkBounds',
+        key: "computeChunkBounds",
         value: function computeChunkBounds(chunk) {
             var spec = this.spec;
             var upperVoxelBound = spec.upperVoxelBound;
@@ -2668,7 +2912,7 @@ var VolumeChunkSource = function (_backend_1$ChunkSourc) {
             var newChunkDataSize = tempChunkDataSize;
             // Chunk start position in voxel coordinates.
             var chunkPosition = geom_1.vec3.multiply(tempChunkPosition, chunk.chunkGridPosition, origChunkDataSize);
-            geom_1.vec3.add(chunkPosition, chunkPosition, this.baseVoxelOffset);
+            geom_1.vec3.add(chunkPosition, chunkPosition, this.spec.baseVoxelOffset);
             // Specifies whether the chunk only partially fits within the data bounds.
             var partial = false;
             for (var i = 0; i < 3; ++i) {
@@ -2692,7 +2936,6 @@ var VolumeChunkSource = function (_backend_1$ChunkSourc) {
 
 exports.VolumeChunkSource = VolumeChunkSource;
 ;
-
 var RenderLayer = function (_worker_rpc_1$SharedO) {
     _inherits(RenderLayer, _worker_rpc_1$SharedO);
 
@@ -2702,7 +2945,6 @@ var RenderLayer = function (_worker_rpc_1$SharedO) {
         var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(RenderLayer).call(this, rpc, options));
 
         _this4.layerChanged = new signals_1.Signal();
-        _this4.equivalences = options['equivalences'];
         var sources = _this4.sources = new Array();
         for (var alternativeIds of options['sources']) {
             var alternatives = new Array();
@@ -2718,21 +2960,36 @@ var RenderLayer = function (_worker_rpc_1$SharedO) {
 
     return RenderLayer;
 }(worker_rpc_1.SharedObjectCounterpart);
-
+RenderLayer = __decorate([worker_rpc_1.registerSharedObject('sliceview/RenderLayer')], RenderLayer);
 exports.RenderLayer = RenderLayer;
 ;
-worker_rpc_1.registerSharedObject('sliceview/RenderLayer', RenderLayer);
-worker_rpc_1.registerRPC('sliceview/RenderLayer:updateEquivalences', function (x) {
-    var obj = this.get(x['id']);
-    var newValue = x['equivalences'];
-    if (newValue !== obj.equivalences) {
-        obj.equivalences = x['equivalences'];
-        obj.layerChanged.dispatch();
+/**
+ * Extends VolumeChunkSource with a parameters member.
+ *
+ * Subclasses should be decorated with
+ * src/neuroglancer/chunk_manager/backend.ts:registerChunkSource.
+ */
+
+var ParameterizedVolumeChunkSource = function (_VolumeChunkSource) {
+    _inherits(ParameterizedVolumeChunkSource, _VolumeChunkSource);
+
+    function ParameterizedVolumeChunkSource(rpc, options) {
+        _classCallCheck(this, ParameterizedVolumeChunkSource);
+
+        var _this5 = _possibleConstructorReturn(this, Object.getPrototypeOf(ParameterizedVolumeChunkSource).call(this, rpc, options));
+
+        _this5.parameters = options['parameters'];
+        return _this5;
     }
-});
+
+    return ParameterizedVolumeChunkSource;
+}(VolumeChunkSource);
+
+exports.ParameterizedVolumeChunkSource = ParameterizedVolumeChunkSource;
+;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -2762,13 +3019,16 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var chunk_layout_1 = __webpack_require__(13);
-var geom_1 = __webpack_require__(14);
-var compare_1 = __webpack_require__(25);
+var chunk_layout_1 = __webpack_require__(14);
 var array_1 = __webpack_require__(26);
+var compare_1 = __webpack_require__(27);
+var data_type_1 = __webpack_require__(28);
+exports.DATA_TYPE_BYTES = data_type_1.DATA_TYPE_BYTES;
+exports.DataType = data_type_1.DataType;
+var geom_1 = __webpack_require__(15);
 var worker_rpc_1 = __webpack_require__(2);
-var geom_2 = __webpack_require__(14);
 var DEBUG_CHUNK_INTERSECTIONS = false;
+var DEBUG_VISIBLE_SOURCES = false;
 /**
  * Heuristic estimate of the slice area contained within a chunk of the
  * specified size.
@@ -2838,18 +3098,20 @@ function compareBounds(needleLowerBound, needleUpperBound, haystackLowerBound, h
     }
     return curResult;
 }
-;
 function pickBestAlternativeSource(xAxis, yAxis, alternatives) {
     var numAlternatives = alternatives.length;
     var bestAlternativeIndex = 0;
+    if (DEBUG_VISIBLE_SOURCES) {
+        console.log(alternatives);
+    }
     if (numAlternatives > 1) {
         var bestSliceArea = 0;
         for (var alternativeIndex = 0; alternativeIndex < numAlternatives; ++alternativeIndex) {
             var alternative = alternatives[alternativeIndex];
             var sliceArea = estimateSliceAreaPerChunk(xAxis, yAxis, alternative.spec.chunkLayout.size);
-            // console.log(`scaleIndex = ${scaleIndex}, xAxis = ${xAxis}, yAxis
-            // = ${yAxis}, chunksize = ${alternative.spec.chunkLayout.size},
-            // sliceArea = ${sliceArea}`);
+            if (DEBUG_VISIBLE_SOURCES) {
+                console.log(`xAxis = ${ xAxis }, yAxis = ${ yAxis }, chunksize = ${ alternative.spec.chunkLayout.size }, sliceArea = ${ sliceArea }`);
+            }
             if (sliceArea > bestSliceArea) {
                 bestSliceArea = sliceArea;
                 bestAlternativeIndex = alternativeIndex;
@@ -2867,8 +3129,8 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
 
         var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewBase).call(this));
 
-        _this.width = null;
-        _this.height = null;
+        _this.width = -1;
+        _this.height = -1;
         _this.hasViewportToData = false;
         /**
          * Specifies whether width, height, and viewportToData are valid.
@@ -2887,14 +3149,14 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
         // Viewport axes used for selecting visible sources.
         _this.previousViewportAxes = [geom_1.vec3.create(), geom_1.vec3.create()];
         _this.centerDataPosition = geom_1.vec3.create();
-        _this.viewportPlaneDistanceToOrigin = null;
+        _this.viewportPlaneDistanceToOrigin = 0;
         /**
          * For each visible ChunkLayout, maps each visible VolumeChunkSource to its priority index.
          */
         _this.visibleChunkLayouts = new Map();
         _this.visibleLayers = new Map();
         _this.visibleSourcesStale = true;
-        _this.pixelSize = null;
+        _this.pixelSize = 0;
         geom_1.mat4.identity(_this.viewportToData);
         return _this;
     }
@@ -2910,7 +3172,7 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
     }, {
         key: 'maybeSetHasValidViewport',
         value: function maybeSetHasValidViewport() {
-            if (!this.hasValidViewport && this.width !== null && this.height !== null && this.hasViewportToData) {
+            if (!this.hasValidViewport && this.width !== -1 && this.height !== -1 && this.hasViewportToData) {
                 this.hasValidViewport = true;
                 this.onHasValidViewport();
             }
@@ -2939,16 +3201,20 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                 return false;
             }
             this.hasViewportToData = true;
-            geom_1.mat4.copy(this.viewportToData, mat);
-            geom_1.vec3.transformMat4(this.centerDataPosition, geom_2.kZeroVec, mat);
-            var newPixelSize = void 0;
+            var viewportToData = this.viewportToData;
+
+            geom_1.mat4.copy(viewportToData, mat);
+            geom_1.rectifyTransformMatrixIfAxisAligned(viewportToData);
+            geom_1.vec3.transformMat4(this.centerDataPosition, geom_1.kZeroVec, mat);
+            // Initialize to zero to avoid confusing TypeScript compiler.
+            var newPixelSize = 0;
             // Swap previousViewportAxes with viewportAxes.
             var viewportAxes = this.viewportAxes;
             var previousViewportAxes = this.previousViewportAxes;
             // Compute axes.
             for (var i = 0; i < 3; ++i) {
                 var a = viewportAxes[i];
-                geom_1.vec4.transformMat4(a, geom_2.kAxes[i], mat);
+                geom_1.vec4.transformMat4(a, geom_1.kAxes[i], viewportToData);
                 // a[3] is guaranteed to be 0.
                 if (i === 0) {
                     newPixelSize = geom_1.vec3.length(a);
@@ -3070,8 +3336,8 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
             var corner = geom_1.vec3.create();
             for (var xScalar of [-this.width / 2, this.width / 2]) {
                 for (var yScalar of [-this.height / 2, this.height / 2]) {
-                    geom_1.vec3.scale(corner, geom_2.kAxes[0], xScalar);
-                    geom_1.vec3.scaleAndAdd(corner, corner, geom_2.kAxes[1], yScalar);
+                    geom_1.vec3.scale(corner, geom_1.kAxes[0], xScalar);
+                    geom_1.vec3.scaleAndAdd(corner, corner, geom_1.kAxes[1], yScalar);
                     geom_1.vec3.transformMat4(corner, corner, this.viewportToData);
                     geom_1.vec3.min(dataLowerBound, dataLowerBound, corner);
                     geom_1.vec3.max(dataUpperBound, dataUpperBound, corner);
@@ -3134,11 +3400,11 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                         positiveVertexDistanceToOrigin += normalValue * chunkSizeValue * (lowerValue + positiveOffset);
                         negativeVertexDistanceToOrigin += normalValue * chunkSizeValue * (lowerValue + diff - positiveOffset);
                     }
-                    // console.log("{positive,negative}VertexDistanceToOrigin: ",
-                    // positiveVertexDistanceToOrigin, negativeVertexDistanceToOrigin,
-                    // planeDistanceToOrigin);
-                    // console.log("intersectsPlane:", negativeVertexDistanceToOrigin,
-                    //             planeDistanceToOrigin, positiveVertexDistanceToOrigin);
+                    if (DEBUG_CHUNK_INTERSECTIONS) {
+                        console.log(`    planeNormal = ${ planeNormal }`);
+                        console.log('    {positive,negative}VertexDistanceToOrigin: ', positiveVertexDistanceToOrigin, negativeVertexDistanceToOrigin, planeDistanceToOrigin);
+                        console.log('    intersectsPlane:', negativeVertexDistanceToOrigin, planeDistanceToOrigin, positiveVertexDistanceToOrigin);
+                    }
                     if (positiveVertexDistanceToOrigin < planeDistanceToOrigin) {
                         return false;
                     }
@@ -3165,6 +3431,9 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                 // Mutates lowerBound and upperBound while running, but leaves them the
                 // same once finished.
                 function checkBounds(nextSplitDim) {
+                    if (DEBUG_CHUNK_INTERSECTIONS) {
+                        console.log(`chunk bounds: ${ lowerBound } ${ upperBound } fullyVisible: ${ fullyVisibleSources } partiallyVisible: ${ partiallyVisibleSources.slice(0, partiallyVisibleSourcesLength) }`);
+                    }
                     if (fullyVisibleSources.length === 0 && partiallyVisibleSourcesLength === 0) {
                         if (DEBUG_CHUNK_INTERSECTIONS) {
                             console.log('  no visible sources');
@@ -3191,7 +3460,7 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                         return;
                     }
                     if (DEBUG_CHUNK_INTERSECTIONS) {
-                        console.log('Within bounds: [' + geom_1.vec3.str(lowerBound) + ", " + geom_1.vec3.str(upperBound) + "]");
+                        console.log('Within bounds: [' + geom_1.vec3.str(lowerBound) + ', ' + geom_1.vec3.str(upperBound) + ']');
                     }
                     if (volume === 1) {
                         addChunk(chunkLayout, layoutObject, lowerBound, fullyVisibleSources);
@@ -3216,7 +3485,7 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                     function adjustSources() {
                         partiallyVisibleSourcesLength = array_1.partitionArray(partiallyVisibleSources, 0, oldPartiallyVisibleSourcesLength, source => {
                             var spec = source.spec;
-                            var result = compareBoundsSingleDimension(lowerBound[nextSplitDim], upperBound[nextSplitDim], spec.lowerChunkBound[nextSplitDim], spec.upperChunkBound[nextSplitDim]);
+                            var result = compareBounds(lowerBound, upperBound, spec.lowerChunkBound, spec.upperChunkBound);
                             switch (result) {
                                 case BoundsComparisonResult.PARTIALLY_INSIDE:
                                     return true;
@@ -3229,6 +3498,10 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                     }
                     adjustSources();
                     checkBounds(newNextSplitDim);
+                    // Truncate list of fully visible sources.
+                    fullyVisibleSources.length = fullyVisibleSourcesLength;
+                    // Restore partiallyVisibleSources.
+                    partiallyVisibleSourcesLength = oldPartiallyVisibleSourcesLength;
                     upperBound[nextSplitDim] = dimUpper;
                     lowerBound[nextSplitDim] = splitPoint;
                     adjustSources();
@@ -3250,23 +3523,6 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
 exports.SliceViewBase = SliceViewBase;
 ;
 /**
- * If this is updated, DATA_TYPE_BYTES must also be updated.
- */
-(function (DataType) {
-    DataType[DataType["UINT8"] = 0] = "UINT8";
-    DataType[DataType["UINT16"] = 1] = "UINT16";
-    DataType[DataType["UINT32"] = 2] = "UINT32";
-    DataType[DataType["UINT64"] = 3] = "UINT64";
-    DataType[DataType["FLOAT32"] = 4] = "FLOAT32";
-})(exports.DataType || (exports.DataType = {}));
-var DataType = exports.DataType;
-exports.DATA_TYPE_BYTES = [];
-exports.DATA_TYPE_BYTES[DataType.UINT8] = 1;
-exports.DATA_TYPE_BYTES[DataType.UINT16] = 2;
-exports.DATA_TYPE_BYTES[DataType.UINT32] = 4;
-exports.DATA_TYPE_BYTES[DataType.UINT64] = 8;
-exports.DATA_TYPE_BYTES[DataType.FLOAT32] = 4;
-/**
  * Specifies the interpretation of volumetric data.
  */
 (function (VolumeType) {
@@ -3275,74 +3531,174 @@ exports.DATA_TYPE_BYTES[DataType.FLOAT32] = 4;
     VolumeType[VolumeType["SEGMENTATION"] = 2] = "SEGMENTATION";
 })(exports.VolumeType || (exports.VolumeType = {}));
 var VolumeType = exports.VolumeType;
-exports.DEFAULT_CHUNK_DATA_SIZES = [geom_1.vec3.fromValues(64, 64, 64)];
+/**
+ * By default, choose a chunk size with at most 2^18 = 262144 voxels.
+ */
+exports.DEFAULT_MAX_VOXELS_PER_CHUNK_LOG2 = 18;
+/**
+ * Determines a near-isotropic (in nanometers) block size.  All dimensions will be powers of 2, and
+ * will not exceed upperVoxelBound - lowerVoxelBound.  The total number of voxels will not exceed
+ * maxVoxelsPerChunkLog2.
+ */
+function getNearIsotropicBlockSize(options) {
+    var voxelSize = options.voxelSize;
+    var _options$lowerVoxelBo = options.lowerVoxelBound;
+    var lowerVoxelBound = _options$lowerVoxelBo === undefined ? geom_1.kZeroVec : _options$lowerVoxelBo;
+    var upperVoxelBound = options.upperVoxelBound;
+    var _options$maxVoxelsPer = options.maxVoxelsPerChunkLog2;
+    var maxVoxelsPerChunkLog2 = _options$maxVoxelsPer === undefined ? exports.DEFAULT_MAX_VOXELS_PER_CHUNK_LOG2 : _options$maxVoxelsPer;
+
+    var chunkDataSize = geom_1.vec3.fromValues(1, 1, 1);
+    var maxChunkDataSize = void 0;
+    if (upperVoxelBound === undefined) {
+        maxChunkDataSize = geom_1.kInfinityVec;
+    } else {
+        maxChunkDataSize = geom_1.vec3.create();
+        for (var i = 0; i < 3; ++i) {
+            maxChunkDataSize[i] = Math.pow(2, Math.floor(Math.log2(upperVoxelBound[i] - lowerVoxelBound[i])));
+        }
+    }
+    // Determine the dimension in which chunkDataSize should be increased.  This is the smallest
+    // dimension (in nanometers) that is < maxChunkDataSize (in voxels).
+    //
+    // Returns -1 if there is no such dimension.
+    function findNextDimension() {
+        var minSize = Infinity;
+        var minDimension = -1;
+        for (var _i5 = 0; _i5 < 3; ++_i5) {
+            if (chunkDataSize[_i5] >= maxChunkDataSize[_i5]) {
+                continue;
+            }
+            var size = chunkDataSize[_i5] * voxelSize[_i5];
+            if (size < minSize) {
+                minSize = size;
+                minDimension = _i5;
+            }
+        }
+        return minDimension;
+    }
+    for (var _i6 = 0; _i6 < maxVoxelsPerChunkLog2; ++_i6) {
+        var nextDim = findNextDimension();
+        if (nextDim === -1) {
+            break;
+        }
+        chunkDataSize[nextDim] *= 2;
+    }
+    return chunkDataSize;
+}
+exports.getNearIsotropicBlockSize = getNearIsotropicBlockSize;
+var tempVec3 = geom_1.vec3.create();
+/**
+ * Computes a 3-d block size that has depth 1 in flatDimension and is near-isotropic (in nanometers)
+ * in the other two dimensions.  The remaining options are the same as for
+ * getNearIsotropicBlockSize.
+ */
+function getTwoDimensionalBlockSize(options) {
+    var _options$lowerVoxelBo2 = options.lowerVoxelBound;
+    var lowerVoxelBound = _options$lowerVoxelBo2 === undefined ? geom_1.kZeroVec : _options$lowerVoxelBo2;
+    var _options$upperVoxelBo = options.upperVoxelBound;
+    var upperVoxelBound = _options$upperVoxelBo === undefined ? geom_1.kInfinityVec : _options$upperVoxelBo;
+    var flatDimension = options.flatDimension;
+    var voxelSize = options.voxelSize;
+    var maxVoxelsPerChunkLog2 = options.maxVoxelsPerChunkLog2;
+
+    geom_1.vec3.subtract(tempVec3, upperVoxelBound, lowerVoxelBound);
+    tempVec3[flatDimension] = 1;
+    return getNearIsotropicBlockSize({ voxelSize, upperVoxelBound: tempVec3, maxVoxelsPerChunkLog2 });
+}
+exports.getTwoDimensionalBlockSize = getTwoDimensionalBlockSize;
 /**
  * Specifies a chunk layout and voxel size.
  */
 
 var VolumeChunkSpecification = function () {
-    function VolumeChunkSpecification(chunkLayout, chunkDataSize, numChannels, dataType, lowerVoxelBound, upperVoxelBound, compressedSegmentationBlockSize) {
+    function VolumeChunkSpecification(options) {
         _classCallCheck(this, VolumeChunkSpecification);
 
-        this.chunkLayout = chunkLayout;
-        this.chunkDataSize = chunkDataSize;
+        var dataType = options.dataType;
+        var _options$lowerVoxelBo3 = options.lowerVoxelBound;
+        var lowerVoxelBound = _options$lowerVoxelBo3 === undefined ? geom_1.kZeroVec : _options$lowerVoxelBo3;
+        var upperVoxelBound = options.upperVoxelBound;
+        var chunkDataSize = options.chunkDataSize;
+        var _options$chunkLayoutO = options.chunkLayoutOffset;
+        var chunkLayoutOffset = _options$chunkLayoutO === undefined ? geom_1.kZeroVec : _options$chunkLayoutO;
+        var voxelSize = options.voxelSize;
+        var _options$baseVoxelOff = options.baseVoxelOffset;
+        var baseVoxelOffset = _options$baseVoxelOff === undefined ? geom_1.kZeroVec : _options$baseVoxelOff;
+        var numChannels = options.numChannels;
+        var _options$lowerClipBou = options.lowerClipBound;
+        var lowerClipBound = _options$lowerClipBou === undefined ? geom_1.vec3.multiply(geom_1.vec3.create(), voxelSize, lowerVoxelBound) : _options$lowerClipBou;
+        var _options$upperClipBou = options.upperClipBound;
+        var upperClipBound = _options$upperClipBou === undefined ? geom_1.vec3.multiply(geom_1.vec3.create(), voxelSize, upperVoxelBound) : _options$upperClipBou;
+
+        this.dataType = options.dataType;
         this.numChannels = numChannels;
-        this.dataType = dataType;
+        this.voxelSize = voxelSize;
+        this.chunkDataSize = chunkDataSize;
+        this.chunkLayout = chunk_layout_1.ChunkLayout.get(geom_1.vec3.multiply(geom_1.vec3.create(), options.chunkDataSize, voxelSize), chunkLayoutOffset);
+        this.chunkBytes = geom_1.prod3(options.chunkDataSize) * data_type_1.DATA_TYPE_BYTES[dataType] * numChannels;
+        this.lowerClipBound = lowerClipBound;
+        this.upperClipBound = upperClipBound;
         this.lowerVoxelBound = lowerVoxelBound;
         this.upperVoxelBound = upperVoxelBound;
-        this.compressedSegmentationBlockSize = compressedSegmentationBlockSize;
-        this.chunkBytes = geom_1.prod3(chunkDataSize) * exports.DATA_TYPE_BYTES[dataType] * numChannels;
-        var voxelSize = this.voxelSize = geom_1.vec3.divide(geom_1.vec3.create(), this.chunkLayout.size, this.chunkDataSize);
+        this.baseVoxelOffset = baseVoxelOffset;
         var lowerChunkBound = this.lowerChunkBound = geom_1.vec3.create();
         var upperChunkBound = this.upperChunkBound = geom_1.vec3.create();
-        var chunkSize = chunkLayout.size;
-        var chunkOffset = chunkLayout.offset;
         for (var i = 0; i < 3; ++i) {
-            lowerChunkBound[i] = Math.floor((lowerVoxelBound[i] * voxelSize[i] - chunkOffset[i]) / chunkSize[i]);
-            upperChunkBound[i] = Math.floor(((upperVoxelBound[i] - 1) * voxelSize[i] - chunkOffset[i]) / chunkSize[i] + 1);
+            lowerChunkBound[i] = Math.floor(lowerVoxelBound[i] / chunkDataSize[i]);
+            upperChunkBound[i] = Math.floor((upperVoxelBound[i] - 1) / chunkDataSize[i] + 1);
         }
-        // console.log(`voxelBound = [${vec3.str(lowerVoxelBound)},${vec3.str(upperVoxelBound)}), chunkBound = [${vec3.str(lowerChunkBound)},${vec3.str(upperChunkBound)}]`);
-        this.compressedSegmentationBlockSize = compressedSegmentationBlockSize;
+        this.compressedSegmentationBlockSize = options.compressedSegmentationBlockSize;
     }
 
     _createClass(VolumeChunkSpecification, [{
         key: 'toObject',
-        value: function toObject(msg) {
-            this.chunkLayout.toObject(msg['chunkLayout'] = {});
-            msg['chunkDataSize'] = this.chunkDataSize;
-            msg['numChannels'] = this.numChannels;
-            msg['dataType'] = this.dataType;
-            msg['lowerVoxelBound'] = this.lowerVoxelBound;
-            msg['upperVoxelBound'] = this.upperVoxelBound;
-            msg['compressedSegmentationBlockSize'] = this.compressedSegmentationBlockSize;
+        value: function toObject() {
+            return {
+                chunkLayoutOffset: this.chunkLayout.offset,
+                numChannels: this.numChannels,
+                chunkDataSize: this.chunkDataSize,
+                voxelSize: this.voxelSize,
+                dataType: this.dataType,
+                lowerVoxelBound: this.lowerVoxelBound,
+                upperVoxelBound: this.upperVoxelBound,
+                lowerClipBound: this.lowerClipBound,
+                upperClipBound: this.upperClipBound,
+                baseVoxelOffset: this.baseVoxelOffset,
+                compressedSegmentationBlockSize: this.compressedSegmentationBlockSize
+            };
         }
+        /**
+         * Returns a VolumeChunkSpecification with default compression specified if suitable for the
+         * volumeType.
+         */
+
     }], [{
         key: 'fromObject',
         value: function fromObject(msg) {
-            return new VolumeChunkSpecification(chunk_layout_1.ChunkLayout.fromObject(msg['chunkLayout']), msg['chunkDataSize'], msg['numChannels'], msg['dataType'], msg['lowerVoxelBound'], msg['upperVoxelBound'], msg['compressedSegmentationBlockSize']);
+            return new VolumeChunkSpecification(msg);
+        }
+    }, {
+        key: 'withDefaultCompression',
+        value: function withDefaultCompression(options) {
+            var compressedSegmentationBlockSize = options.compressedSegmentationBlockSize;
+            var dataType = options.dataType;
+            var voxelSize = options.voxelSize;
+            var lowerVoxelBound = options.lowerVoxelBound;
+            var upperVoxelBound = options.upperVoxelBound;
+
+            if (compressedSegmentationBlockSize === undefined && options.volumeType === VolumeType.SEGMENTATION && (dataType === data_type_1.DataType.UINT32 || dataType === data_type_1.DataType.UINT64)) {
+                compressedSegmentationBlockSize = getNearIsotropicBlockSize({ voxelSize, lowerVoxelBound, upperVoxelBound, maxVoxelsPerChunkLog2: 9 });
+            }
+            return new VolumeChunkSpecification(Object.assign({}, options, { compressedSegmentationBlockSize }));
         }
     }, {
         key: 'getDefaults',
-        value: function* getDefaults(options) {
-            var voxelSize = options.voxelSize;
-            var dataType = options.dataType;
-            var lowerVoxelBound = options.lowerVoxelBound;
+        value: function getDefaults(options) {
             var _options$chunkDataSiz = options.chunkDataSizes;
-            var chunkDataSizes = _options$chunkDataSiz === undefined ? exports.DEFAULT_CHUNK_DATA_SIZES : _options$chunkDataSiz;
-            var _options$numChannels = options.numChannels;
-            var numChannels = _options$numChannels === undefined ? 1 : _options$numChannels;
-            var compressedSegmentationBlockSize = options.compressedSegmentationBlockSize;
+            var chunkDataSizes = _options$chunkDataSiz === undefined ? [getNearIsotropicBlockSize(options)] : _options$chunkDataSiz;
 
-            var chunkOffset = geom_1.vec3.multiply(geom_1.vec3.create(), lowerVoxelBound, voxelSize);
-            if (compressedSegmentationBlockSize === undefined && options.volumeType === VolumeType.SEGMENTATION && (dataType === DataType.UINT32 || dataType === DataType.UINT64)) {
-                compressedSegmentationBlockSize = geom_1.vec3.fromValues(8, 8, 8);
-            }
-            for (var chunkDataSize of chunkDataSizes) {
-                var chunkSize = geom_1.vec3.create();
-                geom_1.vec3.multiply(chunkSize, voxelSize, chunkDataSize);
-                var chunkLayout = chunk_layout_1.ChunkLayout.get(chunkSize, chunkOffset);
-                yield new VolumeChunkSpecification(chunkLayout, chunkDataSize, numChannels, dataType, lowerVoxelBound, options.upperVoxelBound, compressedSegmentationBlockSize);
-            }
+            return chunkDataSizes.map(chunkDataSize => VolumeChunkSpecification.withDefaultCompression(Object.assign({}, options, { chunkDataSize })));
         }
     }]);
 
@@ -3351,9 +3707,11 @@ var VolumeChunkSpecification = function () {
 
 exports.VolumeChunkSpecification = VolumeChunkSpecification;
 ;
+exports.SLICEVIEW_RPC_ID = 'SliceView';
+exports.SLICEVIEW_RENDERLAYER_RPC_ID = 'sliceview/RenderLayer';
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -3377,7 +3735,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var geom_1 = __webpack_require__(14);
+var geom_1 = __webpack_require__(15);
 /**
  * @param size Size of each chunk in nanometers.
  * @param offset Offset of chunk boundaries relative to
@@ -3431,7 +3789,7 @@ exports.ChunkLayout = ChunkLayout;
 ;
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -3453,16 +3811,16 @@ exports.ChunkLayout = ChunkLayout;
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var gl_matrix_1 = __webpack_require__(15);
-exports.vec2 = gl_matrix_1.vec2;
-exports.vec3 = gl_matrix_1.vec3;
-exports.vec4 = gl_matrix_1.vec4;
-exports.mat2 = gl_matrix_1.mat2;
-exports.mat3 = gl_matrix_1.mat3;
-exports.mat4 = gl_matrix_1.mat4;
-exports.quat = gl_matrix_1.quat;
-var gl_matrix_2 = __webpack_require__(15);
-exports.identityMat4 = gl_matrix_2.mat4.create();
+var gl_matrix_1 = __webpack_require__(16);
+var gl_matrix_2 = __webpack_require__(16);
+exports.mat2 = gl_matrix_2.mat2;
+exports.mat3 = gl_matrix_2.mat3;
+exports.mat4 = gl_matrix_2.mat4;
+exports.quat = gl_matrix_2.quat;
+exports.vec2 = gl_matrix_2.vec2;
+exports.vec3 = gl_matrix_2.vec3;
+exports.vec4 = gl_matrix_2.vec4;
+exports.identityMat4 = gl_matrix_1.mat4.create();
 exports.AXES_NAMES = ['x', 'y', 'z'];
 
 var BoundingBox = function BoundingBox(lower, upper) {
@@ -3474,8 +3832,9 @@ var BoundingBox = function BoundingBox(lower, upper) {
 
 exports.BoundingBox = BoundingBox;
 ;
-exports.kAxes = [gl_matrix_2.vec4.fromValues(1, 0, 0, 0), gl_matrix_2.vec4.fromValues(0, 1, 0, 0), gl_matrix_2.vec4.fromValues(0, 0, 1, 0)];
-exports.kZeroVec = gl_matrix_2.vec3.fromValues(0, 0, 0);
+exports.kAxes = [gl_matrix_1.vec4.fromValues(1, 0, 0, 0), gl_matrix_1.vec4.fromValues(0, 1, 0, 0), gl_matrix_1.vec4.fromValues(0, 0, 1, 0)];
+exports.kZeroVec = gl_matrix_1.vec3.fromValues(0, 0, 0);
+exports.kInfinityVec = gl_matrix_1.vec3.fromValues(Infinity, Infinity, Infinity);
 function prod3(x) {
     return x[0] * x[1] * x[2];
 }
@@ -3493,9 +3852,37 @@ function vec3Key(x) {
     return `${ x[0] },${ x[1] },${ x[2] }`;
 }
 exports.vec3Key = vec3Key;
+var RECTIFY_EPSILON = 1e-4;
+function rectifyVec3IfAxisAligned(v, offset) {
+    var a0 = Math.abs(v[offset]),
+        a1 = Math.abs(v[offset + 1]),
+        a2 = Math.abs(v[offset + 2]);
+    var max = Math.max(a0, a1, a2);
+    if (a0 / max < RECTIFY_EPSILON) {
+        v[offset] = 0;
+    }
+    if (a1 / max < RECTIFY_EPSILON) {
+        v[offset + 1] = 0;
+    }
+    if (a2 / max < RECTIFY_EPSILON) {
+        v[offset + 2] = 0;
+    }
+}
+exports.rectifyVec3IfAxisAligned = rectifyVec3IfAxisAligned;
+/**
+ * Makes columns of m that are approximately axis-aligned exactly axis aligned.
+ *
+ * Note that mat is stored in Fortran order, and therefore the first column is m[0], m[1], m[2].
+ */
+function rectifyTransformMatrixIfAxisAligned(m) {
+    rectifyVec3IfAxisAligned(m, 0);
+    rectifyVec3IfAxisAligned(m, 4);
+    rectifyVec3IfAxisAligned(m, 8);
+}
+exports.rectifyTransformMatrixIfAxisAligned = rectifyTransformMatrixIfAxisAligned;
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -3526,18 +3913,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 // END HEADER
 
-exports.glMatrix = __webpack_require__(16);
-exports.mat2 = __webpack_require__(17);
-exports.mat2d = __webpack_require__(18);
-exports.mat3 = __webpack_require__(19);
-exports.mat4 = __webpack_require__(20);
-exports.quat = __webpack_require__(21);
-exports.vec2 = __webpack_require__(24);
-exports.vec3 = __webpack_require__(22);
-exports.vec4 = __webpack_require__(23);
+exports.glMatrix = __webpack_require__(17);
+exports.mat2 = __webpack_require__(18);
+exports.mat2d = __webpack_require__(19);
+exports.mat3 = __webpack_require__(20);
+exports.mat4 = __webpack_require__(21);
+exports.quat = __webpack_require__(22);
+exports.vec2 = __webpack_require__(25);
+exports.vec3 = __webpack_require__(23);
+exports.vec4 = __webpack_require__(24);
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -3613,7 +4000,7 @@ module.exports = glMatrix;
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -3636,7 +4023,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 2x2 Matrix
@@ -4055,7 +4442,7 @@ module.exports = mat2;
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -4078,7 +4465,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 2x3 Matrix
@@ -4530,7 +4917,7 @@ module.exports = mat2d;
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -4553,7 +4940,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 3x3 Matrix
@@ -5282,7 +5669,7 @@ module.exports = mat3;
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -5305,7 +5692,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 4x4 Matrix
@@ -7424,7 +7811,7 @@ module.exports = mat4;
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -7447,10 +7834,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
-var mat3 = __webpack_require__(19);
-var vec3 = __webpack_require__(22);
-var vec4 = __webpack_require__(23);
+var glMatrix = __webpack_require__(17);
+var mat3 = __webpack_require__(20);
+var vec3 = __webpack_require__(23);
+var vec4 = __webpack_require__(24);
 
 /**
  * @class Quaternion
@@ -8030,7 +8417,7 @@ module.exports = quat;
 
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -8053,7 +8440,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 3 Dimensional Vector
@@ -8813,7 +9200,7 @@ module.exports = vec3;
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -8836,7 +9223,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 4 Dimensional Vector
@@ -9428,7 +9815,7 @@ module.exports = vec4;
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
@@ -9451,7 +9838,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = __webpack_require__(16);
+var glMatrix = __webpack_require__(17);
 
 /**
  * @class 2 Dimensional Vector
@@ -10021,35 +10408,6 @@ module.exports = vec2;
 
 
 /***/ },
-/* 25 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-function approxEqual(a, b) {
-    if (a === b) {
-        return true;
-    }
-    return Math.abs(a - b) / Math.min(Math.abs(a), Math.abs(b)) < 1e-6;
-}
-exports.approxEqual = approxEqual;
-
-/***/ },
 /* 26 */
 /***/ function(module, exports) {
 
@@ -10081,7 +10439,7 @@ exports.approxEqual = approxEqual;
  */
 
 function partitionArray(array, start, end, predicate) {
-    for (; start < end;) {
+    while (start < end) {
         var x = array[start];
         if (predicate(x)) {
             ++start;
@@ -10124,6 +10482,74 @@ exports.getFortranOrderStrides = getFortranOrderStrides;
 
 /***/ },
 /* 27 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+function approxEqual(a, b) {
+    if (a === b) {
+        return true;
+    }
+    return Math.abs(a - b) / Math.min(Math.abs(a), Math.abs(b)) < 1e-6;
+}
+exports.approxEqual = approxEqual;
+
+/***/ },
+/* 28 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * If this is updated, DATA_TYPE_BYTES must also be updated.
+ */
+
+(function (DataType) {
+  DataType[DataType["UINT8"] = 0] = "UINT8";
+  DataType[DataType["UINT16"] = 1] = "UINT16";
+  DataType[DataType["UINT32"] = 2] = "UINT32";
+  DataType[DataType["UINT64"] = 3] = "UINT64";
+  DataType[DataType["FLOAT32"] = 4] = "FLOAT32";
+})(exports.DataType || (exports.DataType = {}));
+var DataType = exports.DataType;
+exports.DATA_TYPE_BYTES = [];
+exports.DATA_TYPE_BYTES[DataType.UINT8] = 1;
+exports.DATA_TYPE_BYTES[DataType.UINT16] = 2;
+exports.DATA_TYPE_BYTES[DataType.UINT32] = 4;
+exports.DATA_TYPE_BYTES[DataType.UINT64] = 8;
+exports.DATA_TYPE_BYTES[DataType.FLOAT32] = 4;
+
+/***/ },
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -10151,53 +10577,71 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-__webpack_require__(28);
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+__webpack_require__(30);
 var backend_1 = __webpack_require__(4);
-var api_1 = __webpack_require__(30);
-var base_1 = __webpack_require__(34);
-var backend_2 = __webpack_require__(35);
-var backend_3 = __webpack_require__(11);
-var compressed_segmentation_1 = __webpack_require__(42);
-var jpeg_1 = __webpack_require__(43);
-var raw_1 = __webpack_require__(51);
-var endian_1 = __webpack_require__(41);
-var geom_1 = __webpack_require__(14);
-var worker_rpc_1 = __webpack_require__(2);
-var pako_1 = __webpack_require__(52);
+var api_1 = __webpack_require__(32);
+var base_1 = __webpack_require__(35);
+var backend_2 = __webpack_require__(36);
+var backend_3 = __webpack_require__(12);
+var compressed_segmentation_1 = __webpack_require__(44);
+var jpeg_1 = __webpack_require__(45);
+var raw_1 = __webpack_require__(53);
+var endian_1 = __webpack_require__(42);
+var geom_1 = __webpack_require__(15);
+var pako_1 = __webpack_require__(54);
+function decodeGzippedRawChunk(chunk, response) {
+    raw_1.decodeRawChunk(chunk, pako_1.inflate(new Uint8Array(response)).buffer);
+}
+exports.decodeGzippedRawChunk = decodeGzippedRawChunk;
+function decodeGzippedCompressedSegmentationChunk(chunk, response) {
+    compressed_segmentation_1.decodeCompressedSegmentationChunk(chunk, pako_1.inflate(new Uint8Array(response)).buffer);
+}
+exports.decodeGzippedCompressedSegmentationChunk = decodeGzippedCompressedSegmentationChunk;
+var CHUNK_DECODERS = new Map([[base_1.VolumeChunkEncoding.RAW, decodeGzippedRawChunk], [base_1.VolumeChunkEncoding.JPEG, jpeg_1.decodeJpegChunk], [base_1.VolumeChunkEncoding.COMPRESSED_SEGMENTATION, decodeGzippedCompressedSegmentationChunk]]);
+var VolumeChunkSource = function (_backend_3$Parameteri) {
+    _inherits(VolumeChunkSource, _backend_3$Parameteri);
 
-var VolumeChunkSource = function (_backend_3$VolumeChun) {
-    _inherits(VolumeChunkSource, _backend_3$VolumeChun);
-
-    function VolumeChunkSource(rpc, options) {
+    function VolumeChunkSource() {
         _classCallCheck(this, VolumeChunkSource);
 
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, rpc, options));
-
-        var parameters = _this.parameters = options['parameters'];
-        var compression_suffix = `/image_format_options.gzip_compression_level=6`;
-        switch (parameters['encoding']) {
-            case base_1.VolumeChunkEncoding.RAW:
-                _this.chunkDecoder = (chunk, response) => {
-                    raw_1.decodeRawChunk(chunk, pako_1.inflate(new Uint8Array(response)).buffer);
-                };
-                _this.encodingParams = `/subvolume_format=RAW${ compression_suffix }`;
-                break;
-            case base_1.VolumeChunkEncoding.JPEG:
-                _this.chunkDecoder = jpeg_1.decodeJpegChunk;
-                _this.encodingParams = '/subvolume_format=SINGLE_IMAGE/image_format_options.image_format=JPEG';
-                break;
-            case base_1.VolumeChunkEncoding.COMPRESSED_SEGMENTATION:
-                _this.chunkDecoder = (chunk, response) => {
-                    compressed_segmentation_1.decodeCompressedSegmentationChunk(chunk, pako_1.inflate(new Uint8Array(response)).buffer);
-                };
-                _this.encodingParams = `/subvolume_format=RAW/image_format_options.compressed_segmentation_block_size=${ geom_1.vec3Key(_this.spec.compressedSegmentationBlockSize) }${ compression_suffix }`;
-                break;
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
         }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, ...args));
+
+        _this.encodingParams = _this.getEncodingParams();
+        _this.chunkDecoder = CHUNK_DECODERS.get(_this.parameters.encoding);
         return _this;
     }
 
     _createClass(VolumeChunkSource, [{
-        key: 'download',
+        key: "getEncodingParams",
+        value: function getEncodingParams() {
+            var encoding = this.parameters.encoding;
+
+            var compression_suffix = `/image_format_options.gzip_compression_level=6`;
+            switch (encoding) {
+                case base_1.VolumeChunkEncoding.RAW:
+                    return `/subvolume_format=RAW${ compression_suffix }`;
+                case base_1.VolumeChunkEncoding.JPEG:
+                    return '/subvolume_format=SINGLE_IMAGE/image_format_options.image_format=JPEG';
+                case base_1.VolumeChunkEncoding.COMPRESSED_SEGMENTATION:
+                    return `/subvolume_format=RAW/image_format_options.compressed_segmentation_block_size=${ geom_1.vec3Key(this.spec.compressedSegmentationBlockSize) }${ compression_suffix }`;
+                default:
+                    throw new Error(`Invalid encoding: ${ encoding }`);
+            }
+        }
+    }, {
+        key: "download",
         value: function download(chunk) {
             var parameters = this.parameters;
 
@@ -10207,23 +10651,16 @@ var VolumeChunkSource = function (_backend_3$VolumeChun) {
                 // computeChunkBounds.
                 var chunkPosition = this.computeChunkBounds(chunk);
                 var chunkDataSize = chunk.chunkDataSize;
-
                 path = `/v1beta2/binary/volumes/binary/volumes/subvolume/header.volume_id=${ parameters['volume_id'] }/geometry.corner=${ geom_1.vec3Key(chunkPosition) }/geometry.size=${ geom_1.vec3Key(chunkDataSize) }/geometry.scale=${ parameters['scaleIndex'] }${ this.encodingParams }?alt=media`;
             }
             backend_1.handleChunkDownloadPromise(chunk, api_1.makeRequest(parameters['instance'], 'GET', path, 'arraybuffer'), this.chunkDecoder);
         }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return base_1.volumeSourceToString(this.parameters);
-        }
     }]);
 
     return VolumeChunkSource;
-}(backend_3.VolumeChunkSource);
-
+}(backend_3.ParameterizedVolumeChunkSource);
+VolumeChunkSource = __decorate([backend_1.registerChunkSource(base_1.VolumeSourceParameters)], VolumeChunkSource);
 ;
-worker_rpc_1.registerSharedObject('brainmaps/VolumeChunkSource', VolumeChunkSource);
 function decodeManifestChunk(chunk, response) {
     return backend_2.decodeJsonManifestChunk(chunk, response, 'fragmentKey');
 }
@@ -10236,21 +10673,17 @@ function decodeFragmentChunk(chunk, response) {
     }
     backend_2.decodeVertexPositionsAndIndices(chunk, response, endian_1.Endianness.LITTLE, /*vertexByteOffset=*/8, numVertices);
 }
+var MeshSource = function (_backend_2$Parameteri) {
+    _inherits(MeshSource, _backend_2$Parameteri);
 
-var MeshSource = function (_backend_2$MeshSource) {
-    _inherits(MeshSource, _backend_2$MeshSource);
-
-    function MeshSource(rpc, options) {
+    function MeshSource() {
         _classCallCheck(this, MeshSource);
 
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(MeshSource).call(this, rpc, options));
-
-        _this2.parameters = options['parameters'];
-        return _this2;
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(MeshSource).apply(this, arguments));
     }
 
     _createClass(MeshSource, [{
-        key: 'download',
+        key: "download",
         value: function download(chunk) {
             var parameters = this.parameters;
 
@@ -10258,28 +10691,22 @@ var MeshSource = function (_backend_2$MeshSource) {
             backend_1.handleChunkDownloadPromise(chunk, api_1.makeRequest(parameters['instance'], 'GET', path, 'json'), decodeManifestChunk);
         }
     }, {
-        key: 'downloadFragment',
+        key: "downloadFragment",
         value: function downloadFragment(chunk) {
             var parameters = this.parameters;
 
             var path = `/v1beta2/binary/objects/binary/objects/fragment/header.volume_id=${ parameters['volume_id'] }/mesh_name=${ parameters['mesh_name'] }/fragment_key=${ chunk.fragmentId }/object_id=${ chunk.manifestChunk.objectId }?alt=media`;
             backend_1.handleChunkDownloadPromise(chunk, api_1.makeRequest(parameters['instance'], 'GET', path, 'arraybuffer'), decodeFragmentChunk);
         }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return base_1.meshSourceToString(this.parameters);
-        }
     }]);
 
     return MeshSource;
-}(backend_2.MeshSource);
-
+}(backend_2.ParameterizedMeshSource);
+MeshSource = __decorate([backend_1.registerChunkSource(base_1.MeshSourceParameters)], MeshSource);
 ;
-worker_rpc_1.registerSharedObject('brainmaps/MeshSource', MeshSource);
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -10303,27 +10730,27 @@ worker_rpc_1.registerSharedObject('brainmaps/MeshSource', MeshSource);
  * This implements the authentication API by simply forwarding all requests to the frontend.
  */
 
+var api_implementation_1 = __webpack_require__(31);
 var worker_rpc_1 = __webpack_require__(2);
-var api_implementation_1 = __webpack_require__(29);
 var worker_rpc_context_1 = __webpack_require__(1);
 var resolvePromise = null;
 api_implementation_1.implementation.getNewTokenPromise = function (invalidToken) {
-    var msg = {};
-    if (invalidToken != null) {
-        msg['invalidToken'] = invalidToken;
-    }
-    var promise = new Promise(function (resolve, reject) {
-        resolvePromise = resolve;
-    });
-    worker_rpc_context_1.rpc.invoke('brainmaps.requestToken', msg);
-    return promise;
+  var msg = {};
+  if (invalidToken != null) {
+    msg['invalidToken'] = invalidToken;
+  }
+  var promise = new Promise(function (resolve, reject) {
+    resolvePromise = resolve;
+  });
+  worker_rpc_context_1.rpc.invoke('brainmaps.requestToken', msg);
+  return promise;
 };
 worker_rpc_1.registerRPC('brainmaps.receiveToken', function (x) {
-    resolvePromise(x['authResult']);
+  resolvePromise(x['authResult']);
 });
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports) {
 
 /**
@@ -10368,7 +10795,7 @@ function getToken(invalidToken) {
 exports.getToken = getToken;
 
 /***/ },
-/* 30 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -10388,9 +10815,9 @@ exports.getToken = getToken;
  */
 "use strict";
 
-var api_implementation_1 = __webpack_require__(29);
-var http_request_1 = __webpack_require__(31);
-var promise_1 = __webpack_require__(33);
+var api_implementation_1 = __webpack_require__(31);
+var http_request_1 = __webpack_require__(33);
+var promise_1 = __webpack_require__(11);
 exports.numPendingRequests = 0;
 exports.PRODUCTION_INSTANCE = 0;
 exports.INSTANCE_NAMES = [];
@@ -10463,7 +10890,7 @@ function makeRequest(instance, method, path, responseType) {
 exports.makeRequest = makeRequest;
 
 /***/ },
-/* 31 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -10491,8 +10918,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var hash_1 = __webpack_require__(32);
-var promise_1 = __webpack_require__(33);
+var hash_1 = __webpack_require__(34);
+var promise_1 = __webpack_require__(11);
 exports.URL_SYMBOL = Symbol('url');
 exports.METHOD_SYMBOL = Symbol('method');
 
@@ -10604,7 +11031,7 @@ function parseSpecialUrl(url) {
 exports.parseSpecialUrl = parseSpecialUrl;
 
 /***/ },
-/* 32 */
+/* 34 */
 /***/ function(module, exports) {
 
 /**
@@ -10639,8 +11066,8 @@ function simpleStringHash(s) {
 exports.simpleStringHash = simpleStringHash;
 
 /***/ },
-/* 33 */
-/***/ function(module, exports) {
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
 
 /**
  * @license
@@ -10663,181 +11090,54 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var CancellationError = function () {
-    function CancellationError() {
-        _classCallCheck(this, CancellationError);
-    }
-
-    _createClass(CancellationError, [{
-        key: "toString",
-        value: function toString() {
-            return 'CancellationError';
-        }
-    }]);
-
-    return CancellationError;
-}();
-
-exports.CancellationError = CancellationError;
-;
-/**
- * Value thrown to indicate cancellation.
- */
-exports.CANCELLED = new CancellationError();
-function makeCancellablePromise(executor) {
-    var finished = false;
-    var cancelHandler = void 0;
-    var cancelFunction = void 0;
-    var promise = new Promise((resolve, reject) => {
-        function resolver(value) {
-            if (!finished) {
-                finished = true;
-                // This can't throw.
-                resolve(value);
-            }
-        }
-        function rejecter(value) {
-            if (!finished) {
-                finished = true;
-                // This can't throw.
-                reject(value);
-            }
-        }
-        function setCancelHandler(newCancelHandler) {
-            if (finished) {
-                try {
-                    newCancelHandler();
-                } catch (ignoredError) {}
-            }
-        }
-        try {
-            executor(resolver, rejecter, setCancelHandler);
-        } catch (executorError) {
-            rejecter(executorError);
-        }
-        cancelFunction = () => {
-            if (!finished) {
-                finished = true;
-                if (cancelHandler !== undefined) {
-                    try {
-                        cancelHandler();
-                    } catch (ignoredError) {}
-                    cancelHandler = undefined;
-                }
-                reject(exports.CANCELLED);
-            }
-        };
-    });
-    promise.cancel = cancelFunction;
-    return promise;
-}
-exports.makeCancellablePromise = makeCancellablePromise;
-function cancelPromise(promise) {
-    if (promise != null) {
-        var cancel = promise.cancel;
-
-        if (cancel !== undefined) {
-            cancel.call(promise);
-        }
-    }
-}
-exports.cancelPromise = cancelPromise;
-/**
- * Schedules a call to handler when promise is either fulfilled or rejected.  If the handler throws
- * an error, the returned promise is rejected with it.  Otherwise, the returned promise has the same
- * state as the original promise.
- *
- * If the returned promise is cancelled before the inputPromise is finished, the inputPromise is
- * cancelled.
- */
-function callFinally(inputPromise, handler) {
-    return makeCancellablePromise((resolve, reject, onCancel) => {
-        onCancel(() => {
-            cancelPromise(inputPromise);
-        });
-        inputPromise.then(value => {
-            onCancel(undefined);
-            Promise.resolve(handler(onCancel)).then(() => {
-                resolve(value);
-            });
-        }, reason => {
-            onCancel(undefined);
-            try {
-                Promise.resolve(handler(onCancel)).then(() => {
-                    reject(reason);
-                }, reject);
-            } catch (otherError) {
-                reject(otherError);
-            }
-        });
-    });
-}
-exports.callFinally = callFinally;
-/**
- * Schedules a call to onFulfilled as soon as the promise is fulfilled.
- *
- * A cancellation handler may be set, which is called if the returned promise is cancelled afer
- * inputPromise is fulfilled.  If the returned promise is cancelled before inputPromise is
- * fulfilled, inputPromise is cancelled if it supports it.
- */
-function cancellableThen(inputPromise, onFulfilled) {
-    return makeCancellablePromise((resolve, reject, onCancel) => {
-        var cancelled = false;
-        onCancel(() => {
-            cancelled = true;
-            cancelPromise(inputPromise);
-        });
-        inputPromise.then(value => {
-            if (cancelled) {
-                reject(exports.CANCELLED);
-            } else {
-                onCancel(undefined);
-                resolve(onFulfilled(value, onCancel));
-            }
-        });
-    });
-}
-exports.cancellableThen = cancellableThen;
-
-/***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var api_1 = __webpack_require__(30);
+var api_1 = __webpack_require__(32);
 (function (VolumeChunkEncoding) {
     VolumeChunkEncoding[VolumeChunkEncoding["RAW"] = 0] = "RAW";
     VolumeChunkEncoding[VolumeChunkEncoding["JPEG"] = 1] = "JPEG";
     VolumeChunkEncoding[VolumeChunkEncoding["COMPRESSED_SEGMENTATION"] = 2] = "COMPRESSED_SEGMENTATION";
 })(exports.VolumeChunkEncoding || (exports.VolumeChunkEncoding = {}));
 var VolumeChunkEncoding = exports.VolumeChunkEncoding;
-function volumeSourceToString(p) {
-    return `brainmaps-${ api_1.brainmapsInstanceKey(p['instance']) }:volume/${ p['volume_id'] }/${ p['scaleIndex'] }/${ VolumeChunkEncoding[p['encoding']] }`;
-}
-exports.volumeSourceToString = volumeSourceToString;
-function meshSourceToString(p) {
-    return `brainmaps:${ api_1.brainmapsInstanceKey(p['instance']) }:mesh/${ p['volume_id'] }/${ p['mesh_name'] }`;
-}
-exports.meshSourceToString = meshSourceToString;
+
+var VolumeSourceParameters = function () {
+    function VolumeSourceParameters() {
+        _classCallCheck(this, VolumeSourceParameters);
+    }
+
+    _createClass(VolumeSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(p) {
+            return `brainmaps-${ api_1.brainmapsInstanceKey(p['instance']) }:volume/${ p['volume_id'] }/${ p['scaleIndex'] }/${ VolumeChunkEncoding[p['encoding']] }`;
+        }
+    }]);
+
+    return VolumeSourceParameters;
+}();
+
+VolumeSourceParameters.RPC_ID = 'brainmaps/VolumeChunkSource';
+exports.VolumeSourceParameters = VolumeSourceParameters;
+;
+
+var MeshSourceParameters = function () {
+    function MeshSourceParameters() {
+        _classCallCheck(this, MeshSourceParameters);
+    }
+
+    _createClass(MeshSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(p) {
+            return `brainmaps:${ api_1.brainmapsInstanceKey(p['instance']) }:mesh/${ p['volume_id'] }/${ p['mesh_name'] }`;
+        }
+    }]);
+
+    return MeshSourceParameters;
+}();
+
+MeshSourceParameters.RPC_ID = 'brainmaps/MeshSource';
+exports.MeshSourceParameters = MeshSourceParameters;
+;
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -10867,13 +11167,22 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-__webpack_require__(36); // Import for side effects.
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+__webpack_require__(37); // Import for side effects.
 var backend_1 = __webpack_require__(4);
 var base_1 = __webpack_require__(5);
-var geom_1 = __webpack_require__(14);
-var json_1 = __webpack_require__(40);
-var uint64_1 = __webpack_require__(39);
-var endian_1 = __webpack_require__(41);
+var base_2 = __webpack_require__(41);
+var endian_1 = __webpack_require__(42);
+var geom_1 = __webpack_require__(15);
+var json_1 = __webpack_require__(43);
+var uint64_1 = __webpack_require__(40);
 var worker_rpc_1 = __webpack_require__(2);
 var MESH_OBJECT_MANIFEST_CHUNK_PRIORITY = 100;
 var MESH_OBJECT_FRAGMENT_CHUNK_PRIORITY = 50;
@@ -10896,28 +11205,29 @@ var ManifestChunk = function (_backend_1$Chunk) {
 
 
     _createClass(ManifestChunk, [{
-        key: 'initializeManifestChunk',
+        key: "initializeManifestChunk",
         value: function initializeManifestChunk(key, objectId) {
-            _get(Object.getPrototypeOf(ManifestChunk.prototype), 'initialize', this).call(this, key);
+            _get(Object.getPrototypeOf(ManifestChunk.prototype), "initialize", this).call(this, key);
             this.objectId.assign(objectId);
         }
     }, {
-        key: 'freeSystemMemory',
+        key: "freeSystemMemory",
         value: function freeSystemMemory() {
             this.fragmentIds = null;
         }
     }, {
-        key: 'downloadSucceeded',
+        key: "downloadSucceeded",
         value: function downloadSucceeded() {
-            // We can't easily determine the memory usage of the JSON manifest.  Just use 100 bytes as a default value.
+            // We can't easily determine the memory usage of the JSON manifest.  Just use 100 bytes as a
+            // default value.
             this.systemMemoryBytes = 100;
-            _get(Object.getPrototypeOf(ManifestChunk.prototype), 'downloadSucceeded', this).call(this);
+            _get(Object.getPrototypeOf(ManifestChunk.prototype), "downloadSucceeded", this).call(this);
             if (this.priorityTier === base_1.ChunkPriorityTier.VISIBLE) {
                 this.source.chunkManager.scheduleUpdateChunkPriorities();
             }
         }
     }, {
-        key: 'toString',
+        key: "toString",
         value: function toString() {
             return this.objectId.toString();
         }
@@ -10949,23 +11259,23 @@ var FragmentChunk = function (_backend_1$Chunk2) {
     }
 
     _createClass(FragmentChunk, [{
-        key: 'initializeFragmentChunk',
+        key: "initializeFragmentChunk",
         value: function initializeFragmentChunk(key, manifestChunk, fragmentId) {
-            _get(Object.getPrototypeOf(FragmentChunk.prototype), 'initialize', this).call(this, key);
+            _get(Object.getPrototypeOf(FragmentChunk.prototype), "initialize", this).call(this, key);
             this.manifestChunk = manifestChunk;
             this.fragmentId = fragmentId;
         }
     }, {
-        key: 'freeSystemMemory',
+        key: "freeSystemMemory",
         value: function freeSystemMemory() {
             this.manifestChunk = null;
             this.vertexPositions = this.indices = this.vertexNormals = null;
             this.fragmentId = null;
         }
     }, {
-        key: 'serialize',
+        key: "serialize",
         value: function serialize(msg, transfers) {
-            _get(Object.getPrototypeOf(FragmentChunk.prototype), 'serialize', this).call(this, msg, transfers);
+            _get(Object.getPrototypeOf(FragmentChunk.prototype), "serialize", this).call(this, msg, transfers);
             msg['objectKey'] = this.manifestChunk.key;
             var vertexPositions = this.vertexPositions;
             var indices = this.indices;
@@ -10987,14 +11297,14 @@ var FragmentChunk = function (_backend_1$Chunk2) {
             this.vertexPositions = this.indices = this.vertexNormals = null;
         }
     }, {
-        key: 'downloadSucceeded',
+        key: "downloadSucceeded",
         value: function downloadSucceeded() {
             var vertexPositions = this.vertexPositions;
             var indices = this.indices;
             var vertexNormals = this.vertexNormals;
 
             this.systemMemoryBytes = this.gpuMemoryBytes = vertexPositions.byteLength + indices.byteLength + vertexNormals.byteLength;
-            _get(Object.getPrototypeOf(FragmentChunk.prototype), 'downloadSucceeded', this).call(this);
+            _get(Object.getPrototypeOf(FragmentChunk.prototype), "downloadSucceeded", this).call(this);
         }
     }]);
 
@@ -11096,7 +11406,8 @@ function decodeVertexPositionsAndIndices(chunk, data, endianness, vertexByteOffs
     if (numTriangles !== undefined) {
         numIndices = numTriangles * 3;
     }
-    var indices = new Uint32Array(data, indexByteOffset, numIndices);
+    // For compatibility with Firefox, length argument must not be undefined.
+    var indices = numIndices === undefined ? new Uint32Array(data, indexByteOffset) : new Uint32Array(data, indexByteOffset, numIndices);
     if (indices.length % 3 !== 0) {
         throw new Error(`Number of indices is not a multiple of 3: ${ indices.length }.`);
     }
@@ -11121,7 +11432,7 @@ var MeshSource = function (_backend_1$ChunkSourc) {
     }
 
     _createClass(MeshSource, [{
-        key: 'getChunk',
+        key: "getChunk",
         value: function getChunk(objectId) {
             var key = `${ objectId.low }:${ objectId.high }`;
             var chunk = this.chunks.get(key);
@@ -11133,7 +11444,7 @@ var MeshSource = function (_backend_1$ChunkSourc) {
             return chunk;
         }
     }, {
-        key: 'getFragmentChunk',
+        key: "getFragmentChunk",
         value: function getFragmentChunk(manifestChunk, fragmentId) {
             var key = `${ manifestChunk.key }/${ fragmentId }`;
             var fragmentSource = this.fragmentSource;
@@ -11153,6 +11464,23 @@ var MeshSource = function (_backend_1$ChunkSourc) {
 exports.MeshSource = MeshSource;
 ;
 
+var ParameterizedMeshSource = function (_MeshSource) {
+    _inherits(ParameterizedMeshSource, _MeshSource);
+
+    function ParameterizedMeshSource(rpc, options) {
+        _classCallCheck(this, ParameterizedMeshSource);
+
+        var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(ParameterizedMeshSource).call(this, rpc, options));
+
+        _this4.parameters = options['parameters'];
+        return _this4;
+    }
+
+    return ParameterizedMeshSource;
+}(MeshSource);
+
+exports.ParameterizedMeshSource = ParameterizedMeshSource;
+;
 var FragmentSource = function (_backend_1$ChunkSourc2) {
     _inherits(FragmentSource, _backend_1$ChunkSourc2);
 
@@ -11163,14 +11491,14 @@ var FragmentSource = function (_backend_1$ChunkSourc2) {
             args[_key] = arguments[_key];
         }
 
-        var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(FragmentSource).call(this, ...args));
+        var _this5 = _possibleConstructorReturn(this, Object.getPrototypeOf(FragmentSource).call(this, ...args));
 
-        _this4.meshSource = null;
-        return _this4;
+        _this5.meshSource = null;
+        return _this5;
     }
 
     _createClass(FragmentSource, [{
-        key: 'download',
+        key: "download",
         value: function download(chunk) {
             this.meshSource.downloadFragment(chunk);
         }
@@ -11178,11 +11506,9 @@ var FragmentSource = function (_backend_1$ChunkSourc2) {
 
     return FragmentSource;
 }(backend_1.ChunkSource);
-
+FragmentSource = __decorate([worker_rpc_1.registerSharedObject(base_2.FRAGMENT_SOURCE_RPC_ID)], FragmentSource);
 exports.FragmentSource = FragmentSource;
 ;
-worker_rpc_1.registerSharedObject('mesh/FragmentSource', FragmentSource);
-
 var MeshLayer = function (_worker_rpc_1$SharedO) {
     _inherits(MeshLayer, _worker_rpc_1$SharedO);
 
@@ -11192,23 +11518,23 @@ var MeshLayer = function (_worker_rpc_1$SharedO) {
         // No need to increase reference count of chunkManager and visibleSegmentSet since our owner
         // counterpart will hold a reference to the owner counterparts of them.
 
-        var _this5 = _possibleConstructorReturn(this, Object.getPrototypeOf(MeshLayer).call(this, rpc, options));
+        var _this6 = _possibleConstructorReturn(this, Object.getPrototypeOf(MeshLayer).call(this, rpc, options));
 
-        _this5.chunkManager = rpc.get(options['chunkManager']);
-        _this5.visibleSegmentSet = rpc.get(options['visibleSegmentSet']);
-        _this5.source = _this5.registerDisposer(rpc.getRef(options['source']));
-        _this5.registerSignalBinding(_this5.chunkManager.recomputeChunkPriorities.add(_this5.updateChunkPriorities, _this5));
-        _this5.registerSignalBinding(_this5.visibleSegmentSet.changed.add(_this5.handleVisibleSegmentSetChanged, _this5));
-        return _this5;
+        _this6.chunkManager = rpc.get(options['chunkManager']);
+        _this6.visibleSegmentSet = rpc.get(options['visibleSegmentSet']);
+        _this6.source = _this6.registerDisposer(rpc.getRef(options['source']));
+        _this6.registerSignalBinding(_this6.chunkManager.recomputeChunkPriorities.add(_this6.updateChunkPriorities, _this6));
+        _this6.registerSignalBinding(_this6.visibleSegmentSet.changed.add(_this6.handleVisibleSegmentSetChanged, _this6));
+        return _this6;
     }
 
     _createClass(MeshLayer, [{
-        key: 'handleVisibleSegmentSetChanged',
+        key: "handleVisibleSegmentSetChanged",
         value: function handleVisibleSegmentSetChanged() {
             this.chunkManager.scheduleUpdateChunkPriorities();
         }
     }, {
-        key: 'updateChunkPriorities',
+        key: "updateChunkPriorities",
         value: function updateChunkPriorities() {
             var source = this.source;
             var chunkManager = this.chunkManager;
@@ -11228,12 +11554,11 @@ var MeshLayer = function (_worker_rpc_1$SharedO) {
 
     return MeshLayer;
 }(worker_rpc_1.SharedObjectCounterpart);
-
+MeshLayer = __decorate([worker_rpc_1.registerSharedObject(base_2.MESH_LAYER_RPC_ID)], MeshLayer);
 ;
-worker_rpc_1.registerSharedObject('mesh/MeshLayer', MeshLayer);
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -11263,12 +11588,19 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var hash_table_1 = __webpack_require__(38);
+var uint64_1 = __webpack_require__(40);
 var worker_rpc_1 = __webpack_require__(2);
-var hash_table_1 = __webpack_require__(37);
 var signals_1 = __webpack_require__(6);
-var uint64_1 = __webpack_require__(39);
-
-var Uint64Set = function (_worker_rpc_1$SharedO) {
+var Uint64Set_1 = function (_worker_rpc_1$SharedO) {
     _inherits(Uint64Set, _worker_rpc_1$SharedO);
 
     function Uint64Set() {
@@ -11286,27 +11618,19 @@ var Uint64Set = function (_worker_rpc_1$SharedO) {
     }
 
     _createClass(Uint64Set, [{
-        key: 'initializeCounterpart',
-        value: function initializeCounterpart(rpc) {
-            var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-            options['type'] = 'Uint64Set';
-            _get(Object.getPrototypeOf(Uint64Set.prototype), 'initializeCounterpart', this).call(this, rpc, options);
-        }
-    }, {
-        key: 'disposed',
+        key: "disposed",
         value: function disposed() {
-            _get(Object.getPrototypeOf(Uint64Set.prototype), 'disposed', this).call(this);
-            this.hashTable = null;
-            this.changed = null;
+            _get(Object.getPrototypeOf(Uint64Set.prototype), "disposed", this).call(this);
+            this.hashTable = undefined;
+            this.changed = undefined;
         }
     }, {
-        key: 'add_',
+        key: "add_",
         value: function add_(x) {
             return this.hashTable.add(x.low, x.high);
         }
     }, {
-        key: 'add',
+        key: "add",
         value: function add(x) {
             if (this.add_(x)) {
                 var rpc = this.rpc;
@@ -11318,7 +11642,7 @@ var Uint64Set = function (_worker_rpc_1$SharedO) {
             }
         }
     }, {
-        key: 'has',
+        key: "has",
         value: function has(x) {
             return this.hashTable.has(x.low, x.high);
         }
@@ -11333,12 +11657,12 @@ var Uint64Set = function (_worker_rpc_1$SharedO) {
             }
         }
     }, {
-        key: 'delete_',
+        key: "delete_",
         value: function delete_(x) {
             return this.hashTable.delete(x.low, x.high);
         }
     }, {
-        key: 'delete',
+        key: "delete",
         value: function _delete(x) {
             if (this.delete_(x)) {
                 var rpc = this.rpc;
@@ -11350,7 +11674,7 @@ var Uint64Set = function (_worker_rpc_1$SharedO) {
             }
         }
     }, {
-        key: 'clear',
+        key: "clear",
         value: function clear() {
             if (this.hashTable.clear()) {
                 var rpc = this.rpc;
@@ -11362,14 +11686,14 @@ var Uint64Set = function (_worker_rpc_1$SharedO) {
             }
         }
     }, {
-        key: 'size',
+        key: "size",
         get: function () {
             return this.hashTable.size;
         }
     }], [{
-        key: 'makeWithCounterpart',
+        key: "makeWithCounterpart",
         value: function makeWithCounterpart(rpc) {
-            var obj = new Uint64Set();
+            var obj = new Uint64Set_1();
             obj.initializeCounterpart(rpc);
             return obj;
         }
@@ -11377,7 +11701,8 @@ var Uint64Set = function (_worker_rpc_1$SharedO) {
 
     return Uint64Set;
 }(worker_rpc_1.SharedObjectCounterpart);
-
+var Uint64Set = Uint64Set_1;
+Uint64Set = Uint64Set_1 = __decorate([worker_rpc_1.registerSharedObject('Uint64Set')], Uint64Set);
 exports.Uint64Set = Uint64Set;
 ;
 worker_rpc_1.registerRPC('Uint64Set.add', function (x) {
@@ -11398,10 +11723,9 @@ worker_rpc_1.registerRPC('Uint64Set.clear', function (x) {
         obj.changed.dispatch();
     }
 });
-worker_rpc_1.registerSharedObject('Uint64Set', Uint64Set);
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -11425,7 +11749,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var hash_function_1 = __webpack_require__(38);
+var hash_function_1 = __webpack_require__(39);
 exports.NUM_ALTERNATIVES = 3;
 var DEFAULT_LOAD_FACTOR = 0.9;
 
@@ -11439,8 +11763,6 @@ var HashTable = function () {
         this.size = 0;
         this.growFactor = 1.2;
         this.maxWidth = 4096;
-        this.width = null;
-        this.height = null;
         this.maxHeight = 8192;
         this.emptyLow = 4294967295;
         this.emptyHigh = 4294967295;
@@ -11700,7 +12022,7 @@ exports.HashTable = HashTable;
 ;
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports) {
 
 /**
@@ -11782,7 +12104,7 @@ exports.HashFunction = HashFunction;
 ;
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports) {
 
 /**
@@ -11957,7 +12279,7 @@ exports.Uint64 = Uint64;
 ;
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 /**
@@ -11977,6 +12299,148 @@ exports.Uint64 = Uint64;
  */
 "use strict";
 
+exports.MESH_LAYER_RPC_ID = 'mesh/MeshLayer';
+exports.FRAGMENT_SOURCE_RPC_ID = 'mesh/FragmentSource';
+
+/***/ },
+/* 42 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * Facilities for endianness detection and swapping.
+ */
+
+(function (Endianness) {
+    Endianness[Endianness["LITTLE"] = 0] = "LITTLE";
+    Endianness[Endianness["BIG"] = 1] = "BIG";
+})(exports.Endianness || (exports.Endianness = {}));
+var Endianness = exports.Endianness;
+function determineEndianness() {
+    var a = Uint16Array.of(0x1122);
+    var b = new Uint8Array(a.buffer);
+    return b[0] === 0x11 ? Endianness.BIG : Endianness.LITTLE;
+}
+exports.determineEndianness = determineEndianness;
+/**
+ * The native endianness of the runtime.
+ */
+exports.ENDIANNESS = determineEndianness();
+/**
+ * Swaps the endianness of an array assumed to contain 16-bit values.
+ */
+function swapEndian16(array) {
+    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    for (var i = 0, length = view.length; i < length; i += 2) {
+        var temp = view[i];
+        view[i] = view[i + 1];
+        view[i + 1] = temp;
+    }
+}
+exports.swapEndian16 = swapEndian16;
+/**
+ * Swaps the endianness of an array assumed to contain 32-bit values.
+ */
+function swapEndian32(array) {
+    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    for (var i = 0, length = view.length; i < length; i += 4) {
+        var temp = view[i];
+        view[i] = view[i + 3];
+        view[i + 3] = temp;
+        temp = view[i + 1];
+        view[i + 1] = view[i + 2];
+        view[i + 2] = temp;
+    }
+}
+exports.swapEndian32 = swapEndian32;
+/**
+ * Converts the endianness of an array assumed to contain 16-bit values from source to target.
+ *
+ * This does nothing if source === target.
+ */
+function convertEndian16(array, source) {
+    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
+
+    if (source !== target) {
+        swapEndian16(array);
+    }
+}
+exports.convertEndian16 = convertEndian16;
+/**
+ * Converts the endianness of an array assumed to contain 16-bit values from native to little
+ * endian.
+ *
+ * This does nothing if the native ENDIANNESS is little endian.
+ */
+function nativeToLittle16(array) {
+    if (exports.ENDIANNESS !== Endianness.LITTLE) {
+        swapEndian16(array);
+    }
+}
+exports.nativeToLittle16 = nativeToLittle16;
+/**
+ * Converts the endianness of an array assumed to contain 32-bit values from source to target.
+ *
+ * This does nothing if source === target.
+ */
+function convertEndian32(array, source) {
+    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
+
+    if (source !== target) {
+        swapEndian32(array);
+    }
+}
+exports.convertEndian32 = convertEndian32;
+/**
+ * Converts the endianness of an array assumed to contain 32-bit values from native to little
+ * endian.
+ *
+ * This does nothing if the native ENDIANNESS is little endian.
+ */
+function nativeToLittle32(array) {
+    if (exports.ENDIANNESS !== Endianness.LITTLE) {
+        swapEndian32(array);
+    }
+}
+exports.nativeToLittle32 = nativeToLittle32;
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var geom_1 = __webpack_require__(15);
 function verifyFloat(obj) {
     var t = typeof obj;
     if (t === 'number' || t === 'string') {
@@ -11988,9 +12452,17 @@ function verifyFloat(obj) {
     throw new Error(`Expected floating-point number, but received: ${ JSON.stringify(obj) }.`);
 }
 exports.verifyFloat = verifyFloat;
-function verifyFinitePositiveFloat(obj) {
+function verifyFiniteFloat(obj) {
     var x = verifyFloat(obj);
-    if (Number.isFinite(x) && x > 0) {
+    if (Number.isFinite(x)) {
+        return x;
+    }
+    throw new Error(`Expected finite floating-point number, but received: ${ x }.`);
+}
+exports.verifyFiniteFloat = verifyFiniteFloat;
+function verifyFinitePositiveFloat(obj) {
+    var x = verifyFiniteFloat(obj);
+    if (x > 0) {
         return x;
     }
     throw new Error(`Expected positive finite floating-point number, but received: ${ x }.`);
@@ -12157,7 +12629,6 @@ var SINGLE_QUOTE_STRING_PATTERN = /('(?:[^'\\]|(?:\\.))*')/;
 var DOUBLE_QUOTE_STRING_PATTERN = /("(?:[^'\\]|(?:\\.))*")/;
 var SINGLE_OR_DOUBLE_QUOTE_STRING_PATTERN = new RegExp(`${ SINGLE_QUOTE_STRING_PATTERN.source }|${ DOUBLE_QUOTE_STRING_PATTERN.source }`);
 var DOUBLE_OR_SINGLE_QUOTE_STRING_PATTERN = new RegExp(`${ DOUBLE_QUOTE_STRING_PATTERN.source }|${ SINGLE_QUOTE_STRING_PATTERN.source }`);
-//const stringLiteralPattern = /('(?:[^'\\]|(?:\\.))*')|("(?:[^"\\]|(?:\\.))*")/;
 var DOUBLE_QUOTE_PATTERN = /^((?:[^"'\\]|(?:\\.))*)"/;
 var SINGLE_QUOTE_PATTERN = /^((?:[^"'\\]|(?:\\.))*)'/;
 function convertStringLiteral(x, quoteInitial, quoteReplace, quoteSearch) {
@@ -12389,126 +12860,39 @@ function parseQueryStringParameters(queryString) {
     }
 }
 exports.parseQueryStringParameters = parseQueryStringParameters;
+/**
+ * Verifies that `obj' is a string that, when converted to uppercase, matches a string property of
+ * `enumType`.
+ *
+ * Note: TypeScript does not seem to allow better typing of the return type.
+ *
+ * @returns The corresponding numerical value.
+ */
+function verifyEnumString(obj, enumType) {
+    if (typeof obj === 'string' && obj.match(/^[a-zA-Z]/) !== null) {
+        obj = obj.toUpperCase();
+        if (enumType.hasOwnProperty(obj)) {
+            return enumType[obj];
+        }
+    }
+    throw new Error(`Invalid enum value: ${ JSON.stringify(obj) }.`);
+}
+exports.verifyEnumString = verifyEnumString;
+function verify3dVec(obj) {
+    return parseFixedLengthArray(geom_1.vec3.create(), obj, verifyFiniteFloat);
+}
+exports.verify3dVec = verify3dVec;
+function verify3dScale(obj) {
+    return parseFixedLengthArray(geom_1.vec3.create(), obj, verifyFinitePositiveFloat);
+}
+exports.verify3dScale = verify3dScale;
+function verify3dDimensions(obj) {
+    return parseFixedLengthArray(geom_1.vec3.create(), obj, verifyPositiveInt);
+}
+exports.verify3dDimensions = verify3dDimensions;
 
 /***/ },
-/* 41 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * Facilities for endianness detection and swapping.
- */
-
-(function (Endianness) {
-    Endianness[Endianness["LITTLE"] = 0] = "LITTLE";
-    Endianness[Endianness["BIG"] = 1] = "BIG";
-})(exports.Endianness || (exports.Endianness = {}));
-var Endianness = exports.Endianness;
-function determineEndianness() {
-    var a = Uint16Array.of(0x1122);
-    var b = new Uint8Array(a.buffer);
-    return b[0] === 0x11 ? Endianness.BIG : Endianness.LITTLE;
-}
-exports.determineEndianness = determineEndianness;
-/**
- * The native endianness of the runtime.
- */
-exports.ENDIANNESS = determineEndianness();
-/**
- * Swaps the endianness of an array assumed to contain 16-bit values.
- */
-function swapEndian16(array) {
-    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-    for (var i = 0, length = view.length; i < length; i += 2) {
-        var temp = view[i];
-        view[i] = view[i + 1];
-        view[i + 1] = temp;
-    }
-}
-exports.swapEndian16 = swapEndian16;
-/**
- * Swaps the endianness of an array assumed to contain 32-bit values.
- */
-function swapEndian32(array) {
-    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-    for (var i = 0, length = view.length; i < length; i += 4) {
-        var temp = view[i];
-        view[i] = view[i + 3];
-        view[i + 3] = temp;
-        temp = view[i + 1];
-        view[i + 1] = view[i + 2];
-        view[i + 2] = temp;
-    }
-}
-exports.swapEndian32 = swapEndian32;
-/**
- * Converts the endianness of an array assumed to contain 16-bit values from source to target.
- *
- * This does nothing if source === target.
- */
-function convertEndian16(array, source) {
-    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
-
-    if (source !== target) {
-        swapEndian16(array);
-    }
-}
-exports.convertEndian16 = convertEndian16;
-/**
- * Converts the endianness of an array assumed to contain 16-bit values from native to little
- * endian.
- *
- * This does nothing if the native ENDIANNESS is little endian.
- */
-function nativeToLittle16(array) {
-    if (exports.ENDIANNESS !== Endianness.LITTLE) {
-        swapEndian16(array);
-    }
-}
-exports.nativeToLittle16 = nativeToLittle16;
-/**
- * Converts the endianness of an array assumed to contain 32-bit values from source to target.
- *
- * This does nothing if source === target.
- */
-function convertEndian32(array, source) {
-    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
-
-    if (source !== target) {
-        swapEndian32(array);
-    }
-}
-exports.convertEndian32 = convertEndian32;
-/**
- * Converts the endianness of an array assumed to contain 32-bit values from native to little
- * endian.
- *
- * This does nothing if the native ENDIANNESS is little endian.
- */
-function nativeToLittle32(array) {
-    if (exports.ENDIANNESS !== Endianness.LITTLE) {
-        swapEndian32(array);
-    }
-}
-exports.nativeToLittle32 = nativeToLittle32;
-
-/***/ },
-/* 42 */
+/* 44 */
 /***/ function(module, exports) {
 
 /**
@@ -12529,13 +12913,12 @@ exports.nativeToLittle32 = nativeToLittle32;
 "use strict";
 
 function decodeCompressedSegmentationChunk(chunk, response) {
-  // TODO: Handle multiple channels.
-  chunk.data = new Uint32Array(response, 4 /* skip offset of first channel */);
+  chunk.data = new Uint32Array(response);
 }
 exports.decodeCompressedSegmentationChunk = decodeCompressedSegmentationChunk;
 
 /***/ },
-/* 43 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -12555,15 +12938,15 @@ exports.decodeCompressedSegmentationChunk = decodeCompressedSegmentationChunk;
  */
 "use strict";
 
-var decode_jpeg_stack_1 = __webpack_require__(44);
 var postprocess_1 = __webpack_require__(46);
+var decode_jpeg_stack_1 = __webpack_require__(51);
 function decodeJpegChunk(chunk, response) {
   postprocess_1.postProcessRawData(chunk, decode_jpeg_stack_1.decodeJpegStack(new Uint8Array(response), chunk.chunkDataSize));
 }
 exports.decodeJpegChunk = decodeJpegChunk;
 
 /***/ },
-/* 44 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -12583,8 +12966,651 @@ exports.decodeJpegChunk = decodeJpegChunk;
  */
 "use strict";
 
-var jpgjs_1 = __webpack_require__(45);
-var geom_1 = __webpack_require__(14);
+var base_1 = __webpack_require__(13);
+var encode_uint32_1 = __webpack_require__(47);
+var encode_uint64_1 = __webpack_require__(49);
+var uint32array_builder_ts_1 = __webpack_require__(50);
+var tempBuffer = new uint32array_builder_ts_1.Uint32ArrayBuilder(20000);
+var tempVolumeSize = new Array(4);
+function postProcessRawData(chunk, data) {
+    var spec = chunk.source.spec;
+
+    if (spec.compressedSegmentationBlockSize) {
+        var dataType = spec.dataType;
+
+        tempBuffer.clear();
+        var chunkDataSize = chunk.chunkDataSize;
+        tempVolumeSize[0] = chunkDataSize[0];
+        tempVolumeSize[1] = chunkDataSize[1];
+        tempVolumeSize[2] = chunkDataSize[2];
+        tempVolumeSize[3] = spec.numChannels;
+        switch (dataType) {
+            case base_1.DataType.UINT32:
+                encode_uint32_1.encodeChannels(tempBuffer, spec.compressedSegmentationBlockSize, data, tempVolumeSize);
+                break;
+            case base_1.DataType.UINT64:
+                encode_uint64_1.encodeChannels(tempBuffer, spec.compressedSegmentationBlockSize, data, tempVolumeSize);
+                break;
+            default:
+                throw new Error(`Unsupported data type for compressed segmentation: ${ base_1.DataType[dataType] }`);
+        }
+        chunk.data = new Uint32Array(tempBuffer.view);
+    } else {
+        chunk.data = data;
+    }
+}
+exports.postProcessRawData = postProcessRawData;
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+// DO NOT EDIT.  Generated from
+// templates/neuroglancer/sliceview/compressed_segmentation/encode.template.ts.
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * @file
+ * Support for compressing uint32/uint64 segment label chunks.
+ */
+
+var encode_common_ts_1 = __webpack_require__(48);
+var array_1 = __webpack_require__(26);
+var encode_common_ts_2 = __webpack_require__(48);
+exports.newCache = encode_common_ts_2.newCache;
+var tempEncodingBuffer = void 0;
+var tempValuesBuffer1 = void 0;
+var tempValuesBuffer2 = void 0;
+var tempIndexBuffer1 = void 0;
+var tempIndexBuffer2 = void 0;
+var uint32sPerElement = 1;
+function encodeBlock(rawData, inputOffset, inputStrides, blockSize, actualSize, baseOffset, cache, output) {
+    var ax = actualSize[0],
+        ay = actualSize[1],
+        az = actualSize[2];
+    var bx = blockSize[0],
+        by = blockSize[1],
+        bz = blockSize[2];
+    var sx = inputStrides[0],
+        sy = inputStrides[1],
+        sz = inputStrides[2];
+    sz -= sy * ay;
+    sy -= sx * ax;
+    if (ax * ay * az === 0) {
+        return [0, 0];
+    }
+    var numBlockElements = bx * by * bz + 31; // Add padding elements.
+    if (tempEncodingBuffer === undefined || tempEncodingBuffer.length < numBlockElements) {
+        tempEncodingBuffer = new Uint32Array(numBlockElements);
+        tempValuesBuffer1 = new Uint32Array(numBlockElements * uint32sPerElement);
+        tempValuesBuffer2 = new Uint32Array(numBlockElements * uint32sPerElement);
+        tempIndexBuffer1 = new Uint32Array(numBlockElements);
+        tempIndexBuffer2 = new Uint32Array(numBlockElements);
+    }
+    var encodingBuffer = tempEncodingBuffer.subarray(0, numBlockElements);
+    encodingBuffer.fill(0);
+    var valuesBuffer1 = tempValuesBuffer1;
+    var valuesBuffer2 = tempValuesBuffer2;
+    var indexBuffer1 = tempIndexBuffer1;
+    var indexBuffer2 = tempIndexBuffer2;
+    var noAdjacentDuplicateIndex = 0;
+    {
+        var prevLow = rawData[inputOffset] + 1 >>> 0;
+        var curInputOff = inputOffset;
+        var blockElementIndex = 0;
+        var bsy = bx - ax;
+        var bsz = bx * by - bx * ay;
+        for (var z = 0; z < az; ++z, curInputOff += sz, blockElementIndex += bsz) {
+            for (var y = 0; y < ay; ++y, curInputOff += sy, blockElementIndex += bsy) {
+                for (var x = 0; x < ax; ++x, curInputOff += sx) {
+                    var valueLow = rawData[curInputOff];
+                    if (valueLow !== prevLow) {
+                        prevLow = valuesBuffer1[noAdjacentDuplicateIndex * 1] = valueLow;
+                        indexBuffer1[noAdjacentDuplicateIndex] = noAdjacentDuplicateIndex++;
+                    }
+                    encodingBuffer[blockElementIndex++] = noAdjacentDuplicateIndex;
+                }
+            }
+        }
+    }
+    indexBuffer1.subarray(0, noAdjacentDuplicateIndex).sort((a, b) => {
+        return valuesBuffer1[a] - valuesBuffer1[b];
+    });
+    var numUniqueValues = -1;
+    {
+        var _prevLow = valuesBuffer1[indexBuffer1[0] * uint32sPerElement] + 1 >>> 0;
+        for (var i = 0; i < noAdjacentDuplicateIndex; ++i) {
+            var index = indexBuffer1[i];
+            var valueIndex = index * uint32sPerElement;
+            var _valueLow = valuesBuffer1[valueIndex];
+            if (_valueLow !== _prevLow) {
+                ++numUniqueValues;
+                var outputIndex2 = numUniqueValues * uint32sPerElement;
+                _prevLow = valuesBuffer2[outputIndex2] = _valueLow;
+            }
+            indexBuffer2[index + 1] = numUniqueValues;
+        }
+        ++numUniqueValues;
+    }
+    return encode_common_ts_1.writeBlock(output, baseOffset, cache, bx * by * bz, numUniqueValues, valuesBuffer2, encodingBuffer, indexBuffer2, uint32sPerElement);
+}
+exports.encodeBlock = encodeBlock;
+function encodeChannel(output, blockSize, rawData, volumeSize) {
+    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 1) : arguments[5];
+
+    return encode_common_ts_1.encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
+}
+exports.encodeChannel = encodeChannel;
+function encodeChannels(output, blockSize, rawData, volumeSize) {
+    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 1) : arguments[5];
+
+    return encode_common_ts_1.encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
+}
+exports.encodeChannels = encodeChannels;
+
+/***/ },
+/* 48 */
+/***/ function(module, exports) {
+
+// DO NOT EDIT.  Generated from
+// templates/neuroglancer/sliceview/compressed_segmentation/encode_common.template.ts.
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+exports.BLOCK_HEADER_SIZE = 2;
+function newCache() {
+    return new Map();
+}
+exports.newCache = newCache;
+function writeEncodedRepresentation(outputData, outputOffset, encodingBuffer, indexBuffer, encodedBits, encodedSize32Bits) {
+    // Write encoded representation.
+    if (encodedBits > 0) {
+        switch (encodedBits) {
+            case 1:
+                {
+                    for (var wordIndex = 0, elementIndex = 0; wordIndex < encodedSize32Bits; ++wordIndex) {
+                        var word = 0;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 0]] << 0;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 1]] << 1;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 2]] << 2;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 3]] << 3;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 4]] << 4;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 5]] << 5;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 6]] << 6;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 7]] << 7;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 8]] << 8;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 9]] << 9;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 10]] << 10;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 11]] << 11;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 12]] << 12;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 13]] << 13;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 14]] << 14;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 15]] << 15;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 16]] << 16;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 17]] << 17;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 18]] << 18;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 19]] << 19;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 20]] << 20;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 21]] << 21;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 22]] << 22;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 23]] << 23;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 24]] << 24;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 25]] << 25;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 26]] << 26;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 27]] << 27;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 28]] << 28;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 29]] << 29;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 30]] << 30;
+                        word |= indexBuffer[encodingBuffer[elementIndex + 31]] << 31;
+                        outputData[outputOffset + wordIndex] = word;
+                        elementIndex += 32;
+                    }
+                }
+                break;
+            case 2:
+                {
+                    for (var _wordIndex = 0, _elementIndex = 0; _wordIndex < encodedSize32Bits; ++_wordIndex) {
+                        var _word = 0;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 0]] << 0;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 1]] << 2;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 2]] << 4;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 3]] << 6;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 4]] << 8;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 5]] << 10;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 6]] << 12;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 7]] << 14;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 8]] << 16;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 9]] << 18;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 10]] << 20;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 11]] << 22;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 12]] << 24;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 13]] << 26;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 14]] << 28;
+                        _word |= indexBuffer[encodingBuffer[_elementIndex + 15]] << 30;
+                        outputData[outputOffset + _wordIndex] = _word;
+                        _elementIndex += 16;
+                    }
+                }
+                break;
+            case 4:
+                {
+                    for (var _wordIndex2 = 0, _elementIndex2 = 0; _wordIndex2 < encodedSize32Bits; ++_wordIndex2) {
+                        var _word2 = 0;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 0]] << 0;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 1]] << 4;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 2]] << 8;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 3]] << 12;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 4]] << 16;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 5]] << 20;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 6]] << 24;
+                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 7]] << 28;
+                        outputData[outputOffset + _wordIndex2] = _word2;
+                        _elementIndex2 += 8;
+                    }
+                }
+                break;
+            case 8:
+                {
+                    for (var _wordIndex3 = 0, _elementIndex3 = 0; _wordIndex3 < encodedSize32Bits; ++_wordIndex3) {
+                        var _word3 = 0;
+                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 0]] << 0;
+                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 1]] << 8;
+                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 2]] << 16;
+                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 3]] << 24;
+                        outputData[outputOffset + _wordIndex3] = _word3;
+                        _elementIndex3 += 4;
+                    }
+                }
+                break;
+            case 16:
+                {
+                    for (var _wordIndex4 = 0, _elementIndex4 = 0; _wordIndex4 < encodedSize32Bits; ++_wordIndex4) {
+                        var _word4 = 0;
+                        _word4 |= indexBuffer[encodingBuffer[_elementIndex4 + 0]] << 0;
+                        _word4 |= indexBuffer[encodingBuffer[_elementIndex4 + 1]] << 16;
+                        outputData[outputOffset + _wordIndex4] = _word4;
+                        _elementIndex4 += 2;
+                    }
+                }
+                break;
+            case 32:
+                {
+                    for (var _wordIndex5 = 0, _elementIndex5 = 0; _wordIndex5 < encodedSize32Bits; ++_wordIndex5) {
+                        var _word5 = 0;
+                        _word5 |= indexBuffer[encodingBuffer[_elementIndex5 + 0]] << 0;
+                        outputData[outputOffset + _wordIndex5] = _word5;
+                        _elementIndex5 += 1;
+                    }
+                }
+                break;
+        }
+    }
+}
+function writeBlock(output, baseOffset, cache, numBlockElements, numUniqueValues, valuesBuffer2, encodingBuffer, indexBuffer2, uint32sPerElement) {
+    var encodedBits = void 0;
+    if (numUniqueValues === 1) {
+        encodedBits = 0;
+    } else {
+        encodedBits = 1;
+        while (1 << encodedBits < numUniqueValues) {
+            encodedBits *= 2;
+        }
+    }
+    var encodedSize32bits = Math.ceil(encodedBits * numBlockElements / 32);
+    var encodedValueBaseOffset = output.length;
+    var elementsToWrite = encodedSize32bits;
+    var writeTable = false;
+    var key = Array.prototype.join.call(valuesBuffer2.subarray(0, numUniqueValues * uint32sPerElement), ',');
+    var tableOffset = cache.get(key);
+    if (tableOffset === undefined) {
+        writeTable = true;
+        elementsToWrite += numUniqueValues * uint32sPerElement;
+        tableOffset = encodedValueBaseOffset + encodedSize32bits - baseOffset;
+        cache.set(key, tableOffset);
+    }
+    output.resize(encodedValueBaseOffset + elementsToWrite);
+    var outputData = output.data;
+    writeEncodedRepresentation(outputData, encodedValueBaseOffset, encodingBuffer, indexBuffer2, encodedBits, encodedSize32bits);
+    // Write table
+    if (writeTable) {
+        var curOutputOff = encodedValueBaseOffset + encodedSize32bits;
+        for (var i = 0, length = numUniqueValues * uint32sPerElement; i < length; ++i) {
+            outputData[curOutputOff++] = valuesBuffer2[i];
+        }
+    }
+    return [encodedBits, tableOffset];
+}
+exports.writeBlock = writeBlock;
+function encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock) {
+    // Maps a sorted list of table entries in the form <low>,<high>,<low>,<high>,... to the table
+    // offset relative to baseOffset.
+    var cache = newCache();
+    var gridSize = new Array(3);
+    var blockIndexSize = exports.BLOCK_HEADER_SIZE;
+    for (var i = 0; i < 3; ++i) {
+        var curGridSize = gridSize[i] = Math.ceil(volumeSize[i] / blockSize[i]);
+        blockIndexSize *= curGridSize;
+    }
+    var gx = gridSize[0],
+        gy = gridSize[1],
+        gz = gridSize[2];
+    var xSize = volumeSize[0],
+        ySize = volumeSize[1],
+        zSize = volumeSize[2];
+    var xBlockSize = blockSize[0],
+        yBlockSize = blockSize[1],
+        zBlockSize = blockSize[2];
+    var baseOffset = output.length;
+    var headerOffset = baseOffset;
+    var actualSize = [0, 0, 0];
+    output.resize(baseOffset + blockIndexSize);
+    var sx = inputStrides[0],
+        sy = inputStrides[1],
+        sz = inputStrides[2];
+    for (var bz = 0; bz < gz; ++bz) {
+        actualSize[2] = Math.min(zBlockSize, zSize - bz * zBlockSize);
+        for (var by = 0; by < gy; ++by) {
+            actualSize[1] = Math.min(yBlockSize, ySize - by * yBlockSize);
+            for (var bx = 0; bx < gx; ++bx) {
+                actualSize[0] = Math.min(xBlockSize, xSize - bx * xBlockSize);
+                var inputOffset = bz * zBlockSize * sz + by * yBlockSize * sy + bx * xBlockSize * sx;
+                var encodedValueBaseOffset = output.length - baseOffset;
+
+                var _encodeBlock = encodeBlock(rawData, baseInputOffset + inputOffset, inputStrides, blockSize, actualSize, baseOffset, cache, output);
+
+                var _encodeBlock2 = _slicedToArray(_encodeBlock, 2);
+
+                var encodedBits = _encodeBlock2[0];
+                var tableOffset = _encodeBlock2[1];
+
+                var outputData = output.data;
+                outputData[headerOffset++] = tableOffset | encodedBits << 24;
+                outputData[headerOffset++] = encodedValueBaseOffset;
+            }
+        }
+    }
+}
+exports.encodeChannel = encodeChannel;
+function encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock) {
+    var channelOffsetOutputBase = output.length;
+    var numChannels = volumeSize[3];
+    output.resize(channelOffsetOutputBase + numChannels);
+    for (var channel = 0; channel < numChannels; ++channel) {
+        output.data[channelOffsetOutputBase + channel] = output.length;
+        encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset + inputStrides[3] * channel, inputStrides, encodeBlock);
+    }
+}
+exports.encodeChannels = encodeChannels;
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+// DO NOT EDIT.  Generated from
+// templates/neuroglancer/sliceview/compressed_segmentation/encode.template.ts.
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * @file
+ * Support for compressing uint32/uint64 segment label chunks.
+ */
+
+var encode_common_ts_1 = __webpack_require__(48);
+var array_1 = __webpack_require__(26);
+var encode_common_ts_2 = __webpack_require__(48);
+exports.newCache = encode_common_ts_2.newCache;
+var tempEncodingBuffer = void 0;
+var tempValuesBuffer1 = void 0;
+var tempValuesBuffer2 = void 0;
+var tempIndexBuffer1 = void 0;
+var tempIndexBuffer2 = void 0;
+var uint32sPerElement = 2;
+function encodeBlock(rawData, inputOffset, inputStrides, blockSize, actualSize, baseOffset, cache, output) {
+    var ax = actualSize[0],
+        ay = actualSize[1],
+        az = actualSize[2];
+    var bx = blockSize[0],
+        by = blockSize[1],
+        bz = blockSize[2];
+    var sx = inputStrides[0],
+        sy = inputStrides[1],
+        sz = inputStrides[2];
+    sz -= sy * ay;
+    sy -= sx * ax;
+    if (ax * ay * az === 0) {
+        return [0, 0];
+    }
+    var numBlockElements = bx * by * bz + 31; // Add padding elements.
+    if (tempEncodingBuffer === undefined || tempEncodingBuffer.length < numBlockElements) {
+        tempEncodingBuffer = new Uint32Array(numBlockElements);
+        tempValuesBuffer1 = new Uint32Array(numBlockElements * uint32sPerElement);
+        tempValuesBuffer2 = new Uint32Array(numBlockElements * uint32sPerElement);
+        tempIndexBuffer1 = new Uint32Array(numBlockElements);
+        tempIndexBuffer2 = new Uint32Array(numBlockElements);
+    }
+    var encodingBuffer = tempEncodingBuffer.subarray(0, numBlockElements);
+    encodingBuffer.fill(0);
+    var valuesBuffer1 = tempValuesBuffer1;
+    var valuesBuffer2 = tempValuesBuffer2;
+    var indexBuffer1 = tempIndexBuffer1;
+    var indexBuffer2 = tempIndexBuffer2;
+    var noAdjacentDuplicateIndex = 0;
+    {
+        var prevLow = rawData[inputOffset] + 1 >>> 0;
+        var prevHigh = 0;
+        var curInputOff = inputOffset;
+        var blockElementIndex = 0;
+        var bsy = bx - ax;
+        var bsz = bx * by - bx * ay;
+        for (var z = 0; z < az; ++z, curInputOff += sz, blockElementIndex += bsz) {
+            for (var y = 0; y < ay; ++y, curInputOff += sy, blockElementIndex += bsy) {
+                for (var x = 0; x < ax; ++x, curInputOff += sx) {
+                    var valueLow = rawData[curInputOff];
+                    var valueHigh = rawData[curInputOff + 1];
+                    if (valueLow !== prevLow || valueHigh !== prevHigh) {
+                        prevLow = valuesBuffer1[noAdjacentDuplicateIndex * 2] = valueLow;
+                        prevHigh = valuesBuffer1[noAdjacentDuplicateIndex * 2 + 1] = valueHigh;
+                        indexBuffer1[noAdjacentDuplicateIndex] = noAdjacentDuplicateIndex++;
+                    }
+                    encodingBuffer[blockElementIndex++] = noAdjacentDuplicateIndex;
+                }
+            }
+        }
+    }
+    indexBuffer1.subarray(0, noAdjacentDuplicateIndex).sort((a, b) => {
+        var aHigh = valuesBuffer1[2 * a + 1];
+        var bHigh = valuesBuffer1[2 * b + 1];
+        var aLow = valuesBuffer1[2 * a];
+        var bLow = valuesBuffer1[2 * b];
+        return aHigh - bHigh || aLow - bLow;
+    });
+    var numUniqueValues = -1;
+    {
+        var _prevLow = valuesBuffer1[indexBuffer1[0] * uint32sPerElement] + 1 >>> 0;
+        var _prevHigh = 0;
+        for (var i = 0; i < noAdjacentDuplicateIndex; ++i) {
+            var index = indexBuffer1[i];
+            var valueIndex = index * uint32sPerElement;
+            var _valueLow = valuesBuffer1[valueIndex];
+            var _valueHigh = valuesBuffer1[valueIndex + 1];
+            if (_valueLow !== _prevLow || _valueHigh !== _prevHigh) {
+                ++numUniqueValues;
+                var outputIndex2 = numUniqueValues * uint32sPerElement;
+                _prevLow = valuesBuffer2[outputIndex2] = _valueLow;
+                _prevHigh = valuesBuffer2[outputIndex2 + 1] = _valueHigh;
+            }
+            indexBuffer2[index + 1] = numUniqueValues;
+        }
+        ++numUniqueValues;
+    }
+    return encode_common_ts_1.writeBlock(output, baseOffset, cache, bx * by * bz, numUniqueValues, valuesBuffer2, encodingBuffer, indexBuffer2, uint32sPerElement);
+}
+exports.encodeBlock = encodeBlock;
+function encodeChannel(output, blockSize, rawData, volumeSize) {
+    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 2) : arguments[5];
+
+    return encode_common_ts_1.encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
+}
+exports.encodeChannel = encodeChannel;
+function encodeChannels(output, blockSize, rawData, volumeSize) {
+    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 2) : arguments[5];
+
+    return encode_common_ts_1.encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
+}
+exports.encodeChannels = encodeChannels;
+
+/***/ },
+/* 50 */
+/***/ function(module, exports) {
+
+// DO NOT EDIT.  Generated from templates/neuroglancer/util/typedarray_builder.template.ts.
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Uint32ArrayBuilder = function () {
+    function Uint32ArrayBuilder() {
+        var initialCapacity = arguments.length <= 0 || arguments[0] === undefined ? 16 : arguments[0];
+
+        _classCallCheck(this, Uint32ArrayBuilder);
+
+        this.length = 0;
+        this.data = new Uint32Array(initialCapacity);
+    }
+
+    _createClass(Uint32ArrayBuilder, [{
+        key: "resize",
+        value: function resize(newLength) {
+            var data = this.data;
+
+            if (newLength > data.length) {
+                var newData = new Uint32Array(Math.max(newLength, data.length * 2));
+                newData.set(data.subarray(0, this.length));
+                this.data = newData;
+            }
+            this.length = newLength;
+        }
+    }, {
+        key: "shrinkToFit",
+        value: function shrinkToFit() {
+            this.data = new Uint32Array(this.view);
+        }
+    }, {
+        key: "clear",
+        value: function clear() {
+            this.length = 0;
+        }
+    }, {
+        key: "appendArray",
+        value: function appendArray(other) {
+            var length = this.length;
+
+            this.resize(length + other.length);
+            this.data.set(other, length);
+        }
+    }, {
+        key: "view",
+        get: function () {
+            var data = this.data;
+
+            return new Uint32Array(data.buffer, data.byteOffset, this.length);
+        }
+    }]);
+
+    return Uint32ArrayBuilder;
+}();
+
+exports.Uint32ArrayBuilder = Uint32ArrayBuilder;
+;
+
+/***/ },
+/* 51 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var jpgjs_1 = __webpack_require__(52);
+var geom_1 = __webpack_require__(15);
 function decodeJpegStack(data, chunkDataSize) {
     var parser = new jpgjs_1.JpegDecoder();
     parser.parse(data);
@@ -12600,7 +13626,7 @@ function decodeJpegStack(data, chunkDataSize) {
 exports.decodeJpegStack = decodeJpegStack;
 
 /***/ },
-/* 45 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -16886,644 +17912,7 @@ if (true) {
 
 
 /***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * Converts raw data volumes to the appropriate format required by the frontend.
- */
-
-var base_1 = __webpack_require__(12);
-var uint32array_builder_ts_1 = __webpack_require__(47);
-var encode_uint32_1 = __webpack_require__(48);
-var encode_uint64_1 = __webpack_require__(50);
-var tempBuffer = new uint32array_builder_ts_1.Uint32ArrayBuilder(20000);
-function postProcessRawData(chunk, data) {
-    var spec = chunk.source.spec;
-
-    if (spec.compressedSegmentationBlockSize) {
-        var dataType = spec.dataType;
-
-        tempBuffer.clear();
-        switch (dataType) {
-            case base_1.DataType.UINT32:
-                encode_uint32_1.encodeChannel(tempBuffer, spec.compressedSegmentationBlockSize, data, chunk.chunkDataSize);
-                break;
-            case base_1.DataType.UINT64:
-                encode_uint64_1.encodeChannel(tempBuffer, spec.compressedSegmentationBlockSize, data, chunk.chunkDataSize);
-                break;
-            default:
-                throw new Error(`Unsupported data type for compressed segmentation: ${ base_1.DataType[dataType] }`);
-        }
-        chunk.data = new Uint32Array(tempBuffer.view);
-    } else {
-        chunk.data = data;
-    }
-}
-exports.postProcessRawData = postProcessRawData;
-
-/***/ },
-/* 47 */
-/***/ function(module, exports) {
-
-// DO NOT EDIT.  Generated from templates/neuroglancer/util/typedarray_builder.template.ts.
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Uint32ArrayBuilder = function () {
-    function Uint32ArrayBuilder() {
-        var initialCapacity = arguments.length <= 0 || arguments[0] === undefined ? 16 : arguments[0];
-
-        _classCallCheck(this, Uint32ArrayBuilder);
-
-        this.length = 0;
-        this.data = new Uint32Array(initialCapacity);
-    }
-
-    _createClass(Uint32ArrayBuilder, [{
-        key: "resize",
-        value: function resize(newLength) {
-            var data = this.data;
-
-            if (newLength > data.length) {
-                var newData = new Uint32Array(Math.max(newLength, data.length * 2));
-                newData.set(data.subarray(0, this.length));
-                this.data = newData;
-            }
-            this.length = newLength;
-        }
-    }, {
-        key: "shrinkToFit",
-        value: function shrinkToFit() {
-            this.data = new Uint32Array(this.view);
-        }
-    }, {
-        key: "clear",
-        value: function clear() {
-            this.length = 0;
-        }
-    }, {
-        key: "appendArray",
-        value: function appendArray(other) {
-            var length = this.length;
-
-            this.resize(length + other.length);
-            this.data.set(other, length);
-        }
-    }, {
-        key: "view",
-        get: function () {
-            var data = this.data;
-
-            return new Uint32Array(data.buffer, data.byteOffset, this.length);
-        }
-    }]);
-
-    return Uint32ArrayBuilder;
-}();
-
-exports.Uint32ArrayBuilder = Uint32ArrayBuilder;
-;
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-// DO NOT EDIT.  Generated from templates/neuroglancer/sliceview/compressed_segmentation/encode.template.ts.
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * @file
- * Support for compressing uint32/uint64 segment label chunks.
- */
-
-var encode_common_ts_1 = __webpack_require__(49);
-var array_1 = __webpack_require__(26);
-var encode_common_ts_2 = __webpack_require__(49);
-exports.newCache = encode_common_ts_2.newCache;
-var tempEncodingBuffer = void 0;
-var tempValuesBuffer1 = void 0;
-var tempValuesBuffer2 = void 0;
-var tempIndexBuffer1 = void 0;
-var tempIndexBuffer2 = void 0;
-var uint32sPerElement = 1;
-function encodeBlock(rawData, inputOffset, inputStrides, blockSize, actualSize, baseOffset, cache, output) {
-    var ax = actualSize[0],
-        ay = actualSize[1],
-        az = actualSize[2];
-    var bx = blockSize[0],
-        by = blockSize[1],
-        bz = blockSize[2];
-    var sx = inputStrides[0],
-        sy = inputStrides[1],
-        sz = inputStrides[2];
-    sz -= sy * ay;
-    sy -= sx * ax;
-    if (ax * ay * az === 0) {
-        return [0, 0];
-    }
-    var numBlockElements = bx * by * bz + 31; // Add padding elements.
-    if (tempEncodingBuffer === undefined || tempEncodingBuffer.length < numBlockElements) {
-        tempEncodingBuffer = new Uint32Array(numBlockElements);
-        tempValuesBuffer1 = new Uint32Array(numBlockElements * uint32sPerElement);
-        tempValuesBuffer2 = new Uint32Array(numBlockElements * uint32sPerElement);
-        tempIndexBuffer1 = new Uint32Array(numBlockElements);
-        tempIndexBuffer2 = new Uint32Array(numBlockElements);
-    }
-    var encodingBuffer = tempEncodingBuffer.subarray(0, numBlockElements);
-    encodingBuffer.fill(0);
-    var valuesBuffer1 = tempValuesBuffer1;
-    var valuesBuffer2 = tempValuesBuffer2;
-    var indexBuffer1 = tempIndexBuffer1;
-    var indexBuffer2 = tempIndexBuffer2;
-    var noAdjacentDuplicateIndex = 0;
-    {
-        var prevLow = rawData[inputOffset] + 1 >>> 0;
-        var curInputOff = inputOffset;
-        var blockElementIndex = 0;
-        var bsy = bx - ax;
-        var bsz = bx * by - bx * ay;
-        for (var z = 0; z < az; ++z, curInputOff += sz, blockElementIndex += bsz) {
-            for (var y = 0; y < ay; ++y, curInputOff += sy, blockElementIndex += bsy) {
-                for (var x = 0; x < ax; ++x, curInputOff += sx) {
-                    var valueLow = rawData[curInputOff];
-                    if (valueLow !== prevLow) {
-                        prevLow = valuesBuffer1[noAdjacentDuplicateIndex * 1] = valueLow;
-                        indexBuffer1[noAdjacentDuplicateIndex] = noAdjacentDuplicateIndex++;
-                    }
-                    encodingBuffer[blockElementIndex++] = noAdjacentDuplicateIndex;
-                }
-            }
-        }
-    }
-    indexBuffer1.subarray(0, noAdjacentDuplicateIndex).sort((a, b) => {
-        return valuesBuffer1[a] - valuesBuffer1[b];
-    });
-    var numUniqueValues = -1;
-    {
-        var _prevLow = valuesBuffer1[indexBuffer1[0] * uint32sPerElement] + 1 >>> 0;
-        for (var i = 0; i < noAdjacentDuplicateIndex; ++i) {
-            var index = indexBuffer1[i];
-            var valueIndex = index * uint32sPerElement;
-            var _valueLow = valuesBuffer1[valueIndex];
-            if (_valueLow !== _prevLow) {
-                ++numUniqueValues;
-                var outputIndex2 = numUniqueValues * uint32sPerElement;
-                _prevLow = valuesBuffer2[outputIndex2] = _valueLow;
-            }
-            indexBuffer2[index + 1] = numUniqueValues;
-        }
-        ++numUniqueValues;
-    }
-    return encode_common_ts_1.writeBlock(output, baseOffset, cache, bx * by * bz, numUniqueValues, valuesBuffer2, encodingBuffer, indexBuffer2, uint32sPerElement);
-}
-exports.encodeBlock = encodeBlock;
-function encodeChannel(output, blockSize, rawData, volumeSize) {
-    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
-    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 1) : arguments[5];
-
-    return encode_common_ts_1.encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
-}
-exports.encodeChannel = encodeChannel;
-function encodeChannels(output, blockSize, rawData, volumeSize) {
-    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
-    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 1) : arguments[5];
-
-    return encode_common_ts_1.encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
-}
-exports.encodeChannels = encodeChannels;
-
-/***/ },
-/* 49 */
-/***/ function(module, exports) {
-
-// DO NOT EDIT.  Generated from templates/neuroglancer/sliceview/compressed_segmentation/encode_common.template.ts.
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-exports.BLOCK_HEADER_SIZE = 2;
-function newCache() {
-    return new Map();
-}
-exports.newCache = newCache;
-function writeEncodedRepresentation(outputData, outputOffset, encodingBuffer, indexBuffer, encodedBits, encodedSize32Bits) {
-    // Write encoded representation.
-    if (encodedBits > 0) {
-        switch (encodedBits) {
-            case 1:
-                {
-                    for (var wordIndex = 0, elementIndex = 0; wordIndex < encodedSize32Bits; ++wordIndex) {
-                        var word = 0;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 0]] << 0;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 1]] << 1;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 2]] << 2;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 3]] << 3;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 4]] << 4;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 5]] << 5;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 6]] << 6;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 7]] << 7;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 8]] << 8;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 9]] << 9;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 10]] << 10;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 11]] << 11;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 12]] << 12;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 13]] << 13;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 14]] << 14;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 15]] << 15;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 16]] << 16;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 17]] << 17;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 18]] << 18;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 19]] << 19;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 20]] << 20;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 21]] << 21;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 22]] << 22;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 23]] << 23;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 24]] << 24;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 25]] << 25;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 26]] << 26;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 27]] << 27;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 28]] << 28;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 29]] << 29;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 30]] << 30;
-                        word |= indexBuffer[encodingBuffer[elementIndex + 31]] << 31;
-                        outputData[outputOffset + wordIndex] = word;
-                        elementIndex += 32;
-                    }
-                }
-                break;
-            case 2:
-                {
-                    for (var _wordIndex = 0, _elementIndex = 0; _wordIndex < encodedSize32Bits; ++_wordIndex) {
-                        var _word = 0;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 0]] << 0;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 1]] << 2;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 2]] << 4;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 3]] << 6;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 4]] << 8;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 5]] << 10;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 6]] << 12;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 7]] << 14;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 8]] << 16;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 9]] << 18;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 10]] << 20;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 11]] << 22;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 12]] << 24;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 13]] << 26;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 14]] << 28;
-                        _word |= indexBuffer[encodingBuffer[_elementIndex + 15]] << 30;
-                        outputData[outputOffset + _wordIndex] = _word;
-                        _elementIndex += 16;
-                    }
-                }
-                break;
-            case 4:
-                {
-                    for (var _wordIndex2 = 0, _elementIndex2 = 0; _wordIndex2 < encodedSize32Bits; ++_wordIndex2) {
-                        var _word2 = 0;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 0]] << 0;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 1]] << 4;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 2]] << 8;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 3]] << 12;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 4]] << 16;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 5]] << 20;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 6]] << 24;
-                        _word2 |= indexBuffer[encodingBuffer[_elementIndex2 + 7]] << 28;
-                        outputData[outputOffset + _wordIndex2] = _word2;
-                        _elementIndex2 += 8;
-                    }
-                }
-                break;
-            case 8:
-                {
-                    for (var _wordIndex3 = 0, _elementIndex3 = 0; _wordIndex3 < encodedSize32Bits; ++_wordIndex3) {
-                        var _word3 = 0;
-                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 0]] << 0;
-                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 1]] << 8;
-                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 2]] << 16;
-                        _word3 |= indexBuffer[encodingBuffer[_elementIndex3 + 3]] << 24;
-                        outputData[outputOffset + _wordIndex3] = _word3;
-                        _elementIndex3 += 4;
-                    }
-                }
-                break;
-            case 16:
-                {
-                    for (var _wordIndex4 = 0, _elementIndex4 = 0; _wordIndex4 < encodedSize32Bits; ++_wordIndex4) {
-                        var _word4 = 0;
-                        _word4 |= indexBuffer[encodingBuffer[_elementIndex4 + 0]] << 0;
-                        _word4 |= indexBuffer[encodingBuffer[_elementIndex4 + 1]] << 16;
-                        outputData[outputOffset + _wordIndex4] = _word4;
-                        _elementIndex4 += 2;
-                    }
-                }
-                break;
-            case 32:
-                {
-                    for (var _wordIndex5 = 0, _elementIndex5 = 0; _wordIndex5 < encodedSize32Bits; ++_wordIndex5) {
-                        var _word5 = 0;
-                        _word5 |= indexBuffer[encodingBuffer[_elementIndex5 + 0]] << 0;
-                        outputData[outputOffset + _wordIndex5] = _word5;
-                        _elementIndex5 += 1;
-                    }
-                }
-                break;
-        }
-    }
-}
-function writeBlock(output, baseOffset, cache, numBlockElements, numUniqueValues, valuesBuffer2, encodingBuffer, indexBuffer2, uint32sPerElement) {
-    var encodedBits = void 0;
-    if (numUniqueValues === 1) {
-        encodedBits = 0;
-    } else {
-        encodedBits = 1;
-        while (1 << encodedBits < numUniqueValues) {
-            encodedBits *= 2;
-        }
-    }
-    var encodedSize32bits = Math.ceil(encodedBits * numBlockElements / 32);
-    var encodedValueBaseOffset = output.length;
-    var elementsToWrite = encodedSize32bits;
-    var writeTable = false;
-    var key = Array.prototype.join.call(valuesBuffer2.subarray(0, numUniqueValues * uint32sPerElement), ',');
-    var tableOffset = cache.get(key);
-    if (tableOffset === undefined) {
-        writeTable = true;
-        elementsToWrite += numUniqueValues * uint32sPerElement;
-        tableOffset = encodedValueBaseOffset + encodedSize32bits - baseOffset;
-        cache.set(key, tableOffset);
-    }
-    output.resize(encodedValueBaseOffset + elementsToWrite);
-    var outputData = output.data;
-    writeEncodedRepresentation(outputData, encodedValueBaseOffset, encodingBuffer, indexBuffer2, encodedBits, encodedSize32bits);
-    // Write table
-    if (writeTable) {
-        var curOutputOff = encodedValueBaseOffset + encodedSize32bits;
-        for (var i = 0, length = numUniqueValues * uint32sPerElement; i < length; ++i) {
-            outputData[curOutputOff++] = valuesBuffer2[i];
-        }
-    }
-    return [encodedBits, tableOffset];
-}
-exports.writeBlock = writeBlock;
-function encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock) {
-    // Maps a sorted list of table entries in the form <low>,<high>,<low>,<high>,... to the table
-    // offset relative to baseOffset.
-    var cache = newCache();
-    var gridSize = new Array(3);
-    var blockIndexSize = exports.BLOCK_HEADER_SIZE;
-    for (var i = 0; i < 3; ++i) {
-        var curGridSize = gridSize[i] = Math.ceil(volumeSize[i] / blockSize[i]);
-        blockIndexSize *= curGridSize;
-    }
-    var gx = gridSize[0],
-        gy = gridSize[1],
-        gz = gridSize[2];
-    var xSize = volumeSize[0],
-        ySize = volumeSize[1],
-        zSize = volumeSize[2];
-    var xBlockSize = blockSize[0],
-        yBlockSize = blockSize[1],
-        zBlockSize = blockSize[2];
-    var baseOffset = output.length;
-    var headerOffset = baseOffset;
-    var actualSize = [0, 0, 0];
-    output.resize(baseOffset + blockIndexSize);
-    var sx = inputStrides[0],
-        sy = inputStrides[1],
-        sz = inputStrides[2];
-    for (var bz = 0; bz < gz; ++bz) {
-        actualSize[2] = Math.min(zBlockSize, zSize - bz * zBlockSize);
-        for (var by = 0; by < gy; ++by) {
-            actualSize[1] = Math.min(yBlockSize, ySize - by * yBlockSize);
-            for (var bx = 0; bx < gx; ++bx) {
-                actualSize[0] = Math.min(xBlockSize, xSize - bx * xBlockSize);
-                var inputOffset = bz * zBlockSize * sz + by * yBlockSize * sy + bx * xBlockSize * sx;
-                var encodedValueBaseOffset = output.length - baseOffset;
-
-                var _encodeBlock = encodeBlock(rawData, baseInputOffset + inputOffset, inputStrides, blockSize, actualSize, baseOffset, cache, output);
-
-                var _encodeBlock2 = _slicedToArray(_encodeBlock, 2);
-
-                var encodedBits = _encodeBlock2[0];
-                var tableOffset = _encodeBlock2[1];
-
-                var outputData = output.data;
-                outputData[headerOffset++] = tableOffset | encodedBits << 24;
-                outputData[headerOffset++] = encodedValueBaseOffset;
-            }
-        }
-    }
-}
-exports.encodeChannel = encodeChannel;
-function encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock) {
-    var channelOffsetOutputBase = output.length;
-    var numChannels = volumeSize[3];
-    output.resize(channelOffsetOutputBase + numChannels);
-    for (var channel = 0; channel < numChannels; ++channel) {
-        output.data[channelOffsetOutputBase + channel] = output.length;
-        encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset + inputStrides[3] * channel, inputStrides, encodeBlock);
-    }
-}
-exports.encodeChannels = encodeChannels;
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-// DO NOT EDIT.  Generated from templates/neuroglancer/sliceview/compressed_segmentation/encode.template.ts.
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * @file
- * Support for compressing uint32/uint64 segment label chunks.
- */
-
-var encode_common_ts_1 = __webpack_require__(49);
-var array_1 = __webpack_require__(26);
-var encode_common_ts_2 = __webpack_require__(49);
-exports.newCache = encode_common_ts_2.newCache;
-var tempEncodingBuffer = void 0;
-var tempValuesBuffer1 = void 0;
-var tempValuesBuffer2 = void 0;
-var tempIndexBuffer1 = void 0;
-var tempIndexBuffer2 = void 0;
-var uint32sPerElement = 2;
-function encodeBlock(rawData, inputOffset, inputStrides, blockSize, actualSize, baseOffset, cache, output) {
-    var ax = actualSize[0],
-        ay = actualSize[1],
-        az = actualSize[2];
-    var bx = blockSize[0],
-        by = blockSize[1],
-        bz = blockSize[2];
-    var sx = inputStrides[0],
-        sy = inputStrides[1],
-        sz = inputStrides[2];
-    sz -= sy * ay;
-    sy -= sx * ax;
-    if (ax * ay * az === 0) {
-        return [0, 0];
-    }
-    var numBlockElements = bx * by * bz + 31; // Add padding elements.
-    if (tempEncodingBuffer === undefined || tempEncodingBuffer.length < numBlockElements) {
-        tempEncodingBuffer = new Uint32Array(numBlockElements);
-        tempValuesBuffer1 = new Uint32Array(numBlockElements * uint32sPerElement);
-        tempValuesBuffer2 = new Uint32Array(numBlockElements * uint32sPerElement);
-        tempIndexBuffer1 = new Uint32Array(numBlockElements);
-        tempIndexBuffer2 = new Uint32Array(numBlockElements);
-    }
-    var encodingBuffer = tempEncodingBuffer.subarray(0, numBlockElements);
-    encodingBuffer.fill(0);
-    var valuesBuffer1 = tempValuesBuffer1;
-    var valuesBuffer2 = tempValuesBuffer2;
-    var indexBuffer1 = tempIndexBuffer1;
-    var indexBuffer2 = tempIndexBuffer2;
-    var noAdjacentDuplicateIndex = 0;
-    {
-        var prevLow = rawData[inputOffset] + 1 >>> 0;
-        var prevHigh = 0;
-        var curInputOff = inputOffset;
-        var blockElementIndex = 0;
-        var bsy = bx - ax;
-        var bsz = bx * by - bx * ay;
-        for (var z = 0; z < az; ++z, curInputOff += sz, blockElementIndex += bsz) {
-            for (var y = 0; y < ay; ++y, curInputOff += sy, blockElementIndex += bsy) {
-                for (var x = 0; x < ax; ++x, curInputOff += sx) {
-                    var valueLow = rawData[curInputOff];
-                    var valueHigh = rawData[curInputOff + 1];
-                    if (valueLow !== prevLow || valueHigh !== prevHigh) {
-                        prevLow = valuesBuffer1[noAdjacentDuplicateIndex * 2] = valueLow;
-                        prevHigh = valuesBuffer1[noAdjacentDuplicateIndex * 2 + 1] = valueHigh;
-                        indexBuffer1[noAdjacentDuplicateIndex] = noAdjacentDuplicateIndex++;
-                    }
-                    encodingBuffer[blockElementIndex++] = noAdjacentDuplicateIndex;
-                }
-            }
-        }
-    }
-    indexBuffer1.subarray(0, noAdjacentDuplicateIndex).sort((a, b) => {
-        var aHigh = valuesBuffer1[2 * a + 1];
-        var bHigh = valuesBuffer1[2 * b + 1];
-        var aLow = valuesBuffer1[2 * a];
-        var bLow = valuesBuffer1[2 * b];
-        return aHigh - bHigh || aLow - bLow;
-    });
-    var numUniqueValues = -1;
-    {
-        var _prevLow = valuesBuffer1[indexBuffer1[0] * uint32sPerElement] + 1 >>> 0;
-        var _prevHigh = 0;
-        for (var i = 0; i < noAdjacentDuplicateIndex; ++i) {
-            var index = indexBuffer1[i];
-            var valueIndex = index * uint32sPerElement;
-            var _valueLow = valuesBuffer1[valueIndex];
-            var _valueHigh = valuesBuffer1[valueIndex + 1];
-            if (_valueLow !== _prevLow || _valueHigh !== _prevHigh) {
-                ++numUniqueValues;
-                var outputIndex2 = numUniqueValues * uint32sPerElement;
-                _prevLow = valuesBuffer2[outputIndex2] = _valueLow;
-                _prevHigh = valuesBuffer2[outputIndex2 + 1] = _valueHigh;
-            }
-            indexBuffer2[index + 1] = numUniqueValues;
-        }
-        ++numUniqueValues;
-    }
-    return encode_common_ts_1.writeBlock(output, baseOffset, cache, bx * by * bz, numUniqueValues, valuesBuffer2, encodingBuffer, indexBuffer2, uint32sPerElement);
-}
-exports.encodeBlock = encodeBlock;
-function encodeChannel(output, blockSize, rawData, volumeSize) {
-    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
-    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 2) : arguments[5];
-
-    return encode_common_ts_1.encodeChannel(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
-}
-exports.encodeChannel = encodeChannel;
-function encodeChannels(output, blockSize, rawData, volumeSize) {
-    var baseInputOffset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
-    var inputStrides = arguments.length <= 5 || arguments[5] === undefined ? array_1.getFortranOrderStrides(volumeSize, 2) : arguments[5];
-
-    return encode_common_ts_1.encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset, inputStrides, encodeBlock);
-}
-exports.encodeChannels = encodeChannels;
-
-/***/ },
-/* 51 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -17543,51 +17932,53 @@ exports.encodeChannels = encodeChannels;
  */
 "use strict";
 
-var base_1 = __webpack_require__(12);
-var geom_1 = __webpack_require__(14);
 var postprocess_1 = __webpack_require__(46);
+var data_type_1 = __webpack_require__(28);
+var geom_1 = __webpack_require__(15);
 function decodeRawChunk(chunk, response) {
     var spec = chunk.source.spec;
     var dataType = spec.dataType;
 
     var numElements = geom_1.prod3(chunk.chunkDataSize);
-    var bytesPerElement = base_1.DATA_TYPE_BYTES[dataType];
+    var bytesPerElement = data_type_1.DATA_TYPE_BYTES[dataType];
     var expectedBytes = numElements * bytesPerElement * spec.numChannels;
     if (expectedBytes !== response.byteLength) {
         throw new Error(`Raw-format chunk is ${ response.byteLength } bytes, but ${ numElements } * ${ bytesPerElement } = ${ expectedBytes } bytes are expected.`);
     }
     var data = void 0;
     switch (dataType) {
-        case base_1.DataType.UINT8:
+        case data_type_1.DataType.UINT8:
             data = new Uint8Array(response);
             break;
-        case base_1.DataType.UINT16:
+        case data_type_1.DataType.UINT16:
             data = new Uint16Array(response);
             break;
-        case base_1.DataType.UINT32:
-        case base_1.DataType.UINT64:
+        case data_type_1.DataType.UINT32:
+        case data_type_1.DataType.UINT64:
             data = new Uint32Array(response);
             break;
-        case base_1.DataType.FLOAT32:
+        case data_type_1.DataType.FLOAT32:
             data = new Float32Array(response);
             break;
+        default:
+            throw new Error(`Unexpected data type: ${ dataType }.`);
     }
     postprocess_1.postProcessRawData(chunk, data);
 }
 exports.decodeRawChunk = decodeRawChunk;
 
 /***/ },
-/* 52 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 // Top level file is just a mixin of submodules & constants
 'use strict';
 
-var assign    = __webpack_require__(53).assign;
+var assign    = __webpack_require__(55).assign;
 
-var deflate   = __webpack_require__(54);
-var inflate   = __webpack_require__(62);
-var constants = __webpack_require__(66);
+var deflate   = __webpack_require__(56);
+var inflate   = __webpack_require__(64);
+var constants = __webpack_require__(68);
 
 var pako = {};
 
@@ -17597,7 +17988,7 @@ module.exports = pako;
 
 
 /***/ },
-/* 53 */
+/* 55 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -17705,17 +18096,17 @@ exports.setTyped(TYPED_OK);
 
 
 /***/ },
-/* 54 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var zlib_deflate = __webpack_require__(55);
-var utils        = __webpack_require__(53);
-var strings      = __webpack_require__(60);
-var msg          = __webpack_require__(59);
-var ZStream      = __webpack_require__(61);
+var zlib_deflate = __webpack_require__(57);
+var utils        = __webpack_require__(55);
+var strings      = __webpack_require__(62);
+var msg          = __webpack_require__(61);
+var ZStream      = __webpack_require__(63);
 
 var toString = Object.prototype.toString;
 
@@ -18111,16 +18502,16 @@ exports.gzip = gzip;
 
 
 /***/ },
-/* 55 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
-var utils   = __webpack_require__(53);
-var trees   = __webpack_require__(56);
-var adler32 = __webpack_require__(57);
-var crc32   = __webpack_require__(58);
-var msg     = __webpack_require__(59);
+var utils   = __webpack_require__(55);
+var trees   = __webpack_require__(58);
+var adler32 = __webpack_require__(59);
+var crc32   = __webpack_require__(60);
+var msg     = __webpack_require__(61);
 
 /* Public constants ==========================================================*/
 /* ===========================================================================*/
@@ -19965,13 +20356,13 @@ exports.deflateTune = deflateTune;
 
 
 /***/ },
-/* 56 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var utils = __webpack_require__(53);
+var utils = __webpack_require__(55);
 
 /* Public constants ==========================================================*/
 /* ===========================================================================*/
@@ -21173,7 +21564,7 @@ exports._tr_align = _tr_align;
 
 
 /***/ },
-/* 57 */
+/* 59 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21211,7 +21602,7 @@ module.exports = adler32;
 
 
 /***/ },
-/* 58 */
+/* 60 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21258,7 +21649,7 @@ module.exports = crc32;
 
 
 /***/ },
-/* 59 */
+/* 61 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21277,14 +21668,14 @@ module.exports = {
 
 
 /***/ },
-/* 60 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 // String encode/decode helpers
 'use strict';
 
 
-var utils = __webpack_require__(53);
+var utils = __webpack_require__(55);
 
 
 // Quick check if we can use fast array to bin string conversion
@@ -21468,7 +21859,7 @@ exports.utf8border = function (buf, max) {
 
 
 /***/ },
-/* 61 */
+/* 63 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21503,19 +21894,19 @@ module.exports = ZStream;
 
 
 /***/ },
-/* 62 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var zlib_inflate = __webpack_require__(63);
-var utils        = __webpack_require__(53);
-var strings      = __webpack_require__(60);
-var c            = __webpack_require__(66);
-var msg          = __webpack_require__(59);
-var ZStream      = __webpack_require__(61);
-var GZheader     = __webpack_require__(67);
+var zlib_inflate = __webpack_require__(65);
+var utils        = __webpack_require__(55);
+var strings      = __webpack_require__(62);
+var c            = __webpack_require__(68);
+var msg          = __webpack_require__(61);
+var ZStream      = __webpack_require__(63);
+var GZheader     = __webpack_require__(69);
 
 var toString = Object.prototype.toString;
 
@@ -21927,17 +22318,17 @@ exports.ungzip  = inflate;
 
 
 /***/ },
-/* 63 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var utils         = __webpack_require__(53);
-var adler32       = __webpack_require__(57);
-var crc32         = __webpack_require__(58);
-var inflate_fast  = __webpack_require__(64);
-var inflate_table = __webpack_require__(65);
+var utils         = __webpack_require__(55);
+var adler32       = __webpack_require__(59);
+var crc32         = __webpack_require__(60);
+var inflate_fast  = __webpack_require__(66);
+var inflate_table = __webpack_require__(67);
 
 var CODES = 0;
 var LENS = 1;
@@ -23471,7 +23862,7 @@ exports.inflateUndermine = inflateUndermine;
 
 
 /***/ },
-/* 64 */
+/* 66 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -23803,13 +24194,13 @@ module.exports = function inflate_fast(strm, start) {
 
 
 /***/ },
-/* 65 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var utils = __webpack_require__(53);
+var utils = __webpack_require__(55);
 
 var MAXBITS = 15;
 var ENOUGH_LENS = 852;
@@ -24136,7 +24527,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
 
 
 /***/ },
-/* 66 */
+/* 68 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -24192,7 +24583,7 @@ module.exports = {
 
 
 /***/ },
-/* 67 */
+/* 69 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -24238,7 +24629,7 @@ module.exports = GZheader;
 
 
 /***/ },
-/* 68 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24266,67 +24657,112 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var backend_1 = __webpack_require__(4);
-var backend_2 = __webpack_require__(11);
-var raw_1 = __webpack_require__(51);
-var jpeg_1 = __webpack_require__(43);
-var ndstoreNpz_1 = __webpack_require__(69);
-var http_request_1 = __webpack_require__(31);
-var worker_rpc_1 = __webpack_require__(2);
+var base_1 = __webpack_require__(71);
+var backend_2 = __webpack_require__(12);
+var jpeg_1 = __webpack_require__(45);
+var ndstoreNpz_1 = __webpack_require__(72);
+var raw_1 = __webpack_require__(53);
+var http_request_1 = __webpack_require__(33);
 var chunkDecoders = new Map();
 chunkDecoders.set('npz', ndstoreNpz_1.decodeNdstoreNpzChunk);
 chunkDecoders.set('jpeg', jpeg_1.decodeJpegChunk);
 chunkDecoders.set('raw', raw_1.decodeRawChunk);
+var VolumeChunkSource = function (_backend_2$Parameteri) {
+    _inherits(VolumeChunkSource, _backend_2$Parameteri);
 
-var VolumeChunkSource = function (_backend_2$VolumeChun) {
-    _inherits(VolumeChunkSource, _backend_2$VolumeChun);
-
-    function VolumeChunkSource(rpc, options) {
+    function VolumeChunkSource() {
         _classCallCheck(this, VolumeChunkSource);
 
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, rpc, options));
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
 
-        _this.hostnames = options['hostnames'];
-        _this.key = options['key'];
-        _this.channel = options['channel'];
-        _this.resolution = options['resolution'];
-        _this.encoding = options['encoding'];
-        _this.chunkDecoder = chunkDecoders.get(_this.encoding);
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, ...args));
+
+        _this.chunkDecoder = chunkDecoders.get(_this.parameters.encoding);
         return _this;
     }
 
     _createClass(VolumeChunkSource, [{
-        key: 'download',
+        key: "download",
         value: function download(chunk) {
-            var path = `/ocp/ca/${ this.key }/${ this.channel }/${ this.encoding }/${ this.resolution }`;
+            var parameters = this.parameters;
+
+            var path = `/ocp/ca/${ parameters.key }/${ parameters.channel }/${ parameters.encoding }/${ parameters.resolution }`;
             {
                 // chunkPosition must not be captured, since it will be invalidated by the next call to
                 // computeChunkBounds.
                 var chunkPosition = this.computeChunkBounds(chunk);
                 var chunkDataSize = chunk.chunkDataSize;
-
                 for (var i = 0; i < 3; ++i) {
                     path += `/${ chunkPosition[i] },${ chunkPosition[i] + chunkDataSize[i] }`;
                 }
             }
             path += `/neariso/`;
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(this.hostnames, path), 'arraybuffer'), this.chunkDecoder);
-        }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return `ndstore:volume:${ this.hostnames[0] }/${ this.key }/${ this.channel }/${ this.resolution }/${ this.encoding }`;
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(parameters.baseUrls, path), 'arraybuffer'), this.chunkDecoder);
         }
     }]);
 
     return VolumeChunkSource;
-}(backend_2.VolumeChunkSource);
-
+}(backend_2.ParameterizedVolumeChunkSource);
+VolumeChunkSource = __decorate([backend_1.registerChunkSource(base_1.VolumeChunkSourceParameters)], VolumeChunkSource);
 ;
-worker_rpc_1.registerSharedObject('ndstore/VolumeChunkSource', VolumeChunkSource);
 
 /***/ },
-/* 69 */
+/* 71 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var VolumeChunkSourceParameters = function () {
+    function VolumeChunkSourceParameters() {
+        _classCallCheck(this, VolumeChunkSourceParameters);
+    }
+
+    _createClass(VolumeChunkSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(parameters) {
+            return `ndstore:volume:${ parameters.baseUrls[0] }/${ parameters.key }/${ parameters.channel }/${ parameters.resolution }/${ parameters.encoding }`;
+        }
+    }]);
+
+    return VolumeChunkSourceParameters;
+}();
+
+VolumeChunkSourceParameters.RPC_ID = 'ndstore/VolumeChunkSource';
+exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
+;
+
+/***/ },
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24345,26 +24781,20 @@ worker_rpc_1.registerSharedObject('ndstore/VolumeChunkSource', VolumeChunkSource
  * limitations under the License.
  */
 "use strict";
-/**
- * This decodes the NDStore (https://github.com/neurodata/ndstore) NPZ format, which is the Python
- * NPY binary format with zlib encoding.
- *
- * This is NOT the same as the Python NPZ format, which is a ZIP file containing multiple files
- * (each corresponding to a different variable) in NPY binary format.
- */
 
-var base_1 = __webpack_require__(12);
-var npy_1 = __webpack_require__(70);
-var pako_1 = __webpack_require__(52);
-var geom_1 = __webpack_require__(14);
 var postprocess_1 = __webpack_require__(46);
+var base_1 = __webpack_require__(13);
+var geom_1 = __webpack_require__(15);
+var npy_1 = __webpack_require__(73);
+var pako_1 = __webpack_require__(54);
 function decodeNdstoreNpzChunk(chunk, response) {
     var parseResult = npy_1.parseNpy(pako_1.inflate(new Uint8Array(response)));
     var chunkDataSize = chunk.chunkDataSize;
     var source = chunk.source;
+    var numChannels = source.spec.numChannels;
     var shape = parseResult.shape;
 
-    if (shape.length !== 4 || shape[0] !== 1 || shape[1] !== chunkDataSize[2] || shape[2] !== chunkDataSize[1] || shape[3] !== chunkDataSize[0]) {
+    if (shape.length !== 4 || shape[0] !== numChannels || shape[1] !== chunkDataSize[2] || shape[2] !== chunkDataSize[1] || shape[3] !== chunkDataSize[0]) {
         throw new Error(`Shape ${ JSON.stringify(shape) } does not match chunkDataSize ${ geom_1.vec3Key(chunkDataSize) }`);
     }
     var parsedDataType = parseResult.dataType.dataType;
@@ -24378,7 +24808,7 @@ function decodeNdstoreNpzChunk(chunk, response) {
 exports.decodeNdstoreNpzChunk = decodeNdstoreNpzChunk;
 
 /***/ },
-/* 70 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24397,26 +24827,21 @@ exports.decodeNdstoreNpzChunk = decodeNdstoreNpzChunk;
  * limitations under the License.
  */
 "use strict";
-/**
- * Basic support for parsing the Python Numpy 'npy' serialization format.
- *
- * See http://docs.scipy.org/doc/numpy-dev/neps/npy-format.html
- */
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var json_1 = __webpack_require__(40);
-var base_1 = __webpack_require__(12);
-var endian_1 = __webpack_require__(41);
+var data_type_1 = __webpack_require__(28);
+var endian_1 = __webpack_require__(42);
+var json_1 = __webpack_require__(43);
 var supportedDataTypes = new Map();
 supportedDataTypes.set('|u1', {
     arrayConstructor: Uint8Array,
     fixEndianness: array => {},
     javascriptElementsPerArrayElement: 1,
     elementBytes: 1,
-    dataType: base_1.DataType.UINT8
+    dataType: data_type_1.DataType.UINT8
 });
 
 var _loop = function (_ref) {
@@ -24431,7 +24856,7 @@ var _loop = function (_ref) {
             endian_1.convertEndian16(array, endianness);
         },
         javascriptElementsPerArrayElement: 1,
-        dataType: base_1.DataType.UINT16
+        dataType: data_type_1.DataType.UINT16
     });
     supportedDataTypes.set(`${ endiannessChar }u4`, {
         arrayConstructor: Uint32Array,
@@ -24440,7 +24865,7 @@ var _loop = function (_ref) {
             endian_1.convertEndian32(array, endianness);
         },
         javascriptElementsPerArrayElement: 1,
-        dataType: base_1.DataType.UINT32
+        dataType: data_type_1.DataType.UINT32
     });
     supportedDataTypes.set(`${ endiannessChar }u8`, {
         arrayConstructor: Uint32Array,
@@ -24449,8 +24874,8 @@ var _loop = function (_ref) {
         fixEndianness: array => {
             endian_1.convertEndian32(array, endianness);
         },
-        javascriptElementsPerArrayElement: 1,
-        dataType: base_1.DataType.UINT64
+        javascriptElementsPerArrayElement: 2,
+        dataType: data_type_1.DataType.UINT64
     });
     supportedDataTypes.set(`${ endiannessChar }f4`, {
         arrayConstructor: Float32Array,
@@ -24459,7 +24884,7 @@ var _loop = function (_ref) {
             endian_1.convertEndian32(array, endianness);
         },
         javascriptElementsPerArrayElement: 1,
-        dataType: base_1.DataType.FLOAT32
+        dataType: data_type_1.DataType.FLOAT32
     });
 };
 
@@ -24516,194 +24941,19 @@ function parseNpy(x) {
     if (supportedDataType === undefined) {
         throw new Error(`Unsupported numpy data type ${ JSON.stringify(dtype) }`);
     }
-    var totalDataBytes = supportedDataType.elementBytes * numElements;
+    var arrayConstructor = supportedDataType.arrayConstructor;
+    var javascriptElementsPerArrayElement = supportedDataType.javascriptElementsPerArrayElement;
+
+    var javascriptElements = javascriptElementsPerArrayElement * numElements;
+    var totalDataBytes = arrayConstructor.BYTES_PER_ELEMENT * javascriptElements;
     if (totalDataBytes + dataOffset !== x.byteLength) {
         throw new Error('Expected length does not match length of data');
     }
-    var data = new supportedDataType.arrayConstructor(x.buffer, x.byteOffset + dataOffset, numElements * supportedDataType.javascriptElementsPerArrayElement);
+    var data = new arrayConstructor(x.buffer, x.byteOffset + dataOffset, javascriptElements);
     supportedDataType.fixEndianness(data);
     return new NumpyArray(data, shape, supportedDataType, headerObject['fortran_order'] === true);
 }
 exports.parseNpy = parseNpy;
-
-/***/ },
-/* 71 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(72);
-var backend_2 = __webpack_require__(11);
-var jpeg_1 = __webpack_require__(43);
-var raw_1 = __webpack_require__(51);
-var http_request_1 = __webpack_require__(31);
-var worker_rpc_1 = __webpack_require__(2);
-var TILE_CHUNK_DECODERS = new Map([[base_1.TileEncoding.JPEG, jpeg_1.decodeJpegChunk]]);
-
-var VolumeChunkSource = function (_backend_2$VolumeChun) {
-    _inherits(VolumeChunkSource, _backend_2$VolumeChun);
-
-    function VolumeChunkSource(rpc, options) {
-        _classCallCheck(this, VolumeChunkSource);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, rpc, options));
-
-        _this.parameters = options['parameters'];
-        return _this;
-    }
-
-    _createClass(VolumeChunkSource, [{
-        key: 'download',
-        value: function download(chunk) {
-            var params = this.parameters;
-            var path = void 0;
-            {
-                // chunkPosition must not be captured, since it will be invalidated by the next call to
-                // computeChunkBounds.
-                var chunkPosition = this.computeChunkBounds(chunk);
-                var chunkDataSize = chunk.chunkDataSize;
-
-                if (params['level2'] == "0") {
-                    path = `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }/nd`;
-                } else {
-                    path = `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }_${ params['level2'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }/nd`;
-                }
-            }
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(params.baseUrls, path), 'arraybuffer'), raw_1.decodeRawChunk);
-        }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return base_1.volumeSourceToString(this.parameters);
-        }
-    }]);
-
-    return VolumeChunkSource;
-}(backend_2.VolumeChunkSource);
-
-;
-worker_rpc_1.registerSharedObject('dvid/VolumeChunkSource', VolumeChunkSource);
-
-var TileChunkSource = function (_backend_2$VolumeChun2) {
-    _inherits(TileChunkSource, _backend_2$VolumeChun2);
-
-    function TileChunkSource(rpc, options) {
-        _classCallCheck(this, TileChunkSource);
-
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(TileChunkSource).call(this, rpc, options));
-
-        _this2.parameters = options['parameters'];
-        _this2.chunkDecoder = TILE_CHUNK_DECODERS.get(_this2.parameters['encoding']);
-        return _this2;
-    }
-
-    _createClass(TileChunkSource, [{
-        key: 'download',
-        value: function download(chunk) {
-            var params = this.parameters;
-            var chunkGridPosition = chunk.chunkGridPosition;
-            // Needed by decoder.
-
-            chunk.chunkDataSize = this.spec.chunkDataSize;
-            var path = `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/tile/${ params['dims'] }/${ params['level'] }/${ chunkGridPosition[0] }_${ chunkGridPosition[1] }_${ chunkGridPosition[2] }`;
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(params.baseUrls, path), 'arraybuffer'), this.chunkDecoder);
-        }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return base_1.tileSourceToString(this.parameters);
-        }
-    }]);
-
-    return TileChunkSource;
-}(backend_2.VolumeChunkSource);
-
-;
-worker_rpc_1.registerSharedObject('dvid/TileChunkSource', TileChunkSource);
-
-/***/ },
-/* 72 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-;
-(function (TileEncoding) {
-    TileEncoding[TileEncoding["JPEG"] = 0] = "JPEG";
-})(exports.TileEncoding || (exports.TileEncoding = {}));
-var TileEncoding = exports.TileEncoding;
-;
-;
-function volumeSourceToString(parameters) {
-    return `dvid:volume:${ parameters['baseUrls'][0] }/${ parameters['nodeKey'] }/${ parameters['dataInstanceKey'] }/${ parameters['level2'] }`;
-}
-exports.volumeSourceToString = volumeSourceToString;
-function tileSourceToString(parameters) {
-    return `dvid:volume:${ parameters['baseUrls'][0] }/${ parameters['nodeKey'] }/${ parameters['dataInstanceKey'] }/${ parameters['dims'] }/${ parameters['level'] }/${ TileEncoding[parameters['encoding']] }`;
-}
-exports.tileSourceToString = tileSourceToString;
-
-/***/ },
-/* 73 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-__webpack_require__(68);
 
 /***/ },
 /* 74 */
@@ -24734,115 +24984,170 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var backend_1 = __webpack_require__(4);
 var base_1 = __webpack_require__(75);
-var backend_2 = __webpack_require__(35);
-var backend_3 = __webpack_require__(11);
-var compressed_segmentation_1 = __webpack_require__(42);
-var jpeg_1 = __webpack_require__(43);
-var raw_1 = __webpack_require__(51);
-var endian_1 = __webpack_require__(41);
-var http_request_1 = __webpack_require__(31);
-var worker_rpc_1 = __webpack_require__(2);
-var chunkDecoders = new Map();
-chunkDecoders.set(base_1.VolumeChunkEncoding.RAW, raw_1.decodeRawChunk);
-chunkDecoders.set(base_1.VolumeChunkEncoding.JPEG, jpeg_1.decodeJpegChunk);
-chunkDecoders.set(base_1.VolumeChunkEncoding.COMPRESSED_SEGMENTATION, compressed_segmentation_1.decodeCompressedSegmentationChunk);
+var backend_2 = __webpack_require__(12);
+var jpeg_1 = __webpack_require__(45);
+var raw_1 = __webpack_require__(53);
+var http_request_1 = __webpack_require__(33);
+var TILE_CHUNK_DECODERS = new Map([[base_1.TileEncoding.JPEG, jpeg_1.decodeJpegChunk]]);
+var VolumeChunkSource = function (_backend_2$Parameteri) {
+    _inherits(VolumeChunkSource, _backend_2$Parameteri);
 
-var VolumeChunkSource = function (_backend_3$VolumeChun) {
-    _inherits(VolumeChunkSource, _backend_3$VolumeChun);
-
-    function VolumeChunkSource(rpc, options) {
+    function VolumeChunkSource() {
         _classCallCheck(this, VolumeChunkSource);
 
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, rpc, options));
-
-        _this.baseUrls = options['baseUrls'];
-        _this.path = options['path'];
-        _this.encoding = options['encoding'];
-        _this.chunkDecoder = chunkDecoders.get(_this.encoding);
-        return _this;
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).apply(this, arguments));
     }
 
     _createClass(VolumeChunkSource, [{
-        key: 'download',
+        key: "download",
         value: function download(chunk) {
+            var params = this.parameters;
             var path = void 0;
             {
                 // chunkPosition must not be captured, since it will be invalidated by the next call to
                 // computeChunkBounds.
                 var chunkPosition = this.computeChunkBounds(chunk);
                 var chunkDataSize = chunk.chunkDataSize;
-
-                path = `${ this.path }/${ chunkPosition[0] }-${ chunkPosition[0] + chunkDataSize[0] }_${ chunkPosition[1] }-${ chunkPosition[1] + chunkDataSize[1] }_${ chunkPosition[2] }-${ chunkPosition[2] + chunkDataSize[2] }`;
+                path = `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }/nd`;
             }
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(this.baseUrls, path), 'arraybuffer'), this.chunkDecoder);
-        }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return `precomputed:volume:${ this.baseUrls[0] }/${ this.path }`;
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(params.baseUrls, path), 'arraybuffer'), raw_1.decodeRawChunk);
         }
     }]);
 
     return VolumeChunkSource;
-}(backend_3.VolumeChunkSource);
-
+}(backend_2.ParameterizedVolumeChunkSource);
+VolumeChunkSource = __decorate([backend_1.registerChunkSource(base_1.VolumeChunkSourceParameters)], VolumeChunkSource);
 ;
-worker_rpc_1.registerSharedObject('precomputed/VolumeChunkSource', VolumeChunkSource);
-function decodeManifestChunk(chunk, response) {
-    return backend_2.decodeJsonManifestChunk(chunk, response, 'fragments');
-}
-exports.decodeManifestChunk = decodeManifestChunk;
-function decodeFragmentChunk(chunk, response) {
-    var dv = new DataView(response);
-    var numVertices = dv.getUint32(0, true);
-    backend_2.decodeVertexPositionsAndIndices(chunk, response, endian_1.Endianness.LITTLE, /*vertexByteOffset=*/4, numVertices);
-}
-exports.decodeFragmentChunk = decodeFragmentChunk;
+var TileChunkSource = function (_backend_2$Parameteri2) {
+    _inherits(TileChunkSource, _backend_2$Parameteri2);
 
-var MeshSource = function (_backend_2$MeshSource) {
-    _inherits(MeshSource, _backend_2$MeshSource);
+    function TileChunkSource() {
+        _classCallCheck(this, TileChunkSource);
 
-    function MeshSource(rpc, options) {
-        _classCallCheck(this, MeshSource);
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
 
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(MeshSource).call(this, rpc, options));
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(TileChunkSource).call(this, ...args));
 
-        _this2.baseUrls = options['baseUrls'];
-        _this2.path = options['path'];
-        _this2.lod = options['lod'];
+        _this2.chunkDecoder = TILE_CHUNK_DECODERS.get(_this2.parameters['encoding']);
         return _this2;
     }
 
-    _createClass(MeshSource, [{
-        key: 'download',
+    _createClass(TileChunkSource, [{
+        key: "download",
         value: function download(chunk) {
-            var requestPath = `${ this.path }/${ chunk.objectId }:${ this.lod }`;
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(this.baseUrls, requestPath), 'json'), decodeManifestChunk);
-        }
-    }, {
-        key: 'downloadFragment',
-        value: function downloadFragment(chunk) {
-            var requestPath = `${ this.path }/${ chunk.fragmentId }`;
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(this.baseUrls, requestPath), 'arraybuffer'), decodeFragmentChunk);
-        }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return `precomputed:mesh:${ this.baseUrls[0] }/${ this.path }`;
+            var params = this.parameters;
+            var chunkGridPosition = chunk.chunkGridPosition;
+            // Needed by decoder.
+
+            chunk.chunkDataSize = this.spec.chunkDataSize;
+            var path = `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/tile/${ params['dims'] }/${ params['level'] }/${ chunkGridPosition[0] }_${ chunkGridPosition[1] }_${ chunkGridPosition[2] }`;
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(params.baseUrls, path), 'arraybuffer'), this.chunkDecoder);
         }
     }]);
 
-    return MeshSource;
-}(backend_2.MeshSource);
-
-exports.MeshSource = MeshSource;
+    return TileChunkSource;
+}(backend_2.ParameterizedVolumeChunkSource);
+TileChunkSource = __decorate([backend_1.registerChunkSource(base_1.TileChunkSourceParameters)], TileChunkSource);
 ;
-worker_rpc_1.registerSharedObject('precomputed/MeshSource', MeshSource);
 
 /***/ },
 /* 75 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var DVIDSourceParameters = function DVIDSourceParameters() {
+    _classCallCheck(this, DVIDSourceParameters);
+};
+
+exports.DVIDSourceParameters = DVIDSourceParameters;
+
+var VolumeChunkSourceParameters = function (_DVIDSourceParameters) {
+    _inherits(VolumeChunkSourceParameters, _DVIDSourceParameters);
+
+    function VolumeChunkSourceParameters() {
+        _classCallCheck(this, VolumeChunkSourceParameters);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSourceParameters).apply(this, arguments));
+    }
+
+    _createClass(VolumeChunkSourceParameters, null, [{
+        key: 'stringify',
+        value: function stringify(parameters) {
+            return `dvid:volume:${ parameters['baseUrls'][0] }/${ parameters['nodeKey'] }/${ parameters['dataInstanceKey'] }`;
+        }
+    }]);
+
+    return VolumeChunkSourceParameters;
+}(DVIDSourceParameters);
+
+VolumeChunkSourceParameters.RPC_ID = 'dvid/VolumeChunkSource';
+exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
+;
+(function (TileEncoding) {
+    TileEncoding[TileEncoding["JPEG"] = 0] = "JPEG";
+})(exports.TileEncoding || (exports.TileEncoding = {}));
+var TileEncoding = exports.TileEncoding;
+
+var TileChunkSourceParameters = function (_DVIDSourceParameters2) {
+    _inherits(TileChunkSourceParameters, _DVIDSourceParameters2);
+
+    function TileChunkSourceParameters() {
+        _classCallCheck(this, TileChunkSourceParameters);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(TileChunkSourceParameters).apply(this, arguments));
+    }
+
+    _createClass(TileChunkSourceParameters, null, [{
+        key: 'stringify',
+        value: function stringify(parameters) {
+            return `dvid:volume:${ parameters['baseUrls'][0] }/${ parameters['nodeKey'] }/${ parameters['dataInstanceKey'] }/${ parameters['dims'] }/${ parameters['level'] }/${ TileEncoding[parameters['encoding']] }`;
+        }
+    }]);
+
+    return TileChunkSourceParameters;
+}(DVIDSourceParameters);
+
+TileChunkSourceParameters.RPC_ID = 'dvid/TileChunkSource';
+exports.TileChunkSourceParameters = TileChunkSourceParameters;
+
+/***/ },
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24862,15 +25167,407 @@ worker_rpc_1.registerSharedObject('precomputed/MeshSource', MeshSource);
  */
 "use strict";
 
-__webpack_require__(31);
+__webpack_require__(70);
+
+/***/ },
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var backend_1 = __webpack_require__(4);
+var base_1 = __webpack_require__(78);
+var backend_2 = __webpack_require__(36);
+var backend_3 = __webpack_require__(12);
+var compressed_segmentation_1 = __webpack_require__(44);
+var jpeg_1 = __webpack_require__(45);
+var raw_1 = __webpack_require__(53);
+var endian_1 = __webpack_require__(42);
+var http_request_1 = __webpack_require__(33);
+var chunkDecoders = new Map();
+chunkDecoders.set(base_1.VolumeChunkEncoding.RAW, raw_1.decodeRawChunk);
+chunkDecoders.set(base_1.VolumeChunkEncoding.JPEG, jpeg_1.decodeJpegChunk);
+chunkDecoders.set(base_1.VolumeChunkEncoding.COMPRESSED_SEGMENTATION, compressed_segmentation_1.decodeCompressedSegmentationChunk);
+var VolumeChunkSource = function (_backend_3$Parameteri) {
+    _inherits(VolumeChunkSource, _backend_3$Parameteri);
+
+    function VolumeChunkSource() {
+        _classCallCheck(this, VolumeChunkSource);
+
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, ...args));
+
+        _this.chunkDecoder = chunkDecoders.get(_this.parameters.encoding);
+        return _this;
+    }
+
+    _createClass(VolumeChunkSource, [{
+        key: "download",
+        value: function download(chunk) {
+            var parameters = this.parameters;
+
+            var path = void 0;
+            {
+                // chunkPosition must not be captured, since it will be invalidated by the next call to
+                // computeChunkBounds.
+                var chunkPosition = this.computeChunkBounds(chunk);
+                var chunkDataSize = chunk.chunkDataSize;
+                path = `${ parameters.path }/${ chunkPosition[0] }-${ chunkPosition[0] + chunkDataSize[0] }_${ chunkPosition[1] }-${ chunkPosition[1] + chunkDataSize[1] }_${ chunkPosition[2] }-${ chunkPosition[2] + chunkDataSize[2] }`;
+            }
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(parameters.baseUrls, path), 'arraybuffer'), this.chunkDecoder);
+        }
+    }]);
+
+    return VolumeChunkSource;
+}(backend_3.ParameterizedVolumeChunkSource);
+VolumeChunkSource = __decorate([backend_1.registerChunkSource(base_1.VolumeChunkSourceParameters)], VolumeChunkSource);
+;
+function decodeManifestChunk(chunk, response) {
+    return backend_2.decodeJsonManifestChunk(chunk, response, 'fragments');
+}
+exports.decodeManifestChunk = decodeManifestChunk;
+function decodeFragmentChunk(chunk, response) {
+    var dv = new DataView(response);
+    var numVertices = dv.getUint32(0, true);
+    backend_2.decodeVertexPositionsAndIndices(chunk, response, endian_1.Endianness.LITTLE, /*vertexByteOffset=*/4, numVertices);
+}
+exports.decodeFragmentChunk = decodeFragmentChunk;
+var MeshSource = function (_backend_2$Parameteri) {
+    _inherits(MeshSource, _backend_2$Parameteri);
+
+    function MeshSource() {
+        _classCallCheck(this, MeshSource);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(MeshSource).apply(this, arguments));
+    }
+
+    _createClass(MeshSource, [{
+        key: "download",
+        value: function download(chunk) {
+            var parameters = this.parameters;
+
+            var requestPath = `${ parameters.path }/${ chunk.objectId }:${ parameters.lod }`;
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(parameters.baseUrls, requestPath), 'json'), decodeManifestChunk);
+        }
+    }, {
+        key: "downloadFragment",
+        value: function downloadFragment(chunk) {
+            var parameters = this.parameters;
+
+            var requestPath = `${ parameters.path }/${ chunk.fragmentId }`;
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(parameters.baseUrls, requestPath), 'arraybuffer'), decodeFragmentChunk);
+        }
+    }]);
+
+    return MeshSource;
+}(backend_2.ParameterizedMeshSource);
+MeshSource = __decorate([backend_1.registerChunkSource(base_1.MeshSourceParameters)], MeshSource);
+;
+
+/***/ },
+/* 78 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 (function (VolumeChunkEncoding) {
-  VolumeChunkEncoding[VolumeChunkEncoding["RAW"] = 0] = "RAW";
-  VolumeChunkEncoding[VolumeChunkEncoding["JPEG"] = 1] = "JPEG";
-  VolumeChunkEncoding[VolumeChunkEncoding["COMPRESSED_SEGMENTATION"] = 2] = "COMPRESSED_SEGMENTATION";
+    VolumeChunkEncoding[VolumeChunkEncoding["RAW"] = 0] = "RAW";
+    VolumeChunkEncoding[VolumeChunkEncoding["JPEG"] = 1] = "JPEG";
+    VolumeChunkEncoding[VolumeChunkEncoding["COMPRESSED_SEGMENTATION"] = 2] = "COMPRESSED_SEGMENTATION";
 })(exports.VolumeChunkEncoding || (exports.VolumeChunkEncoding = {}));
 var VolumeChunkEncoding = exports.VolumeChunkEncoding;
-// Prevent this from being considered a typings file.
-var x = 0;
+
+var VolumeChunkSourceParameters = function () {
+    function VolumeChunkSourceParameters() {
+        _classCallCheck(this, VolumeChunkSourceParameters);
+    }
+
+    _createClass(VolumeChunkSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(parameters) {
+            return `precomputed:volume:${ parameters.baseUrls[0] }/${ parameters.path }`;
+        }
+    }]);
+
+    return VolumeChunkSourceParameters;
+}();
+
+VolumeChunkSourceParameters.RPC_ID = 'precomputed/VolumeChunkSource';
+exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
+;
+
+var MeshSourceParameters = function () {
+    function MeshSourceParameters() {
+        _classCallCheck(this, MeshSourceParameters);
+    }
+
+    _createClass(MeshSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(parameters) {
+            return `precomputed:mesh:${ parameters.baseUrls[0] }/${ parameters.path }/${ parameters.lod }`;
+        }
+    }]);
+
+    return MeshSourceParameters;
+}();
+
+MeshSourceParameters.RPC_ID = 'precomputed/MeshSource';
+exports.MeshSourceParameters = MeshSourceParameters;
+;
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var backend_1 = __webpack_require__(4);
+var base_1 = __webpack_require__(80);
+var backend_2 = __webpack_require__(36);
+var backend_3 = __webpack_require__(12);
+var jpeg_1 = __webpack_require__(45);
+var ndstoreNpz_1 = __webpack_require__(72);
+var raw_1 = __webpack_require__(53);
+var endian_1 = __webpack_require__(42);
+var http_request_1 = __webpack_require__(33);
+var chunkDecoders = new Map();
+chunkDecoders.set(base_1.VolumeChunkEncoding.NPZ, ndstoreNpz_1.decodeNdstoreNpzChunk);
+chunkDecoders.set(base_1.VolumeChunkEncoding.JPEG, jpeg_1.decodeJpegChunk);
+chunkDecoders.set(base_1.VolumeChunkEncoding.RAW, raw_1.decodeRawChunk);
+var VolumeChunkSource = function (_backend_3$Parameteri) {
+    _inherits(VolumeChunkSource, _backend_3$Parameteri);
+
+    function VolumeChunkSource() {
+        _classCallCheck(this, VolumeChunkSource);
+
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, ...args));
+
+        _this.chunkDecoder = chunkDecoders.get(_this.parameters['encoding']);
+        _this.encoding = base_1.VolumeChunkEncoding[_this.parameters.encoding].toLowerCase();
+        return _this;
+    }
+
+    _createClass(VolumeChunkSource, [{
+        key: "download",
+        value: function download(chunk) {
+            var parameters = this.parameters;
+
+            var path = `/neuroglancer/${ this.encoding }/${ parameters.key }`;
+            {
+                // chunkPosition must not be captured, since it will be invalidated by the next call to
+                // computeChunkBounds.
+                var chunkPosition = this.computeChunkBounds(chunk);
+                var chunkDataSize = chunk.chunkDataSize;
+
+                for (var i = 0; i < 3; ++i) {
+                    path += `/${ chunkPosition[i] },${ chunkPosition[i] + chunkDataSize[i] }`;
+                }
+            }
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(parameters.baseUrls, path), 'arraybuffer'), this.chunkDecoder);
+        }
+    }]);
+
+    return VolumeChunkSource;
+}(backend_3.ParameterizedVolumeChunkSource);
+VolumeChunkSource = __decorate([backend_1.registerChunkSource(base_1.VolumeChunkSourceParameters)], VolumeChunkSource);
+;
+function decodeFragmentChunk(chunk, response) {
+    var dv = new DataView(response);
+    var numVertices = dv.getUint32(0, true);
+    backend_2.decodeVertexPositionsAndIndices(chunk, response, endian_1.Endianness.LITTLE, /*vertexByteOffset=*/4, numVertices);
+}
+exports.decodeFragmentChunk = decodeFragmentChunk;
+function decodeManifestChunk(chunk, response) {
+    chunk.fragmentIds = [''];
+}
+var MeshSource = function (_backend_2$Parameteri) {
+    _inherits(MeshSource, _backend_2$Parameteri);
+
+    function MeshSource() {
+        _classCallCheck(this, MeshSource);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(MeshSource).apply(this, arguments));
+    }
+
+    _createClass(MeshSource, [{
+        key: "download",
+        value: function download(chunk) {
+            // No manifest chunk to download, as there is always only a single fragment.
+            backend_1.handleChunkDownloadPromise(chunk, Promise.resolve(undefined), decodeManifestChunk);
+        }
+    }, {
+        key: "downloadFragment",
+        value: function downloadFragment(chunk) {
+            var parameters = this.parameters;
+
+            var requestPath = `/neuroglancer/mesh/${ parameters.key }/${ chunk.manifestChunk.objectId }`;
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(parameters.baseUrls, requestPath), 'arraybuffer'), decodeFragmentChunk);
+        }
+    }]);
+
+    return MeshSource;
+}(backend_2.ParameterizedMeshSource);
+MeshSource = __decorate([backend_1.registerChunkSource(base_1.MeshSourceParameters)], MeshSource);
+exports.MeshSource = MeshSource;
+;
+
+/***/ },
+/* 80 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+(function (VolumeChunkEncoding) {
+    VolumeChunkEncoding[VolumeChunkEncoding["JPEG"] = 0] = "JPEG";
+    VolumeChunkEncoding[VolumeChunkEncoding["NPZ"] = 1] = "NPZ";
+    VolumeChunkEncoding[VolumeChunkEncoding["RAW"] = 2] = "RAW";
+})(exports.VolumeChunkEncoding || (exports.VolumeChunkEncoding = {}));
+var VolumeChunkEncoding = exports.VolumeChunkEncoding;
+
+var VolumeChunkSourceParameters = function () {
+    function VolumeChunkSourceParameters() {
+        _classCallCheck(this, VolumeChunkSourceParameters);
+    }
+
+    _createClass(VolumeChunkSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(parameters) {
+            return `python:volume:${ parameters['baseUrls'][0] }/${ parameters['key'] }/${ VolumeChunkEncoding[parameters['encoding']] }`;
+        }
+    }]);
+
+    return VolumeChunkSourceParameters;
+}();
+
+VolumeChunkSourceParameters.RPC_ID = 'python/VolumeChunkSource';
+exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
+;
+
+var MeshSourceParameters = function () {
+    function MeshSourceParameters() {
+        _classCallCheck(this, MeshSourceParameters);
+    }
+
+    _createClass(MeshSourceParameters, null, [{
+        key: "stringify",
+        value: function stringify(parameters) {
+            return `python:mesh:${ parameters['baseUrls'][0] }/${ parameters['key'] }`;
+        }
+    }]);
+
+    return MeshSourceParameters;
+}();
+
+MeshSourceParameters.RPC_ID = 'python/MeshSource';
+exports.MeshSourceParameters = MeshSourceParameters;
+;
 
 /***/ }
 /******/ ]);

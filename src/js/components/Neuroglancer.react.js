@@ -12,7 +12,7 @@ var NeuroglancerTab = React.createClass({
             <div className="container-fluid">
                <div className="row">
                    <div className='col-md-12'>
-                        <div className="neurog-body">
+                        <div id="neurog-body">
                             <div id="container"></div>
                         </div>
                    </div>
@@ -118,11 +118,8 @@ var NeuroglancerTab = React.createClass({
 
     },
     componentDidMount: function(){
-        //todo: make an accessable function in the script for adding the viewer, so this script can be
-        //loaded on initial page load without issues (function will be called here)
-        //necessary for testing locally in chrome
-        var body = $('body')
-        body.append('<script src="neuroglancer/main.bundle.js"></script>')
+        //call neuroglancer method that initializes the view
+        InitializeNeuroglancer({auto_show_layer_dialog:false})
     },
     updateCoordinates(position){
         // position: Float32Array
