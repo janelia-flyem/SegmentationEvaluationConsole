@@ -3,9 +3,7 @@
 var React = require('react');
 var MetricSearch = require('./MetricSearch.React');
 var Help = require('./Help.React');
-var ReactRedux = require('react-redux')
 var DisplayTabs = require('./DisplayTabs.react.js')
-var connect = ReactRedux.connect
 
 window.$ = window.jQuery = require('jquery');
 
@@ -15,6 +13,7 @@ window.$ = window.jQuery = require('jquery');
  * evaluation experiment. 
 */
 var Master = React.createClass({
+
     render: function () {
 
         return (
@@ -29,40 +28,18 @@ var Master = React.createClass({
                             <span className="icon-bar"></span>
                             </button>
                             <a className="navbar-brand">EM Segmentation Evaluation</a>
-                            <a className="navbar-brand" onClick={this.props.toHelp}><span className="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>
+                             <Help/>
                         </div>
                          <div className="collapse navbar-collapse" id="bs-navbar-collapse-1">
                           <MetricSearch />
                         </div>
                     </div>
                 </nav>
-                <div style={this.props.ViewHelp ? {} : {display:'none'}}>
-                    <Help />
-                </div>
                 <DisplayTabs />
             </div>
         );
         // add tabs
     }
 });
-
-var MasterState = function(state){
-    return {
-        ViewHelp: state.ViewHelp
-    }
-};
-
-var MasterDispatch = function(dispatch){
-    return {
-        toHelp: function() {
-            dispatch({
-                type: 'TOGGLE_HELP',
-            });
-        }
-
-    }
-};
-
-Master = connect(MasterState, MasterDispatch)(Master)
 
 module.exports = Master;

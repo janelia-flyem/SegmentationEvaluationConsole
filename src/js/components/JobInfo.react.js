@@ -84,9 +84,11 @@ var JobInfo = React.createClass({
                 </label></div> 
                 
                 <div className="form-group">
-                <button type="button" className="btn btn-default" data-toggle="popover" data-html="true" data-trigger="focus" title="Comparison Configuration" data-content={this.writeConfig()} style={{marginLeft: "1em"}}>
-                <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
-                </button>
+                <a type="button" className="btn btn-default popover-anchor" data-toggle="popover" data-html="true"
+                    data-trigger="focus" title="Comparison Configuration" data-content={this.writeConfig()}
+                    data-placement="bottom"  role="button" tabIndex="2" style={{marginLeft: "1em"}}>
+                    <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
+                </a>
                 </div>
                 
                 {seldiv}

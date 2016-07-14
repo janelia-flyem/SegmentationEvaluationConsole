@@ -3,7 +3,6 @@ var React = require("react")
 var CompType = require('./helpers/CompType');
 
 var initialState = {
-    ViewHelp: false,
     compType: new CompType(),
     metric_results: null,
     ActiveTab: 1,
@@ -16,11 +15,6 @@ var ConsoleReducers = function(state, action){
     }
 
     switch(action.type){
-        case 'TOGGLE_HELP':{
-            return Object.assign({}, state, {
-                ViewHelp: !state.ViewHelp,
-            });
-        }
         case 'LOAD_DATA':{
             return Object.assign({}, state, {
                 metric_results: action.data,
