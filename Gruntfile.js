@@ -2,11 +2,18 @@ module.exports = function(grunt) {
 
     // load npm modules at runtime -- cleans up configu file
     require('jit-grunt')(grunt);
-
   
     // Project configuration.
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
+    connect: {
+        server: {
+            options: {
+              port: 3000,
+              base: 'build'
+            }
+        }
+    },
     less: {
         build: {
             options: {
@@ -129,8 +136,12 @@ module.exports = function(grunt) {
     }
   });
 
+  grunt.loadNpmTasks('grunt-contrib-connect');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+
   // Default task(s).
-  grunt.registerTask('default', ['browserify:app', 'less', 'copy:build', 'watch']);
+  grunt.registerTask('serve', ['connect'])
+  grunt.registerTask('default', ['browserify:app', 'less', 'copy:build','connect', 'watch']);
   grunt.registerTask('dist', ['browserify:app', 'less:build', 'uglify', 'copy:dist', 'cssmin']);
   grunt.registerTask('lint', 'Running lint', ['jslint']);
   grunt.registerTask('test', ["browserify:specs", "jasmine"]);

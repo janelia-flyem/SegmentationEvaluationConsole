@@ -26,9 +26,13 @@ This is single-page app written primarily in Javascript using Facebook's React t
     % grunt
 
 Installed js file located in build/js/bundle.js.  The application can be included
-statically on a webpage by anchoring to a div named 'segeval':
+on a webpage by anchoring to a div named 'segeval':
 
     % <div id="segeval"> </div>
+
+On chrome, the application must be served to avoid same-origin policy errors.
+Grunt automatically starts a server at localhost:3000, so simply navigate to this location in your browser with
+grunt running locally to view the application.
 
 ###Architectural Notes
 
