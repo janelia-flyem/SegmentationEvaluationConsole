@@ -22,28 +22,40 @@ var NeuroglancerTab = React.createClass({
 
         );
     },
+    shouldComponentUpdate: function(nextProps, nextState){
+
+        if(!nextProps.active){
+            return false
+        }
+        return true
+    },
+    getLayerNames(metric_results){
+       var config_ground_label = metric_results.config['dvid-info']['label-name']
+       var config_comp_label = metric_results.config['dvid-info-comp']['label-name']
+       return ['grayscale', config_ground_label, config_comp_label].sort()
+    },
     componentDidUpdate: function(prevProps, prevState){
-        //don't draw anything unless neuroglancer tab is visible
-        if(this.props.active){
             //check to see if any layers need to be added
-            //todo: test to see how this behaves for metric reload. May want to remove layers that are no longer relevant
-            var config_ground_label = this.props.metric_results.config['dvid-info']['label-name']
-            var config_comp_label = this.props.metric_results.config['dvid-info-comp']['label-name']
-            var layer_names = ['grayscale', config_ground_label, config_comp_label].sort()
-            var loaded_layer_names = _.pluck(window.viewer.layerManager.managedLayers, 'name').sort()
+            var server = this.props.metric_results.config['dvid-info']['dvid-server'];
+            var shortuuid = this.props.metric_results.config['dvid-info']['uuid'];
+            var layer_names = this.getLayerNames(this.props.metric_results);
 
-            var all_layers_loaded = _.isEqual(layer_names,loaded_layer_names)
+            var same_layer_names = _.isEqual(layer_names, this.prev_metric_results.layer_names);
+            var same_server = server === this.prev_metric_results.server;
+            var same_uuid = shortuuid === this.prev_metric_results.shortuuid;
 
-            if (!all_layers_loaded){
+
+            if ( !(same_layer_names && same_server && same_uuid)){
+                //update metrics for future comparisions
+                this.prev_metric_results = {layer_names: layer_names, server:server, shortuuid:shortuuid}
+                //remove current layers
+                viewer.layerManager.clear()
                 console.log('adding layers')
                 //get full uuid, then add layers
                 //ASSUMPTION: all layers use the same server and uuid
-                var server = this.props.metric_results.config['dvid-info']['dvid-server']
-                var shortuuid = this.props.metric_results.config['dvid-info']['uuid']
-
                 this.getFullUUID_Promise(server, shortuuid)
                     .then(function(fulluuid){
-                        this.addLayers(_.difference(layer_names,loaded_layer_names), server, fulluuid)
+                        this.addLayers(this.getLayerNames(this.props.metric_results), server, fulluuid)
                     }.bind(this))
             }
             //update neuroglancer position, if needed
@@ -53,7 +65,6 @@ var NeuroglancerTab = React.createClass({
                 window.viewer.display.onResize()
             }
 
-        }
     },
     addLayers: function(layernames_to_load, server, uuid){
         //make the viewer think it's resizing so that height/width
@@ -120,6 +131,7 @@ var NeuroglancerTab = React.createClass({
     componentDidMount: function(){
         //call neuroglancer method that initializes the view
         InitializeNeuroglancer({auto_show_layer_dialog:false})
+        this.prev_metric_results = {layer_names: [], server: null, shortuuid: null}
     },
     updateCoordinates(position){
         // position: Float32Array

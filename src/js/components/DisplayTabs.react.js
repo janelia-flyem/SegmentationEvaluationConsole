@@ -6,32 +6,42 @@ var Neuroglancer = require('./Neuroglancer.react.js');
 
 var DisplayTabs = React.createClass({
   render() {
-    return (
-        <div >
-            <ul className="nav nav-tabs">
-              <li role="tab"
-                  onClick={this.props.changeTab.bind(this,1)}
-                  className={this.props.ActiveTab == 1 ? 'active' : ''}>
-                <a href="#">Metrics</a></li>
-              <li role="tab"
-                  onClick={this.props.changeTab.bind(this, 2)}
-                  className={this.props.ActiveTab == 2 ? 'active' : ''}>
-                <a href="#">Neuroglancer</a></li>
-            </ul>
-            <div className="tab-content container-fluid">
-                 <div role="tabpanel"
-                       className={this.props.ActiveTab == 1 ? 'tab-pane active' : 'tab-pane'}
-                       id="metrics-pane">
-                    <MetricViewer />
-                </div>
-                <div role="tabpanel"
-                    className={this.props.ActiveTab == 2 ? 'tab-pane active' : 'tab-pane'}
-                    id="neuroglancer-pane">
-                    <Neuroglancer />
+    if (this.props.metric_results !== null){
+        return (
+            <div >
+                <ul className="nav nav-tabs">
+                  <li role="tab"
+                      onClick={this.props.changeTab.bind(this,1)}
+                      className={this.props.ActiveTab == 1 ? 'active' : ''}>
+                    <a href="#">Metrics</a></li>
+                  <li role="tab"
+                      onClick={this.props.changeTab.bind(this, 2)}
+                      className={this.props.ActiveTab == 2 ? 'active' : ''}>
+                    <a href="#">Neuroglancer</a></li>
+                </ul>
+                <div className="tab-content container-fluid">
+                     <div role="tabpanel"
+                           className={this.props.ActiveTab == 1 ? 'tab-pane active' : 'tab-pane'}
+                           id="metrics-pane">
+                        <MetricViewer />
+                    </div>
+                    <div role="tabpanel"
+                        className={this.props.ActiveTab == 2 ? 'tab-pane active' : 'tab-pane'}
+                        id="neuroglancer-pane">
+                        <Neuroglancer />
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
+    else {
+        return (
+            <div className="container-fluid">
+                <p className="alert alert-info">Please select 'DVID' or 'File' to load data</p>
+            </div>
+        );
+
+    }
   }
 });
 

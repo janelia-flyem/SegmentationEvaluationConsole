@@ -19701,7 +19701,7 @@ var Viewer = function (_disposable_1$RefCoun3) {
         _this3.registerSignalBinding(_this3.navigationState.changed.add(_this3.handleNavigationStateChanged, _this3));
         _this3.layerManager.initializePosition(_this3.navigationState.position);
         _this3.layerManager.layersChanged.add(() => {
-            if (_this3.layerManager.managedLayers.length === 0) {
+            if (_this3.layerManager.managedLayers.length === 0 && config.auto_show_layer_dialog === true) {
                 // No layers, reset state.
                 _this3.navigationState.voxelSize.reset();
                 _this3.navigationState.reset();
