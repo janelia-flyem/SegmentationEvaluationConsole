@@ -226,7 +226,19 @@ var StackViewer = React.createClass({
         this.props.updateNeurogPos(new Float32Array(coords))
     },
     componentWillReceiveProps: function (nextprops) {
-        this.loadSubstacks(nextprops.substacks, nextprops.comptype);
+        if(nextprops.substacks != this.props.substacks && nextprops.comptype != this.props.comptype){
+            //metrics changed
+            this.loadSubstacks(nextprops.substacks, nextprops.comptype);
+        }
+        if(this.props.active != nextprops.active){
+            //visibility of the tab changed
+            if(nextprops.active){
+                this.state.viewer.animate()
+            }
+            else{
+                cancelAnimationFrame(this.state.viewer.animationFrame);// Stop the animation
+            }
+        }
     },
     componentDidMount: function () {
         this.loadSubstacks(this.props.substacks, this.props.comptype);
@@ -311,7 +323,9 @@ var StackViewer = React.createClass({
 });
 
 var StackViewerState = function(state){
-    return {}
+    return {
+        active: (state.ActiveTab==1 ? true : false)
+    }
 };
 
 var StackViewerDispatch = function(dispatch){
