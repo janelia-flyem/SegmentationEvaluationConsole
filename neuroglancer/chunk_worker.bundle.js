@@ -24995,17 +24995,25 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
 var backend_1 = __webpack_require__(4);
 var base_1 = __webpack_require__(75);
 var backend_2 = __webpack_require__(12);
+var compressed_segmentation_1 = __webpack_require__(44);
 var jpeg_1 = __webpack_require__(45);
-var raw_1 = __webpack_require__(53);
+var base_2 = __webpack_require__(13);
+var geom_1 = __webpack_require__(15);
 var http_request_1 = __webpack_require__(33);
 var TILE_CHUNK_DECODERS = new Map([[base_1.TileEncoding.JPEG, jpeg_1.decodeJpegChunk]]);
 var VolumeChunkSource = function (_backend_2$Parameteri) {
     _inherits(VolumeChunkSource, _backend_2$Parameteri);
 
-    function VolumeChunkSource() {
+    function VolumeChunkSource(rpc, options) {
         _classCallCheck(this, VolumeChunkSource);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).apply(this, arguments));
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(VolumeChunkSource).call(this, rpc, options));
+
+        _this.parameters = options['parameters'];
+        if (_this.parameters.volumeType === base_2.VolumeType.SEGMENTATION) {
+            _this.compressedSegmentationBlockSize = geom_1.vec3.fromValues(8, 8, 8);
+        }
+        return _this;
     }
 
     _createClass(VolumeChunkSource, [{
@@ -25018,9 +25026,30 @@ var VolumeChunkSource = function (_backend_2$Parameteri) {
                 // computeChunkBounds.
                 var chunkPosition = this.computeChunkBounds(chunk);
                 var chunkDataSize = chunk.chunkDataSize;
-                path = `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }/nd`;
+                // if the volume is an image, get a jpeg
+                path = this.getPath(chunkPosition, chunkDataSize, params);
             }
-            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(params.baseUrls, path), 'arraybuffer'), raw_1.decodeRawChunk);
+            backend_1.handleChunkDownloadPromise(chunk, http_request_1.sendHttpRequest(http_request_1.openShardedHttpRequest(params.baseUrls, path), 'arraybuffer'), this.getDecoder(params));
+        }
+    }, {
+        key: "getPath",
+        value: function getPath(chunkPosition, chunkDataSize, params) {
+            if (params.volumeType === base_2.VolumeType.IMAGE) {
+                return `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }/jpeg`;
+            } else {
+                // volumeType is SEGMENTATION
+                return `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }?compression=googlegzip`;
+            }
+        }
+    }, {
+        key: "getDecoder",
+        value: function getDecoder(params) {
+            if (params.volumeType === base_2.VolumeType.IMAGE) {
+                return jpeg_1.decodeJpegChunk;
+            } else {
+                // volumeType is SEGMENTATION
+                return compressed_segmentation_1.decodeCompressedSegmentationChunk;
+            }
         }
     }]);
 
@@ -25066,21 +25095,6 @@ TileChunkSource = __decorate([backend_1.registerChunkSource(base_1.TileChunkSour
 /* 75 */
 /***/ function(module, exports) {
 
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
