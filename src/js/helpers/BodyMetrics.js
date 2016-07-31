@@ -10,8 +10,9 @@ function TestFrag (data, comptype) {
     var arr = [];
     // grab 1st field
     var bodyinfo = data["types"][comptype.toKey()]["seg-bodies"];
+    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-seg"];
     for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][0] ]);
+        arr.push([ item, bodyinfo[item][0], overlapinfo[item], 'Test']);
 
     }
     return arr.sort(compare_lists)
@@ -22,8 +23,9 @@ function BestTest (data, comptype) {
     var arr = [];
     // grab 2nd field
     var bodyinfo = data["types"][comptype.toKey()]["seg-bodies"];
+    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-seg"];
     for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][1] ]);
+        arr.push([ item, bodyinfo[item][1], overlapinfo[item], 'Test']);
     }
     return arr.sort(compare_lists)
 }
@@ -34,8 +36,9 @@ function GTFrag (data, comptype) {
     var arr = [];
     // grab 1st field
     var bodyinfo = data["types"][comptype.toKey()]["gt-bodies"];
+    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-gt"];
     for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][0] ]);
+        arr.push([ item, bodyinfo[item][0], overlapinfo[item], 'GT']);
     }
     return arr.sort(compare_lists)
 }
@@ -46,8 +49,9 @@ function WorstGT (data, comptype) {
     var arr = [];
     // grab 2nd field 
     var bodyinfo = data["types"][comptype.toKey()]["gt-bodies"];
+    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-gt"];
     for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][1] ]);
+        arr.push([ item, bodyinfo[item][1], overlapinfo[item], 'GT']);
     }
     return arr.sort(compare_lists)
 }

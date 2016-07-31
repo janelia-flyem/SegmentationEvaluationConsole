@@ -1,6 +1,8 @@
 "use strict";
 
 var React = require('react');
+var Popover = require('react-bootstrap/lib/Popover');
+var OverlayTrigger = require('react-bootstrap/lib/OverlayTrigger');
 
 var SelectBodyFilter = React.createClass({
     render: function () {
@@ -18,14 +20,45 @@ var SelectBodyFilter = React.createClass({
 
 var TableRow = React.createClass({
     render: function () {
+        var otherSegType = this.getOverlapBodyType(this.props.rowinfo[3]);
+        var popover = (
+            <Popover id={this.props.rowinfo[0] + 'popover'} title={otherSegType + " Bodies Overlapping " + this.props.rowinfo[0]}>
+                <ul>
+                    {this.props.rowinfo[2].map(function(el){
+                        return <li key={el[1]}>{el[1]}</li>
+                    })}
+                </ul>
+            </Popover>
+        );
         return (
             <tr>
-                <td>{this.props.rowinfo[0]}</td>
+                <td>
+                    <OverlayTrigger placement="right" overlay={popover}>
+                      <a>{this.props.rowinfo[0]}</a>
+                    </OverlayTrigger>
+                </td>
                 <td>{this.props.rowinfo[1]}</td>
-
             </tr>
         );
-    }
+    },
+    getOverlapBodyType(BodyTableType){
+        //get the comparison type for each segmentation type
+        if(BodyTableType === 'GT'){
+            return 'Test'
+        }
+        if(BodyTableType === 'Test'){
+            return 'Ground Truth'
+            console.log('GT')
+        }
+        return ''
+    },
+    buildPopupContent: function(overlap_array){
+        var content = '<ul>';
+        for(var i in overlap_array){
+            content += '<li>' + overlap_array[i][1] + '</li>';
+        }
+        return content + '</ul>';
+    },
 });
 
 var TableInt = React.createClass({
@@ -34,7 +67,7 @@ var TableInt = React.createClass({
         var tablelimit = 100;
 
         if (this.props.tableinfo.length < tablelimit) {
-            tablelimit = this.props.tableinfo;
+            tablelimit = this.props.tableinfo.length;
         }
         return (
                 <table className="table table-responsive table-condensed table-responsive table-striped">
