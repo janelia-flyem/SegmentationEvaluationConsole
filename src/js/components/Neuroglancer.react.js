@@ -50,7 +50,10 @@ var NeuroglancerTab = React.createClass({
                 this.prev_metric_results = {layer_names: layer_names, server:server, shortuuid:shortuuid}
                 //remove current layers
                 viewer.layerManager.clear()
-                console.log('adding layers')
+
+                //update the position to the stack midpoint
+                this.update_position_to_midpoint(this.props.metric_results)
+
                 //get full uuid, then add layers
                 //ASSUMPTION: all layers use the same server and uuid
                 this.getFullUUID_Promise(server, shortuuid)
@@ -65,6 +68,29 @@ var NeuroglancerTab = React.createClass({
                 window.viewer.display.onResize()
             }
 
+    },
+    update_position_to_midpoint: function(metric_results){
+        var substacks = metric_results.data.subvolumes.ids
+        var max = [0,0,0];
+        var min = [Infinity,Infinity,Infinity];
+
+        for(var sid in substacks){
+            var currind = [substacks[sid].roi[0],substacks[sid].roi[1], substacks[sid].roi[2]];
+            _.each(currind, function(indval, i){
+                if(indval > max[i]){
+                    max[i] = indval;
+                }
+                if(indval < min[i]){
+                    min[i] = indval
+                }
+            });
+        }
+        var minmax = _.zip(min,max)
+        var midpoint = _.map(minmax, function(minmax, i){
+                return minmax[0] + ((minmax[1]-minmax[0])/2);
+        });
+
+        this.updateCoordinates(new Float32Array(midpoint));
     },
     addLayers: function(layernames_to_load, server, uuid){
         //make the viewer think it's resizing so that height/width
