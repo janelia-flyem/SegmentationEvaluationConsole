@@ -29,7 +29,7 @@ var NeuroglancerTab = React.createClass({
         }
         return true
     },
-    getLayerNames(metric_results){
+    getLayerNames: function(metric_results){
        var config_ground_label = metric_results.config['dvid-info']['label-name']
        var config_comp_label = metric_results.config['dvid-info-comp']['label-name']
        return ['grayscale', config_ground_label, config_comp_label].sort()
@@ -159,7 +159,7 @@ var NeuroglancerTab = React.createClass({
         InitializeNeuroglancer({auto_show_layer_dialog:false})
         this.prev_metric_results = {layer_names: [], server: null, shortuuid: null}
     },
-    updateCoordinates(position){
+    updateCoordinates: function(position){
         // position: Float32Array
         window.viewer.navigationState.pose.position.setVoxelCoordinates(position)
     }

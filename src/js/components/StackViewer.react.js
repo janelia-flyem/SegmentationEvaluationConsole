@@ -117,9 +117,10 @@ var StackViewer = React.createClass({
             subobj["width"] = x2-x1;
             subobj["length"] = y2-y1;
             subobj["height"] = z2-z1;
-            subobj["x"] = x1;
-            subobj["y"] = y1;
-            subobj["z"] = z1;
+            //popup receives substack midpoint
+            subobj["x"] = x1 + subobj["width"]/2;
+            subobj["y"] = y1 + subobj["length"]/2;
+            subobj["z"] = z1 + subobj["height"]/2;
 
             var volume = subobj["width"]*subobj["height"]*subobj["length"];
 
@@ -215,13 +216,14 @@ var StackViewer = React.createClass({
     handleNeurogNav: function(event){
 
         $('#stack3d_stats_modal').modal('hide')
+
         //get xyz coordinates from the modal dom
         var stack_info_divs = $('#stack3d_stats_modal .modal-body')[0].childNodes
-        var coord_divs = [...stack_info_divs].slice(1,4);
-        var coords = _.map(coord_divs, function(div){
-            var coord = div.innerHTML.split(':')[1]
-            return parseInt(coord)
-        });
+        var coords = new Float32Array(3);
+
+        for(var i=1; i<4; i++){
+            coords[i-1] = parseInt(stack_info_divs[i].innerHTML.split(':')[1]);
+        }
 
         this.props.updateNeurogPos(new Float32Array(coords))
     },

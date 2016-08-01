@@ -75,8 +75,8 @@ module.exports = function(grunt) {
         build: {
                 files: [
                     {
-                        src: 'src/application.html',
-                        dest: 'build/application.html'
+                        src: 'src/index.html',
+                        dest: 'build/index.html'
                     },
                     {
                         src: 'build/css/main.css',
@@ -107,8 +107,12 @@ module.exports = function(grunt) {
                         dest: 'dist/'
                     },
                     {
-                        src: 'src/application.html',
-                        dest: 'dist/application.html'
+                        src: 'src/index.html',
+                        dest: 'dist/index.html'
+                    },
+                    {
+                        src: 'neuroglancer/*',
+                        dest: 'dist/'
                     }
                 ]
         },

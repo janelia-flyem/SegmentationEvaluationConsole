@@ -41,16 +41,15 @@ var TableRow = React.createClass({
             </tr>
         );
     },
-    getOverlapBodyType(BodyTableType){
+    getOverlapBodyType: function(BodyTableType){
         //get the comparison type for each segmentation type
         if(BodyTableType === 'GT'){
-            return 'Test'
+            return 'Test';
         }
         if(BodyTableType === 'Test'){
-            return 'Ground Truth'
-            console.log('GT')
+            return 'Ground Truth';
         }
-        return ''
+        return '';
     },
     buildPopupContent: function(overlap_array){
         var content = '<ul>';

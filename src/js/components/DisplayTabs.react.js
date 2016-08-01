@@ -5,7 +5,7 @@ var MetricViewer = require('./MetricViewer.react.js');
 var Neuroglancer = require('./Neuroglancer.react.js');
 
 var DisplayTabs = React.createClass({
-  render() {
+  render: function() {
     if (this.props.metric_results !== null){
         return (
             <div >
