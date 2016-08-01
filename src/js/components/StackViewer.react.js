@@ -226,7 +226,7 @@ var StackViewer = React.createClass({
         this.props.updateNeurogPos(new Float32Array(coords))
     },
     componentWillReceiveProps: function (nextprops) {
-        if(nextprops.substacks != this.props.substacks && nextprops.comptype != this.props.comptype){
+        if(nextprops.substacks != this.props.substacks || nextprops.comptype != this.props.comptype){
             //metrics changed
             this.loadSubstacks(nextprops.substacks, nextprops.comptype);
         }
