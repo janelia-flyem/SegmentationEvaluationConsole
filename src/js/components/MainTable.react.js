@@ -42,9 +42,10 @@ var CompInfo = React.createClass({
         return (
             <div >
                 <h5>2nd Comparison: {expname}</h5>
-                <button type="button" className="btn btn-default" data-toggle="popover" data-html="true" data-trigger="focus" title="Comparison Configuration" data-content={configdata}>
+                <a type="button" className="btn btn-default" data-toggle="popover" data-html="true" tabIndex="4"
+                data-trigger="focus" title="Comparison Configuration" data-content={configdata} role="button">
                 <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
-                </button>
+                </a>
             </div>
         );
     }
