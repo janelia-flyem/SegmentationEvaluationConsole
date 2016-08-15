@@ -12,13 +12,13 @@ var MetricViewer = React.createClass({
     render: function (){
         return (<div className="container-fluid">
            <div className="row">
-                <div className="col-md-3">
+                <div className="col-md-4">
                     <MainTable comptype={this.props.compType} metric_data={this.props.metric_results} />
                 </div>
                 <div className="col-md-3">
                     <BodyTable comptype={this.props.compType} metric_data={this.props.metric_results} />
                 </div>
-                <div className="col-md-6">
+                <div className="col-md-5">
                     <StackViewer
                         rcomptype={this.props.compType}
                         comptype={this.props.compType.toKey()}

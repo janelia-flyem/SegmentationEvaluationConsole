@@ -41,11 +41,12 @@ var CompInfo = React.createClass({
 
         return (
             <div >
-                <h5>2nd Comparison: {expname}</h5>
-                <a type="button" className="btn btn-default" data-toggle="popover" data-html="true" tabIndex="4"
-                data-trigger="focus" title="Comparison Configuration" data-content={configdata} role="button">
-                <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
-                </a>
+                <h5>2nd Comparison: {expname}
+                    <a type="button" className="btn btn-default m-l-1" data-toggle="popover" data-html="true" tabIndex="4"
+                    data-trigger="focus" title="Comparison Configuration" data-content={configdata} role="button">
+                    <span className="glyphicon glyphicon-info-sign" aria-hidden="true" ></span>
+                    </a>
+                </h5>
             </div>
         );
     }
@@ -53,23 +54,42 @@ var CompInfo = React.createClass({
 
 
 var TableRow = React.createClass({
+    /*
+     * Get the up or down arrow indicating if larger or smaller values are better
+     */
+    getCompDirectionIcon: function(comp_better_scores){
+        if(comp_better_scores === "larger"){
+            return <span className='glyphicon glyphicon-arrow-up'></span>
+        }
+        else {//better scores are smaller
+            return <span className='glyphicon glyphicon-arrow-down'></span>
+        }
+    },
     render: function () {
         var comptd = <td />
         var highlight = "";
+        var spacer = <span className='glyphicon glyphicon-none'></span>;
+        var mainSegPlace = spacer;
+        var compSegPlace = spacer;
+        var winner = (<span className="glyphicon glyphicon-certificate winner"></span>);
         if (this.props.compinfo) {
-            comptd = <td>{this.props.compinfo}</td>;
-            if (this.props.compinfo[1]) {
-                highlight = "danger";
+            if (this.props.compinfo[1] === -1) {
+                compSegPlace = winner;
             }
+            else if (this.props.compinfo[1] === 1){
+                mainSegPlace = winner;
+            }
+            comptd = <td>{compSegPlace} {this.props.compinfo[0]}</td>;
         }
 
         return (
-            <tr className={highlight}>
-                <OverlayTrigger trigger='click' placement='top' rootClose={true} overlay={<Popover title={this.props.rowinfo[0]}>{this.props.rowinfo[2]} </Popover>}>            
-                <td>{this.props.rowinfo[0]}</td>
+            <tr >
+                <OverlayTrigger trigger='click' placement='top' rootClose={true}
+                    overlay={<Popover title={this.props.rowinfo[0]}>{this.props.rowinfo[2]} </Popover>}>
+                    <td>{this.getCompDirectionIcon(this.props.rowinfo[3])}{this.props.rowinfo[0]}</td>
                 </OverlayTrigger>
 
-                <td>{this.props.rowinfo[1]}</td>
+                <td>{mainSegPlace} {this.props.rowinfo[1]}</td>
 
                 {comptd}
             </tr>
@@ -121,6 +141,22 @@ var MainTable = React.createClass({
     updateComp: function (metrics) {
         this.setState({metricComp: metrics}); 
     },
+    getKey: function(hasComp){
+        var winnerKey = <div />
+        if (hasComp){
+            winnerKey = <p>(<span className="glyphicon glyphicon-certificate winner"></span>):
+                            better statistic value
+                        </p>
+        }
+        return (<div className='panel panel-info key'>
+                    <p>
+                        (<span className='glyphicon glyphicon-arrow-up'></span>/
+                        <span className='glyphicon glyphicon-arrow-down'></span>)
+                        : comparatively larger/smaller values are better
+                    </p>
+                    {winnerKey}
+               </div>);
+    },
     render: function () { 
         var master_list = [];
         var typename = this.props.comptype.toString();
@@ -130,7 +166,7 @@ var MainTable = React.createClass({
             var desc = statlist[i].toDescArr();
 
             for (var j = 0; j < grp.length; j++) {
-                master_list.push([grp[j]["name"], grp[j]["value"], desc[j]]);
+                master_list.push([grp[j]["name"], grp[j]["value"], desc[j], grp[j]["comp_better_scores"]]);
             }
         }
 
@@ -164,7 +200,7 @@ var MainTable = React.createClass({
         if (comp_list2.length > 0) {
             var tcount = 0;
             for (var i = 0; i < statlist.length; i++) {
-                var comp_array = statlist[i].worseThan(statlistcomp[i]);
+                var comp_array = statlist[i].Compare(statlistcomp[i]);
                 for (var j = 0; j < comp_array.length; j++) {
                     comp_list.push([comp_list2[tcount], comp_array[j]]);
                     tcount += 1
@@ -185,8 +221,8 @@ var MainTable = React.createClass({
                 <div className="panel-heading"> Summary Stats -- {typename}</div>
                 <div className="panel-body stats" >
                     <RetrieveExp2 callback={this.updateComp} />
-
                     {jobinfo}
+                    {this.getKey(comp_list2.length > 0)}
                     {comparable}
                     <TableInt tableinfo={master_list} compinfo={comp_list}/> 
                 </div>

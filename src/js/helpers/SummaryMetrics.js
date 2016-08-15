@@ -8,9 +8,41 @@
  * 
  * Each metric must have
  * 1. toStringArr (summary of stat -- name,value)
- * 2. worseThan (array of true/false)
+ * 2. Compare (array of comparison values. -1: worse than, 0:equal to, 1: better than)
  * 3. orignal json reference
 */
+
+
+/*
+ * Indicates for a metric if a larger value is "better" or a smaller value.
+ * i.e. for VI smaller values are more desirable, while for Rand larger values
+ * indicate a better segmentation
+ */
+var better_score = {
+    SMALLER: 'smaller',
+    LARGER: 'larger'
+}
+/*
+ * comparison helper functions for metrics.
+ * Returns classic comparison values:
+ *  1:  better/greater
+ *  0:  equal
+ * -1:  worse/less than
+ */
+function Compare(A, B, better_score_val){
+    var epsilon = .00001;//Precision level for equals comparison
+
+    if (Math.abs(A - B) < epsilon){
+        return 0;
+    }
+    if(better_score_val === better_score.SMALLER){
+        return A < B ? 1 : -1;
+    }
+    if(better_score_val === better_score.LARGER){
+        return A > B ? 1 : -1;
+    }
+}
+
 
 // VI
 var VIStats = function (data, comptype) {
@@ -23,12 +55,13 @@ var VIStats = function (data, comptype) {
     this.fsplit = this.payload[1];
     this.total = this.fmerge + this.fsplit;
     var that = this;
+    that.better_score_types = [better_score.SMALLER, better_score.SMALLER, better_score.SMALLER];
 
     this.toStringArr = function () {
         return [
-            {name: "FM-VI", value: that.fmerge.toFixed(2)},
-            {name: "FS-VI", value: that.fsplit.toFixed(2)},
-            {name: "VI", value: that.total.toFixed(2)}
+            {name: "FM-VI", value: that.fmerge.toFixed(2), comp_better_scores: that.better_score_types[0]},
+            {name: "FS-VI", value: that.fsplit.toFixed(2), comp_better_scores: that.better_score_types[1]},
+            {name: "VI", value: that.total.toFixed(2), comp_better_scores: that.better_score_types[2]}
         ];
     };
 
@@ -37,18 +70,18 @@ var VIStats = function (data, comptype) {
             "False Merge VI",
             "False Split VI",
             "Total VI"
-        ]
+        ];
     };
 
     this.toJSON = function () {
         return that.payload;
     };
 
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
         return [
-            that.fmerge > otherstat.fmerge,
-            that.fsplit > otherstat.fsplit,
-            that.total > otherstat.total
+            Compare(that.fmerge, otherstat.fmerge, that.better_score_types[0]),
+            Compare(that.fsplit, otherstat.fsplit, that.better_score_types[1]),
+            Compare(that.total, otherstat.total, that.better_score_types[2])
         ];
     }
 };
@@ -66,12 +99,13 @@ var RandStats = function (data, comptype) {
     this.fsplit = this.payload[1];
     this.total = (this.fmerge*this.fsplit)/(this.fmerge+this.fsplit); // just average for now
     var that = this;
+    that.better_score_types = [better_score.LARGER, better_score.LARGER, better_score.LARGER];
 
     this.toStringArr = function () {
         return [
-            {name: "FM-RD", value: that.fmerge.toFixed(2)},
-            {name: "FS-RD", value: that.fsplit.toFixed(2)},
-            {name: "Rand", value: that.total.toFixed(2)}
+            {name: "FM-RD", value: that.fmerge.toFixed(2), comp_better_scores: that.better_score_types[0]},
+            {name: "FS-RD", value: that.fsplit.toFixed(2), comp_better_scores: that.better_score_types[1]},
+            {name: "Rand", value: that.total.toFixed(2), comp_better_scores: that.better_score_types[2]}
         ];
     };
 
@@ -87,11 +121,11 @@ var RandStats = function (data, comptype) {
         return that.payload;
     };
 
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
         return [
-            that.fmerge < otherstat.fmerge,
-            that.fsplit < otherstat.fsplit,
-            that.total < otherstat.total
+           Compare(that.fmerge, otherstat.fmerge, that.better_score_types[0]),
+           Compare(that.fsplit, otherstat.fsplit, that.better_score_types[1]),
+           Compare(that.total, otherstat.total, that.better_score_types[2])
         ];
     }
 };
@@ -110,13 +144,14 @@ var EditStats = function (data, comptype) {
     this.fsplit = this.payload[1];
     this.total = (this.fmerge+this.fsplit)/2.0; // just average for now
     var that = this;
+    that.better_score_types = [better_score.SMALLER, better_score.SMALLER, better_score.SMALLER, better_score.SMALLER];
 
     this.toStringArr = function () {
         return [
-            {name: "Splits", value: String(that.payload["1"][1])},
-            {name: "Merges", value: String(that.payload["1"][0])},
-            {name: "Nuis(5:1)", value: String(that.payload["5"][0] + 5*that.payload["5"][1])},
-            {name: "Nuis(10:1)", value: String(that.payload["10"][0] + 10*that.payload["10"][1])}
+            {name: "Splits", value: String(that.payload["1"][1]), comp_better_scores: that.better_score_types[0]},
+            {name: "Merges", value: String(that.payload["1"][0]), comp_better_scores: that.better_score_types[1]},
+            {name: "Nuis(5:1)", value: String(that.payload["5"][0] + 5*that.payload["5"][1]), comp_better_scores: that.better_score_types[2]},
+            {name: "Nuis(10:1)", value: String(that.payload["10"][0] + 10*that.payload["10"][1]), comp_better_scores: that.better_score_types[3]}
         ];
     };
     this.toDescArr = function () {
@@ -130,12 +165,14 @@ var EditStats = function (data, comptype) {
     this.toJSON = function () {
         return that.payload;
     };
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
         return [
-            that.payload["1"][1] > otherstat.payload["1"][1],
-            that.payload["1"][0] > otherstat.payload["1"][0],
-            (that.payload["5"][0] + that.payload["5"][1]) > (otherstat.payload["5"][0] + otherstat.payload["5"][1]),
-            (that.payload["10"][0] + that.payload["10"][1]) > (otherstat.payload["10"][0] + otherstat.payload["10"][1])
+            Compare(that.payload["1"][1], otherstat.payload["1"][1], that.better_score_types[0]),
+            Compare(that.payload["1"][0], otherstat.payload["1"][0], that.better_score_types[1]),
+            Compare((that.payload["5"][0] + that.payload["5"][1]),
+                (otherstat.payload["5"][0] + otherstat.payload["5"][1]), that.better_score_types[2]),
+            Compare((that.payload["10"][0] + that.payload["10"][1]),
+                (otherstat.payload["10"][0] + otherstat.payload["10"][1]), that.better_score_types[3])
         ];
     }
 };
@@ -156,6 +193,7 @@ var ConnectivityStats = function (data, comptype) {
     this.comptype = comptype;
     this.payload = data["types"]["connection-matrix"];
     var that = this;
+    that.better_score_types = [better_score.SMALLER, better_score.LARGER];
 
     // 0 thresholds will still be given as long as there as a qualifying
     // comparison type
@@ -164,13 +202,13 @@ var ConnectivityStats = function (data, comptype) {
         // were found -- just write 0 to indicate this
         if (that.payload["thresholds"].length > 0) {
             return [
-                {name: "F-Conn", value: String(that.payload["thresholds"][2][0])},
-                {name: "T-Conn", value: String(that.payload["thresholds"][2][1])}
+                {name: "F-Conn", value: String(that.payload["thresholds"][2][0]), comp_better_scores: that.better_score_types[0]},
+                {name: "T-Conn", value: String(that.payload["thresholds"][2][1]), comp_better_scores: that.better_score_types[1]}
             ];
         } else {
             return [
-                {name: "F-Conn", value: "0"},
-                {name: "T-Conn", value: "0"}
+                {name: "F-Conn", value: "0", comp_better_scores: that.better_score_types[0]},
+                {name: "T-Conn", value: "0", comp_better_scores: that.better_score_types[1]}
             ];
 
         }
@@ -187,11 +225,11 @@ var ConnectivityStats = function (data, comptype) {
     this.toJSON = function () {
         return that.payload;
     };
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
         if (that.payload["thresholds"].length > 0) {
             return [
-                that.payload[2][0] > otherstat.payload[2][0], // worse if more false
-                that.payload[2][1] < otherstat.payload[2][1] // worse if fewer true
+                Compare(that.payload[2][0], otherstat.payload[2][0], that.better_score_types[0]), // worse if more false
+                Compare(that.payload[2][1], otherstat.payload[2][1], that.better_score_types[1]) // worse if fewer true
             ] 
 
         } else {
@@ -230,13 +268,14 @@ var BodyStats = function (data, comptype) {
         this.goodbody = this.payload["greatest-overlap"][1]; // the bigger the better
     }
     var that = this;
+    that.better_score_types = [better_score.SMALLER, better_score.SMALLER, better_score.SMALLER, better_score.LARGER];
 
     this.toStringArr = function () {
         return [
-            {name: "B-WRST-GT-VI" , value: that.vi.toFixed(2)},
-            {name: "B-WRST-TST-FR", value: that.fmerge.toFixed(2)},
-            {name: "B-WRST-GT-FR", value: that.fsplit.toFixed(2)},
-            {name: "B-BST-TST-OV", value: String(that.goodoverlap)}
+            {name: "B-WRST-GT-VI" , value: that.vi.toFixed(2), comp_better_scores: that.better_score_types[0]},
+            {name: "B-WRST-TST-FR", value: that.fmerge.toFixed(2), comp_better_scores: that.better_score_types[1]},
+            {name: "B-WRST-GT-FR", value: that.fsplit.toFixed(2), comp_better_scores: that.better_score_types[2]},
+            {name: "B-BST-TST-OV", value: String(that.goodoverlap), comp_better_scores: that.better_score_types[3]}
         ];
     };
     
@@ -253,12 +292,12 @@ var BodyStats = function (data, comptype) {
     this.toJSON = function () {
         return that.payload;
     };
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
         return [
-            that.vi > otherstat.vi,
-            that.fmerge > otherstat.fmerge,
-            that.fsplit > otherstat.fsplit,
-            that.goodoverlap < otherstat.goodoverlap
+            Compare(that.vi, otherstat.vi,that.better_score_types[0]),
+            Compare(that.fmerge, otherstat.fmerge,that.better_score_types[1]),
+            Compare(that.fsplit, otherstat.fsplit,that.better_score_types[2]),
+            Compare(that.goodoverlap, otherstat.goodoverlap, that.better_score_types[3])
         ];
     }
 };
@@ -279,14 +318,16 @@ var VISubvolumeStats = function (data, comptype) {
     this.fmergeb = this.payload["fmerge-best"][0]; 
     this.fsplitb = this.payload["fsplit-best"][0]; 
     var that = this;
+    that.better_score_types = [better_score.SMALLER, better_score.SMALLER, better_score.SMALLER, better_score.SMALLER,
+                               better_score.SMALLER];
 
     this.toStringArr = function () {
         return [
-            {name: "S-WRST-FM-VI" , value: that.fmergew.toFixed(2)},
-            {name: "S-WRST-FS-VI" , value: that.fsplitw.toFixed(2)},
-            {name: "S-AVE-VI" , value: that.average.toFixed(2)},
-            {name: "S-BST-FM-VI" , value: that.fmergeb.toFixed(2)},
-            {name: "S-BST-FS-VI" , value: that.fsplitb.toFixed(2)}
+            {name: "S-WRST-FM-VI" , value: that.fmergew.toFixed(2), comp_better_scores: that.better_score_types[0]},
+            {name: "S-WRST-FS-VI" , value: that.fsplitw.toFixed(2), comp_better_scores: that.better_score_types[1]},
+            {name: "S-AVE-VI" , value: that.average.toFixed(2), comp_better_scores: that.better_score_types[2]},
+            {name: "S-BST-FM-VI" , value: that.fmergeb.toFixed(2), comp_better_scores: that.better_score_types[3]},
+            {name: "S-BST-FS-VI" , value: that.fsplitb.toFixed(2), comp_better_scores: that.better_score_types[4]}
         ];
     };
   
@@ -304,13 +345,14 @@ var VISubvolumeStats = function (data, comptype) {
     this.toJSON = function () {
         return that.payload;
     };
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
+        console.log(that);
         return [
-            that.fmergew > otherstat.fmergew,
-            that.fsplitw > otherstat.fsplitw,
-            that.average > otherstat.average,
-            that.fmergeb > otherstat.fmergeb,
-            that.fsplitb > otherstat.fsplitb
+            Compare(that.fmergew, otherstat.fmergew, that.better_score_types[0]),
+            Compare(that.fsplitw, otherstat.fsplitw, that.better_score_types[1]),
+            Compare(that.average, otherstat.average, that.better_score_types[2]),
+            Compare(that.fmergeb, otherstat.fmergeb, that.better_score_types[3]),
+            Compare(that.fsplitb, otherstat.fsplitb, that.better_score_types[4])
         ];
     }
 };
@@ -331,14 +373,15 @@ var RandSubvolumeStats = function (data, comptype) {
     this.fmergeb = this.payload["fmerge-best"][0]; 
     this.fsplitb = this.payload["fsplit-best"][0]; 
     var that = this;
+    that.better_score_types = [better_score.LARGER, better_score.LARGER, better_score.LARGER, better_score.LARGER, better_score.LARGER];
 
     this.toStringArr = function () {
         return [
-            {name: "S-WRST-FM-RD" , value: that.fmergew.toFixed(2)},
-            {name: "S-WRST-FS-RD" , value: that.fsplitw.toFixed(2)},
-            {name: "S-AVE-RD", value: that.average.toFixed(2)},
-            {name: "S-BST-FM-RD" , value: that.fmergeb.toFixed(2)},
-            {name: "S-BST-FS-VI" , value: that.fsplitb.toFixed(2)}
+            {name: "S-WRST-FM-RD" , value: that.fmergew.toFixed(2), comp_better_scores: that.better_score_types[0]},
+            {name: "S-WRST-FS-RD" , value: that.fsplitw.toFixed(2), comp_better_scores: that.better_score_types[1]},
+            {name: "S-AVE-RD", value: that.average.toFixed(2), comp_better_scores: that.better_score_types[2]},
+            {name: "S-BST-FM-RD" , value: that.fmergeb.toFixed(2), comp_better_scores: that.better_score_types[3]},
+            {name: "S-BST-FS-VI" , value: that.fsplitb.toFixed(2), comp_better_scores: that.better_score_types[4]}
         ];
     };
     this.toDescArr = function () {
@@ -354,13 +397,13 @@ var RandSubvolumeStats = function (data, comptype) {
     this.toJSON = function () {
         return that.payload;
     };
-    this.worseThan = function(otherstat) {
+    this.Compare = function(otherstat) {
         return [
-            that.fmergew < otherstat.fmergew,
-            that.fsplitw < otherstat.fsplitw,
-            that.average < otherstat.average,
-            that.fmergeb < otherstat.fmergeb,
-            that.fsplitb < otherstat.fsplitb
+            Compare(that.fmergew, otherstat.fmergew, that.better_score_types[0]),
+            Compare(that.fsplitw, otherstat.fsplitw, that.better_score_types[1]),
+            Compare(that.average, otherstat.average, that.better_score_types[2]),
+            Compare(that.fmergeb, otherstat.fmergeb, that.better_score_types[3]),
+            Compare(that.fsplitb, otherstat.fsplitb, that.better_score_types[4])
         ];
     }
 };
