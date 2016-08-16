@@ -137,16 +137,22 @@ module.exports = function(grunt) {
         files: ['src/application.html', 'src/js/app.js', 'src/js/**/*.js', 'src/less/*.less', 'neuroglancer/*'],
         tasks: ['browserify', 'less', 'copy:build']
       }
+    },
+    env: {
+        dist : {
+            NODE_ENV : 'production'
+        }
     }
   });
 
   grunt.loadNpmTasks('grunt-contrib-connect');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-env');
 
   // Default task(s).
   grunt.registerTask('serve', ['connect'])
   grunt.registerTask('default', ['browserify:app', 'less', 'copy:build','connect', 'watch']);
-  grunt.registerTask('dist', ['browserify:app', 'less:build', 'uglify', 'copy:dist', 'cssmin']);
+  grunt.registerTask('dist', ['env:dist', 'browserify:app', 'less:build', 'uglify', 'copy:dist', 'cssmin']);
   grunt.registerTask('lint', 'Running lint', ['jslint']);
   grunt.registerTask('test', ["browserify:specs", "jasmine"]);
 

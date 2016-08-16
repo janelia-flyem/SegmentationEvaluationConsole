@@ -30,6 +30,7 @@
   "dependencies": {
     "bootstrap": "^3.3.4",
     "dvid": "latest",
+    "grunt-env": "^0.4.4",
     "jquery": "^2.1.4",
     "react": "^0.14",
     "react-bootstrap": "^0.29.5",
