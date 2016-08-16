@@ -178,10 +178,10 @@ var RetrieveExp = React.createClass({
         );
  
         return (
-            <div className={this.props.className}>
+            <div>
             {modalinfo}
             {wait_component}
-            <form >
+            <form className={this.props.className}>
             <div className="form-group">
             <button type="button" className="btn btn-primary" data-toggle="modal" data-target={"#" + this.addID("dvidQuery")} style={{marginRight: "1em"}}>DVID</button>
             </div>
