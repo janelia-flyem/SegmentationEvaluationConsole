@@ -5,6 +5,7 @@ var dvid = require('dvid');
 window.$ = window.jQuery = require('jquery');
 var WaitDialog = require('./WaitDialog.React');
 var SegMetrics = require('../helpers/SegMetrics');
+var _ = require('underscore');
 
 
 var ExpsLocation = "/seg-metrics/";
@@ -23,8 +24,12 @@ var RetrieveExp = React.createClass({
             waiting: false
         };
     },
+    componentWillMount: function(){
+        //unique ID needed for forms to be reusable
+        this.id = _.uniqueId();
+    },
     loadExperiment: function() {
-        var value = $("#selectexp option:selected").val();
+        var value = $("#" + this.addID("selectexp") + " option:selected").val();
         this.setState({waiting: true});
 
         $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + value,
@@ -56,6 +61,10 @@ var RetrieveExp = React.createClass({
     },
     uploadFile: function(ev) {
         ev.preventDefault();
+        //no file was selected
+        if(ev.target.files.length < 1){
+            return;
+        }
         this.setState({waiting: true});
 
         var reader = new FileReader();
@@ -70,8 +79,8 @@ var RetrieveExp = React.createClass({
     retrieveExpList: function(ev) {
         ev.preventDefault();
 
-        var el_server= React.findDOMNode(this.refs.dvidserver);
-        var el_uuid = React.findDOMNode(this.refs.dviduuid);
+        var el_server= this.refs.dvidserver;
+        var el_uuid = this.refs.dviduuid;
         var uuid = el_uuid.value;
         var dvidserver = el_server.value;
         if (dvidserver === "") {
@@ -104,6 +113,9 @@ var RetrieveExp = React.createClass({
             }.bind(this)
         });
     },
+    addID: function(base){
+        return base + '_' + this.id;
+    },
     render: function() {
         var uuid_err = <div />;
         var server_err = <div />;
@@ -116,7 +128,7 @@ var RetrieveExp = React.createClass({
         var modalinfo = (
                 <div>
 
-                <div className="modal fade" tabIndex="-1" id="dvidQuery" data-keyboard="false" data-backdrop="static" role="dialog" aria-labelledby="dvidQueryTitle">
+                <div className="modal fade" tabIndex="-1" id={this.addID("dvidQuery")} data-keyboard="false" data-backdrop="static" role="dialog" aria-labelledby="dvidQueryTitle">
                 <div className="modal-dialog" role="document">
                 <div className="modal-content">
                 <div className="modal-header">
@@ -127,14 +139,14 @@ var RetrieveExp = React.createClass({
                 <div className="modal-body">
                     <form className="form">
                         <div className="form-group">
-                            <label className="sr-only" htmlFor="dvidserver">DVID Server</label>
-                            <input type="text" className="form-control" id="dvidserver" ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
+                            <label className="sr-only" htmlFor={this.addID("dvidserver")}>DVID Server</label>
+                            <input type="text" className="form-control" id={this.addID("dvidserver")} ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
                             {server_err}
                         </div>
                         
                         <div className="form-group">
-                            <label className="sr-only" htmlFor="dviduuid">DVID UUID</label>
-                            <input type="text" className="form-control" id="dviduuid" ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
+                            <label className="sr-only" htmlFor={this.addID("dviduuid")}>DVID UUID</label>
+                            <input type="text" className="form-control" id={this.addID("dviduuid")} ref="dviduuid" aria-describedby="uuiderr" placeholder="UUID"/>
                             {uuid_err}
                         </div>
                         
@@ -143,7 +155,7 @@ var RetrieveExp = React.createClass({
                         </div>
                         
                         <div className="form-group">
-                        <select id="selectexp" className="form-control">
+                        <select id={this.addID("selectexp")} className="form-control">
                             <option value="default">Choose Experiment</option>
                             {this.state.exp_list.map(function (val) {
                                 return <option key={val[1]} value={val[1]}>{val[0]}</option>;
@@ -166,16 +178,16 @@ var RetrieveExp = React.createClass({
         );
  
         return (
-            <div>
+            <div className={this.props.className}>
             {modalinfo}
             {wait_component}
-            <form className="navbar-form navbar-right">
+            <form >
             <div className="form-group">
-            <button type="button" className="btn btn-primary" data-toggle="modal" data-target="#dvidQuery" style={{marginRight: "1em"}}>DVID</button>
+            <button type="button" className="btn btn-primary" data-toggle="modal" data-target={"#" + this.addID("dvidQuery")} style={{marginRight: "1em"}}>DVID</button>
             </div>
             <div className="form-group">
-            <label className="btn btn-primary" onChange={this.uploadFile} htmlFor="choosefile">
-            <input id="choosefile" type="file" style={{display:"none"}} />
+            <label className="btn btn-primary" onChange={this.uploadFile} htmlFor={"choosefile" + this.id}>
+            <input id={"choosefile" + this.id} type="file" style={{display:"none"}} />
             File
             </label>
             </div>

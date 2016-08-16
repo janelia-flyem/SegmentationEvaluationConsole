@@ -3,7 +3,7 @@
 var React = require('react');
 var OverlayTrigger  = require('react-bootstrap/lib/OverlayTrigger');
 var Popover = require('react-bootstrap/lib/Popover');
-var RetrieveExp2 = require('./RetrieveExp2.react.js');
+var RetrieveExp = require('./RetrieveExp.react.js');
 var JobInfo = require('./JobInfo.react.js');
 
 var CompInfo = React.createClass({
@@ -220,7 +220,10 @@ var MainTable = React.createClass({
             <div className="panel panel-info">
                 <div className="panel-heading"> Summary Stats -- {typename}</div>
                 <div className="panel-body stats" >
-                    <RetrieveExp2 callback={this.updateComp} />
+                    <h5 className='navbar-form stat-button-bar'>
+                        <span>Compare:</span>
+                        <RetrieveExp callback={this.updateComp} />
+                    </h5>
                     {jobinfo}
                     {this.getKey(comp_list2.length > 0)}
                     {comparable}

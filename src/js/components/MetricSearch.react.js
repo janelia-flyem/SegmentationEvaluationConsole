@@ -31,7 +31,7 @@ var MetricSearch = React.createClass({
         
         return (
             <div>
-            <RetrieveExp callback={this.props.loadData} />
+            <RetrieveExp className="navbar-form navbar-right" callback={this.props.loadData} />
             {jobinfo_component}
             </div>
         ); 
