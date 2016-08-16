@@ -71,7 +71,7 @@ var TableRow = React.createClass({
         var spacer = <span className='glyphicon glyphicon-none'></span>;
         var mainSegPlace = spacer;
         var compSegPlace = spacer;
-        var winner = (<span className="glyphicon glyphicon-certificate winner"></span>);
+        var winner = (<span className="glyphicon glyphicon-star winner"></span>);
         if (this.props.compinfo) {
             if (this.props.compinfo[1] === -1) {
                 compSegPlace = winner;
@@ -144,7 +144,7 @@ var MainTable = React.createClass({
     getKey: function(hasComp){
         var winnerKey = <div />
         if (hasComp){
-            winnerKey = <p>(<span className="glyphicon glyphicon-certificate winner"></span>):
+            winnerKey = <p>(<span className="glyphicon glyphicon-star winner"></span>):
                             better statistic value
                         </p>
         }
