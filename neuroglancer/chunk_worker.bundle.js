@@ -48,11 +48,11 @@ __webpack_require__(1);
 __webpack_require__(4);
 __webpack_require__(12);
 __webpack_require__(29);
-__webpack_require__(70);
 __webpack_require__(74);
-__webpack_require__(76);
-__webpack_require__(77);
-module.exports = __webpack_require__(79);
+__webpack_require__(78);
+__webpack_require__(80);
+__webpack_require__(81);
+module.exports = __webpack_require__(83);
 
 
 /***/ },
@@ -476,6 +476,14 @@ var RefCounted = function () {
         value: function registerEventListener(target, eventType, listener, arg) {
             target.addEventListener(eventType, listener, arg);
             this.registerDisposer(() => target.removeEventListener(eventType, listener, arg));
+        }
+    }, {
+        key: "registerCancellable",
+        value: function registerCancellable(cancellable) {
+            this.registerDisposer(() => {
+                cancellable.cancel();
+            });
+            return cancellable;
         }
     }]);
 
@@ -2673,9 +2681,9 @@ exports.cancellableThen = cancellableThen;
  */
 "use strict";
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2763,6 +2771,7 @@ var SliceView = function (_base_2$SliceViewBase) {
             for (var layer of this.visibleLayers.keys()) {
                 this.removeVisibleLayer(layer);
             }
+            _get(Object.getPrototypeOf(SliceView.prototype), "disposed", this).call(this);
         }
     }]);
 
@@ -2912,7 +2921,6 @@ var VolumeChunkSource = function (_backend_1$ChunkSourc) {
             var newChunkDataSize = tempChunkDataSize;
             // Chunk start position in voxel coordinates.
             var chunkPosition = geom_1.vec3.multiply(tempChunkPosition, chunk.chunkGridPosition, origChunkDataSize);
-            geom_1.vec3.add(chunkPosition, chunkPosition, this.spec.baseVoxelOffset);
             // Specifies whether the chunk only partially fits within the data bounds.
             var partial = false;
             for (var i = 0; i < 3; ++i) {
@@ -2922,6 +2930,7 @@ var VolumeChunkSource = function (_backend_1$ChunkSourc) {
                     partial = true;
                 }
             }
+            geom_1.vec3.add(chunkPosition, chunkPosition, this.spec.baseVoxelOffset);
             if (partial) {
                 chunk.chunkDataSize = geom_1.vec3.clone(newChunkDataSize);
             } else {
@@ -10591,12 +10600,12 @@ var api_1 = __webpack_require__(32);
 var base_1 = __webpack_require__(35);
 var backend_2 = __webpack_require__(36);
 var backend_3 = __webpack_require__(12);
-var compressed_segmentation_1 = __webpack_require__(44);
-var jpeg_1 = __webpack_require__(45);
-var raw_1 = __webpack_require__(53);
-var endian_1 = __webpack_require__(42);
+var compressed_segmentation_1 = __webpack_require__(48);
+var jpeg_1 = __webpack_require__(49);
+var raw_1 = __webpack_require__(57);
+var endian_1 = __webpack_require__(47);
 var geom_1 = __webpack_require__(15);
-var pako_1 = __webpack_require__(54);
+var pako_1 = __webpack_require__(58);
 function decodeGzippedRawChunk(chunk, response) {
     raw_1.decodeRawChunk(chunk, pako_1.inflate(new Uint8Array(response)).buffer);
 }
@@ -11175,14 +11184,16 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
         if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-__webpack_require__(37); // Import for side effects.
 var backend_1 = __webpack_require__(4);
 var base_1 = __webpack_require__(5);
-var base_2 = __webpack_require__(41);
-var endian_1 = __webpack_require__(42);
+var base_2 = __webpack_require__(37);
+var backend_2 = __webpack_require__(38);
+var base_3 = __webpack_require__(46);
+var base_4 = __webpack_require__(46);
+var endian_1 = __webpack_require__(47);
 var geom_1 = __webpack_require__(15);
-var json_1 = __webpack_require__(43);
-var uint64_1 = __webpack_require__(40);
+var json_1 = __webpack_require__(42);
+var uint64_1 = __webpack_require__(41);
 var worker_rpc_1 = __webpack_require__(2);
 var MESH_OBJECT_MANIFEST_CHUNK_PRIORITY = 100;
 var MESH_OBJECT_FRAGMENT_CHUNK_PRIORITY = 50;
@@ -11434,7 +11445,7 @@ var MeshSource = function (_backend_1$ChunkSourc) {
     _createClass(MeshSource, [{
         key: "getChunk",
         value: function getChunk(objectId) {
-            var key = `${ objectId.low }:${ objectId.high }`;
+            var key = base_3.getObjectKey(objectId);
             var chunk = this.chunks.get(key);
             if (chunk === undefined) {
                 chunk = this.getNewChunk_(ManifestChunk);
@@ -11509,38 +11520,27 @@ var FragmentSource = function (_backend_1$ChunkSourc2) {
 FragmentSource = __decorate([worker_rpc_1.registerSharedObject(base_2.FRAGMENT_SOURCE_RPC_ID)], FragmentSource);
 exports.FragmentSource = FragmentSource;
 ;
-var MeshLayer = function (_worker_rpc_1$SharedO) {
-    _inherits(MeshLayer, _worker_rpc_1$SharedO);
+var MeshLayer = function (_backend_2$Segmentati) {
+    _inherits(MeshLayer, _backend_2$Segmentati);
 
     function MeshLayer(rpc, options) {
         _classCallCheck(this, MeshLayer);
 
-        // No need to increase reference count of chunkManager and visibleSegmentSet since our owner
-        // counterpart will hold a reference to the owner counterparts of them.
-
         var _this6 = _possibleConstructorReturn(this, Object.getPrototypeOf(MeshLayer).call(this, rpc, options));
 
-        _this6.chunkManager = rpc.get(options['chunkManager']);
-        _this6.visibleSegmentSet = rpc.get(options['visibleSegmentSet']);
         _this6.source = _this6.registerDisposer(rpc.getRef(options['source']));
         _this6.registerSignalBinding(_this6.chunkManager.recomputeChunkPriorities.add(_this6.updateChunkPriorities, _this6));
-        _this6.registerSignalBinding(_this6.visibleSegmentSet.changed.add(_this6.handleVisibleSegmentSetChanged, _this6));
         return _this6;
     }
 
     _createClass(MeshLayer, [{
-        key: "handleVisibleSegmentSetChanged",
-        value: function handleVisibleSegmentSetChanged() {
-            this.chunkManager.scheduleUpdateChunkPriorities();
-        }
-    }, {
         key: "updateChunkPriorities",
         value: function updateChunkPriorities() {
             var source = this.source;
             var chunkManager = this.chunkManager;
 
-            for (var segment of this.visibleSegmentSet) {
-                var manifestChunk = source.getChunk(segment);
+            base_4.forEachVisibleSegment(this, objectId => {
+                var manifestChunk = source.getChunk(objectId);
                 chunkManager.requestChunk(manifestChunk, base_1.ChunkPriorityTier.VISIBLE, MESH_OBJECT_MANIFEST_CHUNK_PRIORITY);
                 if (manifestChunk.state === base_1.ChunkState.SYSTEM_MEMORY_WORKER) {
                     for (var fragmentId of manifestChunk.fragmentIds) {
@@ -11548,17 +11548,101 @@ var MeshLayer = function (_worker_rpc_1$SharedO) {
                         chunkManager.requestChunk(fragmentChunk, base_1.ChunkPriorityTier.VISIBLE, MESH_OBJECT_FRAGMENT_CHUNK_PRIORITY);
                     }
                 }
-            }
+            });
         }
     }]);
 
     return MeshLayer;
-}(worker_rpc_1.SharedObjectCounterpart);
+}(backend_2.SegmentationLayerSharedObjectCounterpart);
 MeshLayer = __decorate([worker_rpc_1.registerSharedObject(base_2.MESH_LAYER_RPC_ID)], MeshLayer);
 ;
 
 /***/ },
 /* 37 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+exports.MESH_LAYER_RPC_ID = 'mesh/MeshLayer';
+exports.FRAGMENT_SOURCE_RPC_ID = 'mesh/FragmentSource';
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+// Import to register the shared object types.
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+__webpack_require__(39);
+__webpack_require__(43);
+var worker_rpc_1 = __webpack_require__(2);
+
+var SegmentationLayerSharedObjectCounterpart = function (_worker_rpc_1$SharedO) {
+    _inherits(SegmentationLayerSharedObjectCounterpart, _worker_rpc_1$SharedO);
+
+    function SegmentationLayerSharedObjectCounterpart(rpc, options) {
+        _classCallCheck(this, SegmentationLayerSharedObjectCounterpart);
+
+        // No need to increase the reference count of chunkManager, visibleSegments or
+        // segmentEquivalences since our owner will hold a reference to their owners.
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationLayerSharedObjectCounterpart).call(this, rpc, options));
+
+        _this.chunkManager = rpc.get(options['chunkManager']);
+        _this.visibleSegments = rpc.get(options['visibleSegments']);
+        _this.segmentEquivalences = rpc.get(options['segmentEquivalences']);
+        var scheduleUpdateChunkPriorities = () => {
+            _this.chunkManager.scheduleUpdateChunkPriorities();
+        };
+        _this.registerSignalBinding(_this.visibleSegments.changed.add(scheduleUpdateChunkPriorities));
+        _this.registerSignalBinding(_this.segmentEquivalences.changed.add(scheduleUpdateChunkPriorities));
+        return _this;
+    }
+
+    return SegmentationLayerSharedObjectCounterpart;
+}(worker_rpc_1.SharedObjectCounterpart);
+
+exports.SegmentationLayerSharedObjectCounterpart = SegmentationLayerSharedObjectCounterpart;
+;
+
+/***/ },
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -11596,136 +11680,141 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
         if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var hash_table_1 = __webpack_require__(38);
-var uint64_1 = __webpack_require__(40);
+var disjoint_sets_1 = __webpack_require__(40);
+var json_1 = __webpack_require__(42);
+var uint64_1 = __webpack_require__(41);
 var worker_rpc_1 = __webpack_require__(2);
 var signals_1 = __webpack_require__(6);
-var Uint64Set_1 = function (_worker_rpc_1$SharedO) {
-    _inherits(Uint64Set, _worker_rpc_1$SharedO);
+var RPC_TYPE_ID = 'DisjointUint64Sets';
+var ADD_METHOD_ID = 'DisjointUint64Sets.add';
+var CLEAR_METHOD_ID = 'DisjointUint64Sets.clear';
+var SharedDisjointUint64Sets = function (_worker_rpc_1$SharedO) {
+    _inherits(SharedDisjointUint64Sets, _worker_rpc_1$SharedO);
 
-    function Uint64Set() {
-        _classCallCheck(this, Uint64Set);
+    function SharedDisjointUint64Sets() {
+        _classCallCheck(this, SharedDisjointUint64Sets);
 
         for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
             args[_key] = arguments[_key];
         }
 
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Uint64Set).call(this, ...args));
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SharedDisjointUint64Sets).call(this, ...args));
 
-        _this.hashTable = new hash_table_1.HashTable();
+        _this.disjointSets = new disjoint_sets_1.DisjointUint64Sets();
         _this.changed = new signals_1.Signal();
         return _this;
     }
 
-    _createClass(Uint64Set, [{
+    _createClass(SharedDisjointUint64Sets, [{
         key: "disposed",
         value: function disposed() {
-            _get(Object.getPrototypeOf(Uint64Set.prototype), "disposed", this).call(this);
-            this.hashTable = undefined;
+            this.disjointSets = undefined;
             this.changed = undefined;
+            _get(Object.getPrototypeOf(SharedDisjointUint64Sets.prototype), "disposed", this).call(this);
         }
     }, {
-        key: "add_",
-        value: function add_(x) {
-            return this.hashTable.add(x.low, x.high);
-        }
-    }, {
-        key: "add",
-        value: function add(x) {
-            if (this.add_(x)) {
+        key: "link",
+        value: function link(a, b) {
+            if (this.disjointSets.link(a, b)) {
                 var rpc = this.rpc;
 
                 if (rpc) {
-                    rpc.invoke('Uint64Set.add', { 'id': this.rpcId, 'value': x });
+                    rpc.invoke(ADD_METHOD_ID, { 'id': this.rpcId, 'al': a.low, 'ah': a.high, 'bl': b.low, 'bh': b.high });
                 }
-                this.changed.dispatch(x, true);
+                this.changed.dispatch();
             }
         }
     }, {
-        key: "has",
-        value: function has(x) {
-            return this.hashTable.has(x.low, x.high);
-        }
-    }, {
-        key: Symbol.iterator,
-        value: function* () {
-            var temp = new uint64_1.Uint64();
-            for (var x of this.hashTable[Symbol.iterator]()) {
-                temp.low = x[0];
-                temp.high = x[1];
-                yield temp;
-            }
-        }
-    }, {
-        key: "delete_",
-        value: function delete_(x) {
-            return this.hashTable.delete(x.low, x.high);
-        }
-    }, {
-        key: "delete",
-        value: function _delete(x) {
-            if (this.delete_(x)) {
-                var rpc = this.rpc;
-
-                if (rpc) {
-                    rpc.invoke('Uint64Set.delete', { 'id': this.rpcId, 'value': x });
-                }
-                this.changed.dispatch(x, false);
-            }
+        key: "get",
+        value: function get(x) {
+            return this.disjointSets.get(x);
         }
     }, {
         key: "clear",
         value: function clear() {
-            if (this.hashTable.clear()) {
+            if (this.disjointSets.clear()) {
                 var rpc = this.rpc;
 
                 if (rpc) {
-                    rpc.invoke('Uint64Set.clear', { 'id': this.rpcId });
+                    rpc.invoke(CLEAR_METHOD_ID, { 'id': this.rpcId });
                 }
-                this.changed.dispatch(null, false);
+                this.changed.dispatch();
+            }
+        }
+    }, {
+        key: "setElements",
+        value: function setElements(a) {
+            return this.disjointSets.setElements(a);
+        }
+    }, {
+        key: "toJSON",
+        value: function toJSON() {
+            return this.disjointSets.toJSON();
+        }
+        /**
+         * Restores the state from a JSON representation.
+         */
+
+    }, {
+        key: "restoreState",
+        value: function restoreState(obj) {
+            var _this2 = this;
+
+            this.clear();
+            if (obj !== undefined) {
+                (function () {
+                    var ids = [new uint64_1.Uint64(), new uint64_1.Uint64()];
+                    json_1.parseArray(obj, z => {
+                        json_1.parseArray(z, (s, index) => {
+                            ids[index % 2].parseString(String(s), 10);
+                            if (index !== 0) {
+                                _this2.link(ids[0], ids[1]);
+                            }
+                        });
+                    });
+                })();
             }
         }
     }, {
         key: "size",
         get: function () {
-            return this.hashTable.size;
+            return this.disjointSets.size;
         }
     }], [{
         key: "makeWithCounterpart",
         value: function makeWithCounterpart(rpc) {
-            var obj = new Uint64Set_1();
+            var obj = new this();
             obj.initializeCounterpart(rpc);
             return obj;
         }
     }]);
 
-    return Uint64Set;
+    return SharedDisjointUint64Sets;
 }(worker_rpc_1.SharedObjectCounterpart);
-var Uint64Set = Uint64Set_1;
-Uint64Set = Uint64Set_1 = __decorate([worker_rpc_1.registerSharedObject('Uint64Set')], Uint64Set);
-exports.Uint64Set = Uint64Set;
+SharedDisjointUint64Sets = __decorate([worker_rpc_1.registerSharedObject(RPC_TYPE_ID)], SharedDisjointUint64Sets);
+exports.SharedDisjointUint64Sets = SharedDisjointUint64Sets;
 ;
-worker_rpc_1.registerRPC('Uint64Set.add', function (x) {
+var tempA = new uint64_1.Uint64();
+var tempB = new uint64_1.Uint64();
+worker_rpc_1.registerRPC(ADD_METHOD_ID, function (x) {
     var obj = this.get(x['id']);
-    if (obj.add_(x['value'])) {
+    tempA.low = x['al'];
+    tempA.high = x['ah'];
+    tempB.low = x['bl'];
+    tempB.high = x['bh'];
+    if (obj.disjointSets.link(tempA, tempB)) {
         obj.changed.dispatch();
     }
 });
-worker_rpc_1.registerRPC('Uint64Set.delete', function (x) {
+worker_rpc_1.registerRPC(CLEAR_METHOD_ID, function (x) {
     var obj = this.get(x['id']);
-    if (obj.delete_(x['value'])) {
-        obj.changed.dispatch();
-    }
-});
-worker_rpc_1.registerRPC('Uint64Set.clear', function (x) {
-    var obj = this.get(x['id']);
-    if (obj.hashTable.clear()) {
+    if (obj.disjointSets.clear()) {
         obj.changed.dispatch();
     }
 });
 
 /***/ },
-/* 38 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -11749,362 +11838,209 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var hash_function_1 = __webpack_require__(39);
-exports.NUM_ALTERNATIVES = 3;
-var DEFAULT_LOAD_FACTOR = 0.9;
+var uint64_1 = __webpack_require__(41);
+var rankSymbol = Symbol('disjoint_sets:rank');
+var parentSymbol = Symbol('disjoint_sets:parent');
+var nextSymbol = Symbol('disjoint_sets:next');
+var prevSymbol = Symbol('disjoint_sets:prev');
+function findRepresentative(v) {
+    // First pass: find the root, which will be stored in ancestor.
+    var old = v;
+    var ancestor = v[parentSymbol];
+    while (ancestor !== v) {
+        v = ancestor;
+        ancestor = v[parentSymbol];
+    }
+    // Second pass: set all of the parent pointers along the path from the
+    // original element `old' to refer directly to the root `ancestor'.
+    v = old[parentSymbol];
+    while (ancestor !== v) {
+        old[parentSymbol] = ancestor;
+        old = v;
+        v = old[parentSymbol];
+    }
+    return ancestor;
+}
+function linkUnequalSetRepresentatives(i, j) {
+    var iRank = i[rankSymbol];
+    var jRank = j[rankSymbol];
+    if (iRank > jRank) {
+        j[parentSymbol] = i;
+        return i;
+    }
+    i[parentSymbol] = j;
+    if (iRank === jRank) {
+        j[rankSymbol] = jRank + 1;
+    }
+    return j;
+}
+function spliceCircularLists(i, j) {
+    var iPrev = i[prevSymbol];
+    var jPrev = j[prevSymbol];
+    // Connect end of i to beginning of j.
+    j[prevSymbol] = iPrev;
+    iPrev[nextSymbol] = j;
+    // Connect end of j to beginning of i.
+    i[prevSymbol] = jPrev;
+    jPrev[nextSymbol] = i;
+}
+function* setElementIterator(i) {
+    var j = i;
+    do {
+        yield j;
+        j = j[nextSymbol];
+    } while (j !== i);
+}
+function initializeElement(v) {
+    v[parentSymbol] = v;
+    v[rankSymbol] = 0;
+    v[nextSymbol] = v[prevSymbol] = v;
+}
+var minSymbol = Symbol('disjoint_sets:min');
+function isRootElement(v) {
+    return v[parentSymbol] === v;
+}
+/**
+ * Represents a collection of disjoint sets of Uint64 values.
+ *
+ * Supports merging sets, retrieving the minimum Uint64 value contained in a set (the representative
+ * value), and iterating over the elements contained in a set.
+ */
 
-var HashTable = function () {
-    function HashTable() {
-        var hashFunctions = arguments.length <= 0 || arguments[0] === undefined ? HashTable.generateHashFunctions(exports.NUM_ALTERNATIVES) : arguments[0];
+var DisjointUint64Sets = function () {
+    function DisjointUint64Sets() {
+        _classCallCheck(this, DisjointUint64Sets);
 
-        _classCallCheck(this, HashTable);
-
-        this.loadFactor = DEFAULT_LOAD_FACTOR;
-        this.size = 0;
-        this.growFactor = 1.2;
-        this.maxWidth = 4096;
-        this.maxHeight = 8192;
-        this.emptyLow = 4294967295;
-        this.emptyHigh = 4294967295;
-        this.maxRehashAttempts = 5;
-        this.maxAttempts = 5;
+        this.map = new Map();
         this.generation = 0;
-        this.hashFunctions = hashFunctions;
-        this.allocate(4, 1);
     }
 
-    _createClass(HashTable, [{
-        key: 'updateHashFunctions',
-        value: function updateHashFunctions(numAlternatives) {
-            this.hashFunctions = HashTable.generateHashFunctions(numAlternatives);
-        }
-    }, {
-        key: 'getHash',
-        value: function getHash(tableIndex, low, high) {
-            var hashes = this.hashFunctions[tableIndex];
-            var width = this.width,
-                height = this.height;
-            var x = hashes[0].compute(low, high) % width;
-            var y = hashes[1].compute(low, high) % height;
-            return 2 * (y * this.width + x);
-        }
-    }, {
-        key: Symbol.iterator,
-        value: function* () {
-            var tableSize = this.width * this.height;
-            var emptyLow = this.emptyLow,
-                emptyHigh = this.emptyHigh;
-            var temp = [0, 0];
-            for (var table of this.tables) {
-                for (var i = 0; i < tableSize; ++i) {
-                    var low = table[2 * i],
-                        high = table[2 * i + 1];
-                    if (low !== emptyLow || high !== emptyHigh) {
-                        temp[0] = low;
-                        temp[1] = high;
-                        yield temp;
-                    }
-                }
+    _createClass(DisjointUint64Sets, [{
+        key: 'get',
+        value: function get(x) {
+            var key = x.toString();
+            var element = this.map.get(key);
+            if (element === undefined) {
+                return x;
             }
+            return findRepresentative(element)[minSymbol];
         }
-        /**
-         * Returns the index of the table containing the specified element, or null if the element is not
-         * present.
-         */
+    }, {
+        key: 'isMinElement',
+        value: function isMinElement(x) {
+            var y = this.get(x);
+            return y === x || uint64_1.Uint64.equal(y, x);
+        }
+    }, {
+        key: 'makeSet',
+        value: function makeSet(x) {
+            var key = x.toString();
+            var map = this.map;
 
-    }, {
-        key: 'hasWithTableIndex',
-        value: function hasWithTableIndex(low, high) {
-            var numTables = this.tables.length;
-            for (var i = 0; i < numTables; ++i) {
-                var h = this.getHash(i, low, high);
-                var table = this.tables[i];
-                if (table[h] === low && table[h + 1] === high) {
-                    return i;
-                }
+            var element = map.get(key);
+            if (element === undefined) {
+                element = x.clone();
+                initializeElement(element);
+                element[minSymbol] = element;
+                map.set(key, element);
+                return element;
             }
-            return null;
-        }
-        /**
-         * Returns true iff the specified element is present.
-         */
-
-    }, {
-        key: 'has',
-        value: function has(low, high) {
-            var numTables = this.tables.length;
-            for (var i = 0; i < numTables; ++i) {
-                var h = this.getHash(i, low, high);
-                var table = this.tables[i];
-                if (table[h] === low && table[h + 1] === high) {
-                    return true;
-                }
-            }
-            return false;
+            return findRepresentative(element);
         }
     }, {
-        key: 'delete',
-        value: function _delete(low, high) {
-            var numTables = this.tables.length;
-            for (var i = 0; i < numTables; ++i) {
-                var h = this.getHash(i, low, high);
-                var table = this.tables[i];
-                if (table[h] === low && table[h + 1] === high) {
-                    table[h] = this.emptyLow;
-                    table[h + 1] = this.emptyHigh;
-                    ++this.generation;
-                    this.size--;
-                    return true;
-                }
+        key: 'link',
+        value: function link(a, b) {
+            a = this.makeSet(a);
+            b = this.makeSet(b);
+            if (a === b) {
+                return false;
             }
-            return false;
+            this.generation++;
+            var newNode = linkUnequalSetRepresentatives(a, b);
+            spliceCircularLists(a, b);
+            var aMin = a[minSymbol];
+            var bMin = b[minSymbol];
+            newNode[minSymbol] = uint64_1.Uint64.less(aMin, bMin) ? aMin : bMin;
+            return true;
+        }
+    }, {
+        key: 'setElements',
+        value: function* setElements(a) {
+            var key = a.toString();
+            var element = this.map.get(key);
+            if (element === undefined) {
+                yield a;
+            } else {
+                yield* setElementIterator(element);
+            }
         }
     }, {
         key: 'clear',
         value: function clear() {
-            if (this.size === 0) {
-                return false;
-            }
-            this.size = 0;
-            ++this.generation;
-            var tables = this.tables;
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
+            var map = this.map;
 
-            var numTables = tables.length;
-            for (var i = 0; i < numTables; ++i) {
-                var table = tables[i];
-                var tableSize = table.length;
-                for (var j = 0; j < tableSize; j += 2) {
-                    table[j] = emptyLow;
-                    table[j + 1] = emptyHigh;
-                }
-            }
-            return true;
-        }
-    }, {
-        key: 'tryToInsert',
-        value: function tryToInsert(low, high) {
-            var attempt = 0;
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-            var maxAttempts = this.maxAttempts;
-            var tables = this.tables;
-
-            var numTables = tables.length;
-            var tableIndex = Math.floor(Math.random() * numTables);
-            while (true) {
-                var h = this.getHash(tableIndex, low, high);
-                var table = tables[tableIndex];
-                var newLow = table[h],
-                    newHigh = table[h + 1];
-                table[h] = low;
-                table[h + 1] = high;
-                if (newLow === emptyLow && newHigh === emptyHigh) {
-                    return null;
-                }
-                low = newLow;
-                high = newHigh;
-                if (++attempt === maxAttempts) {
-                    break;
-                }
-                tableIndex = (tableIndex + Math.floor(Math.random() * (numTables - 1))) % numTables;
-            }
-            return [low, high];
-        }
-    }, {
-        key: 'allocate',
-        value: function allocate(width, height) {
-            var tableSize = width * height;
-            this.width = width;
-            this.height = height;
-            var numAlternatives = this.hashFunctions.length;
-            var tables = this.tables = new Array(numAlternatives);
-            for (var i = 0; i < numAlternatives; ++i) {
-                tables[i] = new Uint32Array(tableSize * 2);
-            }
-            this.maxAttempts = tableSize;
-            var emptyLow = this.emptyLow,
-                emptyHigh = this.emptyHigh;
-            for (var table of tables) {
-                for (var _i = 0; _i < tableSize; ++_i) {
-                    table[2 * _i] = emptyLow;
-                    table[2 * _i + 1] = emptyHigh;
-                }
-            }
-            this.capacity = tableSize * this.tables.length * this.loadFactor;
-        }
-    }, {
-        key: 'rehash',
-        value: function rehash(oldTables, width, height) {
-            this.allocate(width, height);
-            this.updateHashFunctions(oldTables.length);
-            for (var table of oldTables) {
-                var tableSize = table.length / 2;
-                for (var i = 0; i < tableSize; ++i) {
-                    var h = 2 * i;
-                    var low = table[h],
-                        high = table[h + 1];
-                    if (low !== 0 || high !== 0) {
-                        if (this.tryToInsert(low, high) !== null) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-    }, {
-        key: 'grow',
-        value: function grow(desiredTableSize) {
-            var oldTables = this.tables;
-            var width = this.width;
-            var height = this.height;
-            var maxWidth = this.maxWidth;
-            var maxHeight = this.maxHeight;
-
-            while (true) {
-                var origTableSize = width * height;
-                width = Math.min(maxWidth, Math.ceil(desiredTableSize / this.height));
-                if (width * height < desiredTableSize) {
-                    height = Math.min(maxHeight, Math.ceil(desiredTableSize / this.width));
-                }
-                var tableSize = width * height;
-                if (tableSize < desiredTableSize && tableSize === origTableSize) {
-                    throw new Error('Maximum table size exceeded');
-                }
-                for (var rehashAttempt = 0; rehashAttempt < this.maxRehashAttempts; ++rehashAttempt) {
-                    if (this.rehash(oldTables, width, height)) {
-                        return;
-                    }
-                }
-                desiredTableSize = Math.ceil(this.growFactor * desiredTableSize);
-            }
-        }
-    }, {
-        key: 'add',
-        value: function add(low, high) {
-            if (this.has(low, high)) {
+            if (map.size === 0) {
                 return false;
             }
             ++this.generation;
-            if (++this.size > this.capacity) {
-                this.grow(Math.ceil(this.growFactor * this.width * this.height));
+            map.clear();
+            return true;
+        }
+    }, {
+        key: 'mappings',
+        value: function* mappings() {
+            var temp = arguments.length <= 0 || arguments[0] === undefined ? new Array(2) : arguments[0];
+
+            for (var element of this.map.values()) {
+                temp[0] = element;
+                temp[1] = findRepresentative(element)[minSymbol];
+                yield temp;
             }
-            while (true) {
-                var result = this.tryToInsert(low, high);
-                if (result == null) {
-                    return true;
+        }
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.mappings();
+        }
+        /**
+         * Returns an array of arrays of strings, where the arrays contained in the outer array correspond
+         * to the disjoint sets, and the strings are the base-10 string representations of the members of
+         * each set.  The members are sorted in numerical order, and the sets are sorted in numerical
+         * order of their smallest elements.
+         */
+
+    }, {
+        key: 'toJSON',
+        value: function toJSON() {
+            var sets = new Array();
+            for (var element of this.map.values()) {
+                if (isRootElement(element)) {
+                    var members = new Array();
+                    for (var member of setElementIterator(element)) {
+                        members.push(member);
+                    }
+                    members.sort(uint64_1.Uint64.compare);
+                    sets.push(members);
                 }
-                low = result[0];
-                high = result[1];
-                this.grow(this.width * this.height);
             }
+            sets.sort((a, b) => uint64_1.Uint64.compare(a[0], b[0]));
+            return sets.map(set => set.map(element => element.toString()));
         }
-    }], [{
-        key: 'generateHashFunctions',
-        value: function generateHashFunctions() {
-            var numAlternatives = arguments.length <= 0 || arguments[0] === undefined ? exports.NUM_ALTERNATIVES : arguments[0];
-
-            var hashFunctions = [];
-            for (var alt = 0; alt < numAlternatives; ++alt) {
-                var curFunctions = [hash_function_1.HashFunction.generate(), hash_function_1.HashFunction.generate()];
-                hashFunctions.push(curFunctions);
-            }
-            return hashFunctions;
+    }, {
+        key: 'size',
+        get: function () {
+            return this.map.size;
         }
     }]);
 
-    return HashTable;
+    return DisjointUint64Sets;
 }();
 
-exports.HashTable = HashTable;
+exports.DisjointUint64Sets = DisjointUint64Sets;
 ;
 
 /***/ },
-/* 39 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-exports.PRIME_MODULUS = 4093;
-
-var HashFunction = function () {
-    function HashFunction(a0, a1, b, c) {
-        _classCallCheck(this, HashFunction);
-
-        this.a0 = a0;
-        this.a1 = a1;
-        this.b = b;
-        this.c = c;
-    }
-
-    _createClass(HashFunction, [{
-        key: "computeDotProduct",
-        value: function computeDotProduct(low, high) {
-            var a0 = this.a0;
-            var a1 = this.a1;
-
-            var a0DotLow = a0[0] * (low & 0xFF) + a0[1] * (low >> 8 & 0xFF) + a0[2] * (low >> 16 & 0xFF) + a0[3] * (low >> 24 & 0xFF);
-            var a1DotHigh = a1[0] * (high & 0xFF) + a1[1] * (high >> 8 & 0xFF) + a1[2] * (high >> 16 & 0xFF) + a1[3] * (high >> 24 & 0xFF);
-            return a0DotLow + a1DotHigh;
-        }
-    }, {
-        key: "compute",
-        value: function compute(low, high) {
-            var b = this.b;
-            var c = this.c;
-
-            var x = this.computeDotProduct(low, high);
-            var x2 = x * x % exports.PRIME_MODULUS;
-            var result = (x + x2 * c + b) % exports.PRIME_MODULUS;
-            return result;
-        }
-    }, {
-        key: "toString",
-        value: function toString() {
-            return `new HashFunction(Float32Array.of(${ this.a0 }), Float32Array.of(${ this.a1 }), ${ this.b }, ${ this.c })`;
-        }
-    }], [{
-        key: "generate",
-        value: function generate() {
-            function genCoeff() {
-                return Math.floor(Math.random() * exports.PRIME_MODULUS);
-            }
-            function genVector() {
-                return Float32Array.of(genCoeff(), genCoeff(), genCoeff(), genCoeff());
-            }
-            return new HashFunction(genVector(), genVector(), genCoeff(), genCoeff());
-        }
-    }]);
-
-    return HashFunction;
-}();
-
-exports.HashFunction = HashFunction;
-;
-
-/***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 /**
@@ -12193,9 +12129,13 @@ var Uint64 = function () {
             var vLowStr = vLow.toString(base);
             return vHigh.toString(base) + '0'.repeat(lowDigits - vLowStr.length) + vLowStr;
         }
+        /**
+         * Returns true if a is strictly less than b.
+         */
+
     }, {
-        key: 'parseString',
-        value: function parseString(s) {
+        key: 'tryParseString',
+        value: function tryParseString(s) {
             var base = arguments.length <= 1 || arguments[1] === undefined ? 10 : arguments[1];
             var _stringConversionData2 = stringConversionData[base];
             var lowDigits = _stringConversionData2.lowDigits;
@@ -12230,6 +12170,16 @@ var Uint64 = function () {
             return true;
         }
     }, {
+        key: 'parseString',
+        value: function parseString(s) {
+            var base = arguments.length <= 1 || arguments[1] === undefined ? 10 : arguments[1];
+
+            if (!this.tryParseString(s, base)) {
+                throw new Error(`Failed to parse string as uint64 value: ${ JSON.stringify(s) }.`);
+            }
+            return this;
+        }
+    }, {
         key: 'valid',
         value: function valid() {
             var low = this.low;
@@ -12237,10 +12187,25 @@ var Uint64 = function () {
 
             return low >>> 0 === low && high >>> 0 === high;
         }
+    }, {
+        key: 'toJSON',
+        value: function toJSON() {
+            return this.toString();
+        }
     }], [{
         key: 'less',
         value: function less(a, b) {
             return a.high < b.high || a.high === b.high && a.low < b.low;
+        }
+        /**
+         * Returns a negative number if a is strictly less than b, 0 if a is equal to b, or a positive
+         * number if a is strictly greater than b.
+         */
+
+    }, {
+        key: 'compare',
+        value: function compare(a, b) {
+            return a.high - b.high || a.low - b.low;
         }
     }, {
         key: 'equal',
@@ -12264,10 +12229,7 @@ var Uint64 = function () {
             var base = arguments.length <= 1 || arguments[1] === undefined ? 10 : arguments[1];
 
             var x = new Uint64();
-            if (!x.parseString(s, base)) {
-                throw new Error(`Failed to parse string as uint64 value: ${ JSON.stringify(s) }.`);
-            }
-            return x;
+            return x.parseString(s, base);
         }
     }]);
 
@@ -12279,148 +12241,7 @@ exports.Uint64 = Uint64;
 ;
 
 /***/ },
-/* 41 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-exports.MESH_LAYER_RPC_ID = 'mesh/MeshLayer';
-exports.FRAGMENT_SOURCE_RPC_ID = 'mesh/FragmentSource';
-
-/***/ },
 /* 42 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * Facilities for endianness detection and swapping.
- */
-
-(function (Endianness) {
-    Endianness[Endianness["LITTLE"] = 0] = "LITTLE";
-    Endianness[Endianness["BIG"] = 1] = "BIG";
-})(exports.Endianness || (exports.Endianness = {}));
-var Endianness = exports.Endianness;
-function determineEndianness() {
-    var a = Uint16Array.of(0x1122);
-    var b = new Uint8Array(a.buffer);
-    return b[0] === 0x11 ? Endianness.BIG : Endianness.LITTLE;
-}
-exports.determineEndianness = determineEndianness;
-/**
- * The native endianness of the runtime.
- */
-exports.ENDIANNESS = determineEndianness();
-/**
- * Swaps the endianness of an array assumed to contain 16-bit values.
- */
-function swapEndian16(array) {
-    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-    for (var i = 0, length = view.length; i < length; i += 2) {
-        var temp = view[i];
-        view[i] = view[i + 1];
-        view[i + 1] = temp;
-    }
-}
-exports.swapEndian16 = swapEndian16;
-/**
- * Swaps the endianness of an array assumed to contain 32-bit values.
- */
-function swapEndian32(array) {
-    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-    for (var i = 0, length = view.length; i < length; i += 4) {
-        var temp = view[i];
-        view[i] = view[i + 3];
-        view[i + 3] = temp;
-        temp = view[i + 1];
-        view[i + 1] = view[i + 2];
-        view[i + 2] = temp;
-    }
-}
-exports.swapEndian32 = swapEndian32;
-/**
- * Converts the endianness of an array assumed to contain 16-bit values from source to target.
- *
- * This does nothing if source === target.
- */
-function convertEndian16(array, source) {
-    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
-
-    if (source !== target) {
-        swapEndian16(array);
-    }
-}
-exports.convertEndian16 = convertEndian16;
-/**
- * Converts the endianness of an array assumed to contain 16-bit values from native to little
- * endian.
- *
- * This does nothing if the native ENDIANNESS is little endian.
- */
-function nativeToLittle16(array) {
-    if (exports.ENDIANNESS !== Endianness.LITTLE) {
-        swapEndian16(array);
-    }
-}
-exports.nativeToLittle16 = nativeToLittle16;
-/**
- * Converts the endianness of an array assumed to contain 32-bit values from source to target.
- *
- * This does nothing if source === target.
- */
-function convertEndian32(array, source) {
-    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
-
-    if (source !== target) {
-        swapEndian32(array);
-    }
-}
-exports.convertEndian32 = convertEndian32;
-/**
- * Converts the endianness of an array assumed to contain 32-bit values from native to little
- * endian.
- *
- * This does nothing if the native ENDIANNESS is little endian.
- */
-function nativeToLittle32(array) {
-    if (exports.ENDIANNESS !== Endianness.LITTLE) {
-        swapEndian32(array);
-    }
-}
-exports.nativeToLittle32 = nativeToLittle32;
-
-/***/ },
-/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -12892,7 +12713,1056 @@ function verify3dDimensions(obj) {
 exports.verify3dDimensions = verify3dDimensions;
 
 /***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var hash_table_1 = __webpack_require__(44);
+var worker_rpc_1 = __webpack_require__(2);
+var signals_1 = __webpack_require__(6);
+var Uint64Set_1 = function (_worker_rpc_1$SharedO) {
+    _inherits(Uint64Set, _worker_rpc_1$SharedO);
+
+    function Uint64Set() {
+        _classCallCheck(this, Uint64Set);
+
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Uint64Set).call(this, ...args));
+
+        _this.hashTable = new hash_table_1.HashSetUint64();
+        _this.changed = new signals_1.Signal();
+        return _this;
+    }
+
+    _createClass(Uint64Set, [{
+        key: "disposed",
+        value: function disposed() {
+            _get(Object.getPrototypeOf(Uint64Set.prototype), "disposed", this).call(this);
+            this.hashTable = undefined;
+            this.changed = undefined;
+        }
+    }, {
+        key: "add_",
+        value: function add_(x) {
+            return this.hashTable.add(x);
+        }
+    }, {
+        key: "add",
+        value: function add(x) {
+            if (this.add_(x)) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke('Uint64Set.add', { 'id': this.rpcId, 'value': x });
+                }
+                this.changed.dispatch(x, true);
+            }
+        }
+    }, {
+        key: "has",
+        value: function has(x) {
+            return this.hashTable.has(x);
+        }
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.hashTable.keys();
+        }
+    }, {
+        key: "delete_",
+        value: function delete_(x) {
+            return this.hashTable.delete(x);
+        }
+    }, {
+        key: "delete",
+        value: function _delete(x) {
+            if (this.delete_(x)) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke('Uint64Set.delete', { 'id': this.rpcId, 'value': x });
+                }
+                this.changed.dispatch(x, false);
+            }
+        }
+    }, {
+        key: "clear",
+        value: function clear() {
+            if (this.hashTable.clear()) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke('Uint64Set.clear', { 'id': this.rpcId });
+                }
+                this.changed.dispatch(null, false);
+            }
+        }
+    }, {
+        key: "toJSON",
+        value: function toJSON() {
+            var result = new Array();
+            for (var id of this) {
+                result.push(id.toString());
+            }
+            return result;
+        }
+    }, {
+        key: "size",
+        get: function () {
+            return this.hashTable.size;
+        }
+    }], [{
+        key: "makeWithCounterpart",
+        value: function makeWithCounterpart(rpc) {
+            var obj = new Uint64Set_1();
+            obj.initializeCounterpart(rpc);
+            return obj;
+        }
+    }]);
+
+    return Uint64Set;
+}(worker_rpc_1.SharedObjectCounterpart);
+var Uint64Set = Uint64Set_1;
+Uint64Set = Uint64Set_1 = __decorate([worker_rpc_1.registerSharedObject('Uint64Set')], Uint64Set);
+exports.Uint64Set = Uint64Set;
+;
+worker_rpc_1.registerRPC('Uint64Set.add', function (x) {
+    var obj = this.get(x['id']);
+    if (obj.add_(x['value'])) {
+        obj.changed.dispatch();
+    }
+});
+worker_rpc_1.registerRPC('Uint64Set.delete', function (x) {
+    var obj = this.get(x['id']);
+    if (obj.delete_(x['value'])) {
+        obj.changed.dispatch();
+    }
+});
+worker_rpc_1.registerRPC('Uint64Set.clear', function (x) {
+    var obj = this.get(x['id']);
+    if (obj.hashTable.clear()) {
+        obj.changed.dispatch();
+    }
+});
+
+/***/ },
 /* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var hash_function_1 = __webpack_require__(45);
+var uint64_1 = __webpack_require__(41);
+exports.NUM_ALTERNATIVES = 3;
+var DEFAULT_LOAD_FACTOR = 0.9;
+var DEBUG = false;
+// Key that needs to be inserted.  Temporary variables used during insert.  These can safely be
+// global because control never leaves functions defined in this module while these are in use.
+var pendingLow = 0,
+    pendingHigh = 0,
+    backupPendingLow = 0,
+    backupPendingHigh = 0;
+
+var HashTableBase = function () {
+    function HashTableBase() {
+        var hashFunctions = arguments.length <= 0 || arguments[0] === undefined ? HashTableBase.generateHashFunctions(exports.NUM_ALTERNATIVES) : arguments[0];
+
+        _classCallCheck(this, HashTableBase);
+
+        this.loadFactor = DEFAULT_LOAD_FACTOR;
+        this.size = 0;
+        this.growFactor = 1.2;
+        this.maxHeight = 8192;
+        this.emptyLow = 4294967295;
+        this.emptyHigh = 4294967295;
+        this.maxRehashAttempts = 5;
+        this.maxAttempts = 5;
+        this.maxWidth = 4096 / this.entryStride;
+        this.generation = 0;
+        this.mungedEmptyKey = -1;
+        this.hashFunctions = hashFunctions;
+        this.allocate(4, 1);
+    }
+
+    _createClass(HashTableBase, [{
+        key: 'updateHashFunctions',
+        value: function updateHashFunctions(numHashes) {
+            this.hashFunctions = HashTableBase.generateHashFunctions(numHashes);
+            this.mungedEmptyKey = -1;
+        }
+        /**
+         * Invokes callback with a modified version of the hash table data array.
+         *
+         * Replaces all slots that appear to be valid entries for (emptyLow, emptyHigh), i.e. slots that
+         * contain (emptyLow, emptyHigh) and to which (emptyLow, emptyHigh) hashes, with (mungedEmptyKey,
+         * mungedEmptyKey).
+         *
+         * mungedEmptyKey is chosen to be a 32-bit value with the property that the 64-bit value
+         * (mungedEmptyKey, mungedEmptyKey) does not hash to any of the same slots as (emptyLow,
+         * emptyHigh).
+         *
+         * This allows the modified data array to be used for lookups without special casing the empty
+         * key.
+         */
+
+    }, {
+        key: 'tableWithMungedEmptyKey',
+        value: function tableWithMungedEmptyKey(callback) {
+            var numHashes = this.hashFunctions.length;
+            var emptySlots = new Array(numHashes);
+            for (var i = 0; i < numHashes; ++i) {
+                emptySlots[i] = this.getHash(i, this.emptyLow, this.emptyHigh);
+            }
+            var mungedEmptyKey = this.mungedEmptyKey;
+
+            if (mungedEmptyKey === -1) {
+                chooseMungedEmptyKey: while (true) {
+                    mungedEmptyKey = Math.random() * 0x1000000 >>> 0;
+                    for (var _i = 0; _i < numHashes; ++_i) {
+                        var h = this.getHash(_i, mungedEmptyKey, mungedEmptyKey);
+                        for (var j = 0; j < numHashes; ++j) {
+                            if (emptySlots[j] === h) {
+                                continue chooseMungedEmptyKey;
+                            }
+                        }
+                    }
+                    this.mungedEmptyKey = mungedEmptyKey;
+                    break;
+                }
+            }
+            var table = this.table;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+
+            for (var _i2 = 0; _i2 < numHashes; ++_i2) {
+                var _h = emptySlots[_i2];
+                if (table[_h] === emptyLow && table[_h + 1] === emptyHigh) {
+                    table[_h] = mungedEmptyKey;
+                    table[_h + 1] = mungedEmptyKey;
+                }
+            }
+            try {
+                callback(table);
+            } finally {
+                for (var _i3 = 0; _i3 < numHashes; ++_i3) {
+                    var _h2 = emptySlots[_i3];
+                    if (table[_h2] === mungedEmptyKey && table[_h2 + 1] === mungedEmptyKey) {
+                        table[_h2] = emptyLow;
+                        table[_h2 + 1] = emptyHigh;
+                    }
+                }
+            }
+        }
+    }, {
+        key: 'getHash',
+        value: function getHash(hashIndex, low, high) {
+            var hashes = this.hashFunctions[hashIndex];
+            var width = this.width,
+                height = this.height;
+            var x = hashes[0].compute(low, high) % width;
+            var y = hashes[1].compute(low, high) % height;
+            return this.entryStride * (y * this.width + x);
+        }
+        /**
+         * Iterates over the Uint64 keys contained in the hash set.
+         *
+         * The same temp value will be modified and yielded at every iteration.
+         */
+
+    }, {
+        key: 'keys',
+        value: function* keys() {
+            var temp = arguments.length <= 0 || arguments[0] === undefined ? new uint64_1.Uint64() : arguments[0];
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var entryStride = this.entryStride;
+            var table = this.table;
+
+            for (var i = 0, length = table.length; i < length; i += entryStride) {
+                var low = table[i],
+                    high = table[i + 1];
+                if (low !== emptyLow || high !== emptyHigh) {
+                    temp.low = low;
+                    temp.high = high;
+                    yield temp;
+                }
+            }
+        }
+    }, {
+        key: 'indexOfPair',
+        value: function indexOfPair(low, high) {
+            var table = this.table;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+
+            if (low === emptyLow && high === emptyHigh) {
+                return -1;
+            }
+            for (var i = 0, numHashes = this.hashFunctions.length; i < numHashes; ++i) {
+                var h = this.getHash(i, low, high);
+                if (table[h] === low && table[h + 1] === high) {
+                    return h;
+                }
+            }
+            return -1;
+        }
+        /**
+         * Returns the offset into the hash table of the specified element, or -1 if the element is not
+         * present.
+         */
+
+    }, {
+        key: 'indexOf',
+        value: function indexOf(x) {
+            return this.indexOfPair(x.low, x.high);
+        }
+        /**
+         * Changes the empty key to a value that is not equal to the current empty key and is not present
+         * in the table.
+         *
+         * This is called when an attempt is made to insert the empty key.
+         */
+
+    }, {
+        key: 'chooseAnotherEmptyKey',
+        value: function chooseAnotherEmptyKey() {
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var table = this.table;
+            var entryStride = this.entryStride;
+
+            var newLow = void 0,
+                newHigh = void 0;
+            while (true) {
+                newLow = Math.random() * 0x100000000 >>> 0;
+                newHigh = Math.random() * 0x100000000 >>> 0;
+                if (newLow === emptyLow && newHigh === emptyHigh) {
+                    continue;
+                }
+                if (this.hasPair(newLow, newHigh)) {
+                    continue;
+                }
+                break;
+            }
+            this.emptyLow = newLow;
+            this.emptyHigh = newHigh;
+            // Replace empty keys in the table.
+            for (var h = 0, length = table.length; h < length; h += entryStride) {
+                if (table[h] === emptyLow && table[h + 1] === emptyHigh) {
+                    table[h] = newLow;
+                    table[h + 1] = newHigh;
+                }
+            }
+        }
+        /**
+         * Returns true iff the specified element is present.
+         */
+
+    }, {
+        key: 'has',
+        value: function has(x) {
+            return this.indexOf(x) !== -1;
+        }
+        /**
+         * Returns true iff the specified element is present.
+         */
+
+    }, {
+        key: 'hasPair',
+        value: function hasPair(low, high) {
+            return this.indexOfPair(low, high) !== -1;
+        }
+    }, {
+        key: 'delete',
+        value: function _delete(x) {
+            var index = this.indexOf(x);
+            if (index !== -1) {
+                var table = this.table;
+
+                table[index] = this.emptyLow;
+                table[index + 1] = this.emptyHigh;
+                ++this.generation;
+                this.size--;
+                return true;
+            }
+            return false;
+        }
+    }, {
+        key: 'clearTable',
+        value: function clearTable() {
+            var table = this.table;
+            var entryStride = this.entryStride;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+
+            var length = table.length;
+            for (var h = 0; h < length; h += entryStride) {
+                table[h] = emptyLow;
+                table[h + 1] = emptyHigh;
+            }
+        }
+    }, {
+        key: 'clear',
+        value: function clear() {
+            if (this.size === 0) {
+                return false;
+            }
+            this.size = 0;
+            ++this.generation;
+            this.clearTable();
+            return true;
+        }
+    }, {
+        key: 'swapPending',
+        value: function swapPending(table, offset) {
+            var tempLow = pendingLow,
+                tempHigh = pendingHigh;
+            this.storePending(table, offset);
+            table[offset] = tempLow;
+            table[offset + 1] = tempHigh;
+        }
+    }, {
+        key: 'storePending',
+        value: function storePending(table, offset) {
+            pendingLow = table[offset];
+            pendingHigh = table[offset + 1];
+        }
+    }, {
+        key: 'backupPending',
+        value: function backupPending() {
+            backupPendingLow = pendingLow;
+            backupPendingHigh = pendingHigh;
+        }
+    }, {
+        key: 'restorePending',
+        value: function restorePending() {
+            pendingLow = backupPendingLow;
+            pendingHigh = backupPendingHigh;
+        }
+    }, {
+        key: 'tryToInsert',
+        value: function tryToInsert() {
+            if (DEBUG) {
+                console.log(`tryToInsert: ${ pendingLow }, ${ pendingHigh }`);
+            }
+            var attempt = 0;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var maxAttempts = this.maxAttempts;
+            var table = this.table;
+
+            var numHashes = this.hashFunctions.length;
+            var tableIndex = Math.floor(Math.random() * numHashes);
+            while (true) {
+                var h = this.getHash(tableIndex, pendingLow, pendingHigh);
+                this.swapPending(table, h);
+                if (pendingLow === emptyLow && pendingHigh === emptyHigh) {
+                    return true;
+                }
+                if (++attempt === maxAttempts) {
+                    break;
+                }
+                tableIndex = (tableIndex + Math.floor(Math.random() * (numHashes - 1)) + 1) % numHashes;
+            }
+            return false;
+        }
+    }, {
+        key: 'allocate',
+        value: function allocate(width, height) {
+            var tableSize = width * height;
+            this.width = width;
+            this.height = height;
+            var entryStride = this.entryStride;
+
+            this.table = new Uint32Array(tableSize * entryStride);
+            this.maxAttempts = tableSize;
+            this.clearTable();
+            this.capacity = tableSize * this.loadFactor;
+            this.mungedEmptyKey = -1;
+        }
+    }, {
+        key: 'rehash',
+        value: function rehash(oldTable, width, height) {
+            if (DEBUG) {
+                console.log('rehash begin');
+            }
+            this.allocate(width, height);
+            this.updateHashFunctions(this.hashFunctions.length);
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var entryStride = this.entryStride;
+
+            for (var h = 0, length = oldTable.length; h < length; h += entryStride) {
+                var low = oldTable[h],
+                    high = oldTable[h + 1];
+                if (low !== emptyLow || high !== emptyHigh) {
+                    this.storePending(oldTable, h);
+                    if (!this.tryToInsert()) {
+                        if (DEBUG) {
+                            console.log('rehash failed');
+                        }
+                        return false;
+                    }
+                }
+            }
+            if (DEBUG) {
+                console.log('rehash end');
+            }
+            return true;
+        }
+    }, {
+        key: 'grow',
+        value: function grow(desiredTableSize) {
+            if (DEBUG) {
+                console.log(`grow: ${ desiredTableSize }`);
+            }
+            var oldTable = this.table;
+            var width = this.width;
+            var height = this.height;
+            var maxWidth = this.maxWidth;
+            var maxHeight = this.maxHeight;
+
+            while (true) {
+                var origTableSize = width * height;
+                width = Math.min(maxWidth, Math.ceil(desiredTableSize / this.height));
+                if (width * height < desiredTableSize) {
+                    height = Math.min(maxHeight, Math.ceil(desiredTableSize / width));
+                }
+                var tableSize = width * height;
+                if (tableSize < desiredTableSize && tableSize === origTableSize) {
+                    throw new Error('Maximum table size exceeded');
+                }
+                for (var rehashAttempt = 0; rehashAttempt < this.maxRehashAttempts; ++rehashAttempt) {
+                    if (this.rehash(oldTable, width, height)) {
+                        if (DEBUG) {
+                            console.log(`grow end`);
+                        }
+                        return;
+                    }
+                }
+                desiredTableSize = Math.ceil(this.growFactor * desiredTableSize);
+            }
+        }
+    }, {
+        key: 'insertInternal',
+        value: function insertInternal() {
+            ++this.generation;
+            if (pendingLow === this.emptyLow && pendingHigh === this.emptyHigh) {
+                this.chooseAnotherEmptyKey();
+            }
+            if (++this.size > this.capacity) {
+                this.backupPending();
+                this.grow(Math.ceil(this.growFactor * this.width * this.height));
+                this.restorePending();
+            }
+            while (!this.tryToInsert()) {
+                this.backupPending();
+                this.grow(this.width * this.height);
+                this.restorePending();
+            }
+        }
+    }], [{
+        key: 'generateHashFunctions',
+        value: function generateHashFunctions() {
+            var numAlternatives = arguments.length <= 0 || arguments[0] === undefined ? exports.NUM_ALTERNATIVES : arguments[0];
+
+            var hashFunctions = [];
+            for (var alt = 0; alt < numAlternatives; ++alt) {
+                var curFunctions = [hash_function_1.HashFunction.generate(), hash_function_1.HashFunction.generate()];
+                hashFunctions.push(curFunctions);
+            }
+            return hashFunctions;
+        }
+    }]);
+
+    return HashTableBase;
+}();
+
+exports.HashTableBase = HashTableBase;
+;
+
+var HashSetUint64 = function (_HashTableBase) {
+    _inherits(HashSetUint64, _HashTableBase);
+
+    function HashSetUint64() {
+        _classCallCheck(this, HashSetUint64);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashSetUint64).apply(this, arguments));
+    }
+
+    _createClass(HashSetUint64, [{
+        key: 'add',
+        value: function add(x) {
+            var low = x.low;
+            var high = x.high;
+
+            if (this.hasPair(low, high)) {
+                return false;
+            }
+            if (DEBUG) {
+                console.log(`add: ${ low },${ high }`);
+            }
+            pendingLow = low;
+            pendingHigh = high;
+            this.insertInternal();
+            return true;
+        }
+        /**
+         * Iterates over the keys.  The same temporary value will be modified and yielded at every
+         * iteration.
+         */
+
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.keys();
+        }
+    }]);
+
+    return HashSetUint64;
+}(HashTableBase);
+
+exports.HashSetUint64 = HashSetUint64;
+;
+HashSetUint64.prototype.entryStride = 2;
+// Value that needs to be inserted.  Temporary variables used during insert.  These can safely be
+// global because control never leaves functions defined in this module while these are in use.
+var pendingValueLow = 0,
+    pendingValueHigh = 0,
+    backupPendingValueLow = 0,
+    backupPendingValueHigh = 0;
+
+var HashMapUint64 = function (_HashTableBase2) {
+    _inherits(HashMapUint64, _HashTableBase2);
+
+    function HashMapUint64() {
+        _classCallCheck(this, HashMapUint64);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashMapUint64).apply(this, arguments));
+    }
+
+    _createClass(HashMapUint64, [{
+        key: 'set',
+        value: function set(key, value) {
+            var low = key.low;
+            var high = key.high;
+
+            if (this.hasPair(low, high)) {
+                return false;
+            }
+            if (DEBUG) {
+                console.log(`add: ${ low },${ high } -> ${ value.low },${ value.high }`);
+            }
+            pendingLow = low;
+            pendingHigh = high;
+            pendingValueLow = value.low;
+            pendingValueHigh = value.high;
+            this.insertInternal();
+            return true;
+        }
+    }, {
+        key: 'get',
+        value: function get(key, value) {
+            var h = this.indexOf(key);
+            if (h === -1) {
+                return false;
+            }
+            var table = this.table;
+
+            value.low = table[h + 2];
+            value.high = table[h + 3];
+            return true;
+        }
+    }, {
+        key: 'swapPending',
+        value: function swapPending(table, offset) {
+            var tempLow = pendingValueLow,
+                tempHigh = pendingValueHigh;
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'swapPending', this).call(this, table, offset);
+            table[offset + 2] = tempLow;
+            table[offset + 3] = tempHigh;
+        }
+    }, {
+        key: 'storePending',
+        value: function storePending(table, offset) {
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'storePending', this).call(this, table, offset);
+            pendingValueLow = table[offset + 2];
+            pendingValueHigh = table[offset + 3];
+        }
+    }, {
+        key: 'backupPending',
+        value: function backupPending() {
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'backupPending', this).call(this);
+            backupPendingValueLow = pendingValueLow;
+            backupPendingValueHigh = pendingValueHigh;
+        }
+    }, {
+        key: 'restorePending',
+        value: function restorePending() {
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'restorePending', this).call(this);
+            pendingValueLow = backupPendingValueLow;
+            pendingValueHigh = backupPendingValueHigh;
+        }
+        /**
+         * Iterates over entries.  The same temporary value will be modified and yielded at every
+         * iteration.
+         */
+
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.entries();
+        }
+        /**
+         * Iterates over entries.  The same temporary value will be modified and yielded at every
+         * iteration.
+         */
+
+    }, {
+        key: 'entries',
+        value: function* entries() {
+            var temp = arguments.length <= 0 || arguments[0] === undefined ? [new uint64_1.Uint64(), new uint64_1.Uint64()] : arguments[0];
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var entryStride = this.entryStride;
+            var table = this.table;
+
+            var _temp = _slicedToArray(temp, 2);
+
+            var key = _temp[0];
+            var value = _temp[1];
+
+            for (var i = 0, length = table.length; i < length; i += entryStride) {
+                var low = table[i],
+                    high = table[i + 1];
+                if (low !== emptyLow || high !== emptyHigh) {
+                    key.low = low;
+                    key.high = high;
+                    value.low = table[i + 2];
+                    value.high = table[i + 3];
+                    yield temp;
+                }
+            }
+        }
+    }]);
+
+    return HashMapUint64;
+}(HashTableBase);
+
+exports.HashMapUint64 = HashMapUint64;
+;
+HashMapUint64.prototype.entryStride = 4;
+
+/***/ },
+/* 45 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+exports.PRIME_MODULUS = 4093;
+
+var HashFunction = function () {
+    function HashFunction(a0, a1, b, c) {
+        _classCallCheck(this, HashFunction);
+
+        this.a0 = a0;
+        this.a1 = a1;
+        this.b = b;
+        this.c = c;
+    }
+
+    _createClass(HashFunction, [{
+        key: "computeDotProduct",
+        value: function computeDotProduct(low, high) {
+            var a0 = this.a0;
+            var a1 = this.a1;
+
+            var a0DotLow = a0[0] * (low & 0xFF) + a0[1] * (low >> 8 & 0xFF) + a0[2] * (low >> 16 & 0xFF) + a0[3] * (low >> 24 & 0xFF);
+            var a1DotHigh = a1[0] * (high & 0xFF) + a1[1] * (high >> 8 & 0xFF) + a1[2] * (high >> 16 & 0xFF) + a1[3] * (high >> 24 & 0xFF);
+            return a0DotLow + a1DotHigh;
+        }
+    }, {
+        key: "compute",
+        value: function compute(low, high) {
+            var b = this.b;
+            var c = this.c;
+
+            var x = this.computeDotProduct(low, high);
+            var x2 = x * x % exports.PRIME_MODULUS;
+            var result = (x + x2 * c + b) % exports.PRIME_MODULUS;
+            return result;
+        }
+    }, {
+        key: "toString",
+        value: function toString() {
+            return `new HashFunction(Float32Array.of(${ this.a0 }), Float32Array.of(${ this.a1 }), ${ this.b }, ${ this.c })`;
+        }
+    }], [{
+        key: "generate",
+        value: function generate() {
+            function genCoeff() {
+                return Math.floor(Math.random() * exports.PRIME_MODULUS);
+            }
+            function genVector() {
+                return Float32Array.of(genCoeff(), genCoeff(), genCoeff(), genCoeff());
+            }
+            return new HashFunction(genVector(), genVector(), genCoeff(), genCoeff());
+        }
+    }]);
+
+    return HashFunction;
+}();
+
+exports.HashFunction = HashFunction;
+;
+
+/***/ },
+/* 46 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * Returns a string key for identifying a uint64 object id.  This is faster than
+ * Uint64.prototype.toString().
+ */
+
+function getObjectKey(objectId) {
+    return `${ objectId.low },${ objectId.high }`;
+}
+exports.getObjectKey = getObjectKey;
+function forEachVisibleSegment(state, callback) {
+    var visibleSegments = state.visibleSegments;
+    var segmentEquivalences = state.segmentEquivalences;
+
+    for (var rootObjectId of visibleSegments) {
+        // TODO(jbms): Remove this check if logic is added to ensure that it always holds.
+        if (!segmentEquivalences.disjointSets.isMinElement(rootObjectId)) {
+            continue;
+        }
+        for (var objectId of segmentEquivalences.setElements(rootObjectId)) {
+            callback(objectId, rootObjectId);
+        }
+    }
+}
+exports.forEachVisibleSegment = forEachVisibleSegment;
+
+/***/ },
+/* 47 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * Facilities for endianness detection and swapping.
+ */
+
+(function (Endianness) {
+    Endianness[Endianness["LITTLE"] = 0] = "LITTLE";
+    Endianness[Endianness["BIG"] = 1] = "BIG";
+})(exports.Endianness || (exports.Endianness = {}));
+var Endianness = exports.Endianness;
+function determineEndianness() {
+    var a = Uint16Array.of(0x1122);
+    var b = new Uint8Array(a.buffer);
+    return b[0] === 0x11 ? Endianness.BIG : Endianness.LITTLE;
+}
+exports.determineEndianness = determineEndianness;
+/**
+ * The native endianness of the runtime.
+ */
+exports.ENDIANNESS = determineEndianness();
+/**
+ * Swaps the endianness of an array assumed to contain 16-bit values.
+ */
+function swapEndian16(array) {
+    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    for (var i = 0, length = view.length; i < length; i += 2) {
+        var temp = view[i];
+        view[i] = view[i + 1];
+        view[i + 1] = temp;
+    }
+}
+exports.swapEndian16 = swapEndian16;
+/**
+ * Swaps the endianness of an array assumed to contain 32-bit values.
+ */
+function swapEndian32(array) {
+    var view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    for (var i = 0, length = view.length; i < length; i += 4) {
+        var temp = view[i];
+        view[i] = view[i + 3];
+        view[i + 3] = temp;
+        temp = view[i + 1];
+        view[i + 1] = view[i + 2];
+        view[i + 2] = temp;
+    }
+}
+exports.swapEndian32 = swapEndian32;
+/**
+ * Converts the endianness of an array assumed to contain 16-bit values from source to target.
+ *
+ * This does nothing if source === target.
+ */
+function convertEndian16(array, source) {
+    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
+
+    if (source !== target) {
+        swapEndian16(array);
+    }
+}
+exports.convertEndian16 = convertEndian16;
+/**
+ * Converts the endianness of an array assumed to contain 16-bit values from native to little
+ * endian.
+ *
+ * This does nothing if the native ENDIANNESS is little endian.
+ */
+function nativeToLittle16(array) {
+    if (exports.ENDIANNESS !== Endianness.LITTLE) {
+        swapEndian16(array);
+    }
+}
+exports.nativeToLittle16 = nativeToLittle16;
+/**
+ * Converts the endianness of an array assumed to contain 32-bit values from source to target.
+ *
+ * This does nothing if source === target.
+ */
+function convertEndian32(array, source) {
+    var target = arguments.length <= 2 || arguments[2] === undefined ? exports.ENDIANNESS : arguments[2];
+
+    if (source !== target) {
+        swapEndian32(array);
+    }
+}
+exports.convertEndian32 = convertEndian32;
+/**
+ * Converts the endianness of an array assumed to contain 32-bit values from native to little
+ * endian.
+ *
+ * This does nothing if the native ENDIANNESS is little endian.
+ */
+function nativeToLittle32(array) {
+    if (exports.ENDIANNESS !== Endianness.LITTLE) {
+        swapEndian32(array);
+    }
+}
+exports.nativeToLittle32 = nativeToLittle32;
+
+/***/ },
+/* 48 */
 /***/ function(module, exports) {
 
 /**
@@ -12918,7 +13788,7 @@ function decodeCompressedSegmentationChunk(chunk, response) {
 exports.decodeCompressedSegmentationChunk = decodeCompressedSegmentationChunk;
 
 /***/ },
-/* 45 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -12938,15 +13808,15 @@ exports.decodeCompressedSegmentationChunk = decodeCompressedSegmentationChunk;
  */
 "use strict";
 
-var postprocess_1 = __webpack_require__(46);
-var decode_jpeg_stack_1 = __webpack_require__(51);
+var postprocess_1 = __webpack_require__(50);
+var decode_jpeg_stack_1 = __webpack_require__(55);
 function decodeJpegChunk(chunk, response) {
   postprocess_1.postProcessRawData(chunk, decode_jpeg_stack_1.decodeJpegStack(new Uint8Array(response), chunk.chunkDataSize));
 }
 exports.decodeJpegChunk = decodeJpegChunk;
 
 /***/ },
-/* 46 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -12967,9 +13837,9 @@ exports.decodeJpegChunk = decodeJpegChunk;
 "use strict";
 
 var base_1 = __webpack_require__(13);
-var encode_uint32_1 = __webpack_require__(47);
-var encode_uint64_1 = __webpack_require__(49);
-var uint32array_builder_ts_1 = __webpack_require__(50);
+var encode_uint32_1 = __webpack_require__(51);
+var encode_uint64_1 = __webpack_require__(53);
+var uint32array_builder_ts_1 = __webpack_require__(54);
 var tempBuffer = new uint32array_builder_ts_1.Uint32ArrayBuilder(20000);
 var tempVolumeSize = new Array(4);
 function postProcessRawData(chunk, data) {
@@ -13002,7 +13872,7 @@ function postProcessRawData(chunk, data) {
 exports.postProcessRawData = postProcessRawData;
 
 /***/ },
-/* 47 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 // DO NOT EDIT.  Generated from
@@ -13028,9 +13898,9 @@ exports.postProcessRawData = postProcessRawData;
  * Support for compressing uint32/uint64 segment label chunks.
  */
 
-var encode_common_ts_1 = __webpack_require__(48);
+var encode_common_ts_1 = __webpack_require__(52);
 var array_1 = __webpack_require__(26);
-var encode_common_ts_2 = __webpack_require__(48);
+var encode_common_ts_2 = __webpack_require__(52);
 exports.newCache = encode_common_ts_2.newCache;
 var tempEncodingBuffer = void 0;
 var tempValuesBuffer1 = void 0;
@@ -13125,7 +13995,7 @@ function encodeChannels(output, blockSize, rawData, volumeSize) {
 exports.encodeChannels = encodeChannels;
 
 /***/ },
-/* 48 */
+/* 52 */
 /***/ function(module, exports) {
 
 // DO NOT EDIT.  Generated from
@@ -13375,7 +14245,7 @@ function encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset,
 exports.encodeChannels = encodeChannels;
 
 /***/ },
-/* 49 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 // DO NOT EDIT.  Generated from
@@ -13401,9 +14271,9 @@ exports.encodeChannels = encodeChannels;
  * Support for compressing uint32/uint64 segment label chunks.
  */
 
-var encode_common_ts_1 = __webpack_require__(48);
+var encode_common_ts_1 = __webpack_require__(52);
 var array_1 = __webpack_require__(26);
-var encode_common_ts_2 = __webpack_require__(48);
+var encode_common_ts_2 = __webpack_require__(52);
 exports.newCache = encode_common_ts_2.newCache;
 var tempEncodingBuffer = void 0;
 var tempValuesBuffer1 = void 0;
@@ -13508,7 +14378,7 @@ function encodeChannels(output, blockSize, rawData, volumeSize) {
 exports.encodeChannels = encodeChannels;
 
 /***/ },
-/* 50 */
+/* 54 */
 /***/ function(module, exports) {
 
 // DO NOT EDIT.  Generated from templates/neuroglancer/util/typedarray_builder.template.ts.
@@ -13589,7 +14459,7 @@ exports.Uint32ArrayBuilder = Uint32ArrayBuilder;
 ;
 
 /***/ },
-/* 51 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -13609,7 +14479,7 @@ exports.Uint32ArrayBuilder = Uint32ArrayBuilder;
  */
 "use strict";
 
-var jpgjs_1 = __webpack_require__(52);
+var jpgjs_1 = __webpack_require__(56);
 var geom_1 = __webpack_require__(15);
 function decodeJpegStack(data, chunkDataSize) {
     var parser = new jpgjs_1.JpegDecoder();
@@ -13626,7 +14496,7 @@ function decodeJpegStack(data, chunkDataSize) {
 exports.decodeJpegStack = decodeJpegStack;
 
 /***/ },
-/* 52 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -17912,7 +18782,7 @@ if (true) {
 
 
 /***/ },
-/* 53 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -17932,7 +18802,7 @@ if (true) {
  */
 "use strict";
 
-var postprocess_1 = __webpack_require__(46);
+var postprocess_1 = __webpack_require__(50);
 var data_type_1 = __webpack_require__(28);
 var geom_1 = __webpack_require__(15);
 function decodeRawChunk(chunk, response) {
@@ -17968,17 +18838,17 @@ function decodeRawChunk(chunk, response) {
 exports.decodeRawChunk = decodeRawChunk;
 
 /***/ },
-/* 54 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 // Top level file is just a mixin of submodules & constants
 'use strict';
 
-var assign    = __webpack_require__(55).assign;
+var assign    = __webpack_require__(59).assign;
 
-var deflate   = __webpack_require__(56);
-var inflate   = __webpack_require__(64);
-var constants = __webpack_require__(68);
+var deflate   = __webpack_require__(60);
+var inflate   = __webpack_require__(68);
+var constants = __webpack_require__(72);
 
 var pako = {};
 
@@ -17988,7 +18858,7 @@ module.exports = pako;
 
 
 /***/ },
-/* 55 */
+/* 59 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -18096,17 +18966,17 @@ exports.setTyped(TYPED_OK);
 
 
 /***/ },
-/* 56 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var zlib_deflate = __webpack_require__(57);
-var utils        = __webpack_require__(55);
-var strings      = __webpack_require__(62);
-var msg          = __webpack_require__(61);
-var ZStream      = __webpack_require__(63);
+var zlib_deflate = __webpack_require__(61);
+var utils        = __webpack_require__(59);
+var strings      = __webpack_require__(66);
+var msg          = __webpack_require__(65);
+var ZStream      = __webpack_require__(67);
 
 var toString = Object.prototype.toString;
 
@@ -18502,16 +19372,16 @@ exports.gzip = gzip;
 
 
 /***/ },
-/* 57 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
-var utils   = __webpack_require__(55);
-var trees   = __webpack_require__(58);
-var adler32 = __webpack_require__(59);
-var crc32   = __webpack_require__(60);
-var msg     = __webpack_require__(61);
+var utils   = __webpack_require__(59);
+var trees   = __webpack_require__(62);
+var adler32 = __webpack_require__(63);
+var crc32   = __webpack_require__(64);
+var msg     = __webpack_require__(65);
 
 /* Public constants ==========================================================*/
 /* ===========================================================================*/
@@ -20356,13 +21226,13 @@ exports.deflateTune = deflateTune;
 
 
 /***/ },
-/* 58 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var utils = __webpack_require__(55);
+var utils = __webpack_require__(59);
 
 /* Public constants ==========================================================*/
 /* ===========================================================================*/
@@ -21564,7 +22434,7 @@ exports._tr_align = _tr_align;
 
 
 /***/ },
-/* 59 */
+/* 63 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21602,7 +22472,7 @@ module.exports = adler32;
 
 
 /***/ },
-/* 60 */
+/* 64 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21649,7 +22519,7 @@ module.exports = crc32;
 
 
 /***/ },
-/* 61 */
+/* 65 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21668,14 +22538,14 @@ module.exports = {
 
 
 /***/ },
-/* 62 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 // String encode/decode helpers
 'use strict';
 
 
-var utils = __webpack_require__(55);
+var utils = __webpack_require__(59);
 
 
 // Quick check if we can use fast array to bin string conversion
@@ -21859,7 +22729,7 @@ exports.utf8border = function (buf, max) {
 
 
 /***/ },
-/* 63 */
+/* 67 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -21894,19 +22764,19 @@ module.exports = ZStream;
 
 
 /***/ },
-/* 64 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var zlib_inflate = __webpack_require__(65);
-var utils        = __webpack_require__(55);
-var strings      = __webpack_require__(62);
-var c            = __webpack_require__(68);
-var msg          = __webpack_require__(61);
-var ZStream      = __webpack_require__(63);
-var GZheader     = __webpack_require__(69);
+var zlib_inflate = __webpack_require__(69);
+var utils        = __webpack_require__(59);
+var strings      = __webpack_require__(66);
+var c            = __webpack_require__(72);
+var msg          = __webpack_require__(65);
+var ZStream      = __webpack_require__(67);
+var GZheader     = __webpack_require__(73);
 
 var toString = Object.prototype.toString;
 
@@ -22318,17 +23188,17 @@ exports.ungzip  = inflate;
 
 
 /***/ },
-/* 65 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var utils         = __webpack_require__(55);
-var adler32       = __webpack_require__(59);
-var crc32         = __webpack_require__(60);
-var inflate_fast  = __webpack_require__(66);
-var inflate_table = __webpack_require__(67);
+var utils         = __webpack_require__(59);
+var adler32       = __webpack_require__(63);
+var crc32         = __webpack_require__(64);
+var inflate_fast  = __webpack_require__(70);
+var inflate_table = __webpack_require__(71);
 
 var CODES = 0;
 var LENS = 1;
@@ -23862,7 +24732,7 @@ exports.inflateUndermine = inflateUndermine;
 
 
 /***/ },
-/* 66 */
+/* 70 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -24194,13 +25064,13 @@ module.exports = function inflate_fast(strm, start) {
 
 
 /***/ },
-/* 67 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 'use strict';
 
 
-var utils = __webpack_require__(55);
+var utils = __webpack_require__(59);
 
 var MAXBITS = 15;
 var ENOUGH_LENS = 852;
@@ -24527,7 +25397,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
 
 
 /***/ },
-/* 68 */
+/* 72 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -24583,7 +25453,7 @@ module.exports = {
 
 
 /***/ },
-/* 69 */
+/* 73 */
 /***/ function(module, exports) {
 
 'use strict';
@@ -24629,7 +25499,7 @@ module.exports = GZheader;
 
 
 /***/ },
-/* 70 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24666,11 +25536,11 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(71);
+var base_1 = __webpack_require__(75);
 var backend_2 = __webpack_require__(12);
-var jpeg_1 = __webpack_require__(45);
-var ndstoreNpz_1 = __webpack_require__(72);
-var raw_1 = __webpack_require__(53);
+var jpeg_1 = __webpack_require__(49);
+var ndstoreNpz_1 = __webpack_require__(76);
+var raw_1 = __webpack_require__(57);
 var http_request_1 = __webpack_require__(33);
 var chunkDecoders = new Map();
 chunkDecoders.set('npz', ndstoreNpz_1.decodeNdstoreNpzChunk);
@@ -24718,7 +25588,7 @@ VolumeChunkSource = __decorate([backend_1.registerChunkSource(base_1.VolumeChunk
 ;
 
 /***/ },
-/* 71 */
+/* 75 */
 /***/ function(module, exports) {
 
 /**
@@ -24762,7 +25632,7 @@ exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
 ;
 
 /***/ },
-/* 72 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24782,11 +25652,11 @@ exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
  */
 "use strict";
 
-var postprocess_1 = __webpack_require__(46);
+var postprocess_1 = __webpack_require__(50);
 var base_1 = __webpack_require__(13);
 var geom_1 = __webpack_require__(15);
-var npy_1 = __webpack_require__(73);
-var pako_1 = __webpack_require__(54);
+var npy_1 = __webpack_require__(77);
+var pako_1 = __webpack_require__(58);
 function decodeNdstoreNpzChunk(chunk, response) {
     var parseResult = npy_1.parseNpy(pako_1.inflate(new Uint8Array(response)));
     var chunkDataSize = chunk.chunkDataSize;
@@ -24808,7 +25678,7 @@ function decodeNdstoreNpzChunk(chunk, response) {
 exports.decodeNdstoreNpzChunk = decodeNdstoreNpzChunk;
 
 /***/ },
-/* 73 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24833,8 +25703,8 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var data_type_1 = __webpack_require__(28);
-var endian_1 = __webpack_require__(42);
-var json_1 = __webpack_require__(43);
+var endian_1 = __webpack_require__(47);
+var json_1 = __webpack_require__(42);
 var supportedDataTypes = new Map();
 supportedDataTypes.set('|u1', {
     arrayConstructor: Uint8Array,
@@ -24956,7 +25826,7 @@ function parseNpy(x) {
 exports.parseNpy = parseNpy;
 
 /***/ },
-/* 74 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24993,10 +25863,10 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(75);
+var base_1 = __webpack_require__(79);
 var backend_2 = __webpack_require__(12);
-var compressed_segmentation_1 = __webpack_require__(44);
-var jpeg_1 = __webpack_require__(45);
+var compressed_segmentation_1 = __webpack_require__(48);
+var jpeg_1 = __webpack_require__(49);
 var base_2 = __webpack_require__(13);
 var geom_1 = __webpack_require__(15);
 var http_request_1 = __webpack_require__(33);
@@ -25038,7 +25908,13 @@ var VolumeChunkSource = function (_backend_2$Parameteri) {
                 return `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }/jpeg`;
             } else {
                 // volumeType is SEGMENTATION
-                return `/api/node/${ params['nodeKey'] }/${ params['dataInstanceKey'] }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }?compression=googlegzip`;
+                //handle metric data
+                var dataInstanceKey = params['dataInstanceKey'];
+                var hashIndex = dataInstanceKey.lastIndexOf('#');
+                if (hashIndex !== -1) {
+                    dataInstanceKey = dataInstanceKey.replace('#', '');
+                }
+                return `/api/node/${ params['nodeKey'] }/${ dataInstanceKey }/raw/0_1_2/${ chunkDataSize[0] }_${ chunkDataSize[1] }_${ chunkDataSize[2] }/${ chunkPosition[0] }_${ chunkPosition[1] }_${ chunkPosition[2] }?compression=googlegzip`;
             }
         }
     }, {
@@ -25092,7 +25968,7 @@ TileChunkSource = __decorate([backend_1.registerChunkSource(base_1.TileChunkSour
 ;
 
 /***/ },
-/* 75 */
+/* 79 */
 /***/ function(module, exports) {
 
 "use strict";
@@ -25161,7 +26037,7 @@ TileChunkSourceParameters.RPC_ID = 'dvid/TileChunkSource';
 exports.TileChunkSourceParameters = TileChunkSourceParameters;
 
 /***/ },
-/* 76 */
+/* 80 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -25181,10 +26057,10 @@ exports.TileChunkSourceParameters = TileChunkSourceParameters;
  */
 "use strict";
 
-__webpack_require__(70);
+__webpack_require__(74);
 
 /***/ },
-/* 77 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -25221,13 +26097,13 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(78);
+var base_1 = __webpack_require__(82);
 var backend_2 = __webpack_require__(36);
 var backend_3 = __webpack_require__(12);
-var compressed_segmentation_1 = __webpack_require__(44);
-var jpeg_1 = __webpack_require__(45);
-var raw_1 = __webpack_require__(53);
-var endian_1 = __webpack_require__(42);
+var compressed_segmentation_1 = __webpack_require__(48);
+var jpeg_1 = __webpack_require__(49);
+var raw_1 = __webpack_require__(57);
+var endian_1 = __webpack_require__(47);
 var http_request_1 = __webpack_require__(33);
 var chunkDecoders = new Map();
 chunkDecoders.set(base_1.VolumeChunkEncoding.RAW, raw_1.decodeRawChunk);
@@ -25313,7 +26189,7 @@ MeshSource = __decorate([backend_1.registerChunkSource(base_1.MeshSourceParamete
 ;
 
 /***/ },
-/* 78 */
+/* 82 */
 /***/ function(module, exports) {
 
 /**
@@ -25383,7 +26259,7 @@ exports.MeshSourceParameters = MeshSourceParameters;
 ;
 
 /***/ },
-/* 79 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -25420,13 +26296,13 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(80);
+var base_1 = __webpack_require__(84);
 var backend_2 = __webpack_require__(36);
 var backend_3 = __webpack_require__(12);
-var jpeg_1 = __webpack_require__(45);
-var ndstoreNpz_1 = __webpack_require__(72);
-var raw_1 = __webpack_require__(53);
-var endian_1 = __webpack_require__(42);
+var jpeg_1 = __webpack_require__(49);
+var ndstoreNpz_1 = __webpack_require__(76);
+var raw_1 = __webpack_require__(57);
+var endian_1 = __webpack_require__(47);
 var http_request_1 = __webpack_require__(33);
 var chunkDecoders = new Map();
 chunkDecoders.set(base_1.VolumeChunkEncoding.NPZ, ndstoreNpz_1.decodeNdstoreNpzChunk);
@@ -25514,7 +26390,7 @@ exports.MeshSource = MeshSource;
 ;
 
 /***/ },
-/* 80 */
+/* 84 */
 /***/ function(module, exports) {
 
 /**

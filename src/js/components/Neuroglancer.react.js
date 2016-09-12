@@ -98,21 +98,25 @@ var NeuroglancerTab = React.createClass({
         window.viewer.display.onResize()
 
         //munge configs so they can be used to build layers
+        var compTypeStr = this.props.compType.typeName + ':' + this.props.compType.instanceName;
+        var typeData = this.props.metric_results.data.types[compTypeStr];
         var ground_config = this.props.metric_results.config['dvid-info']
+
         //make a config for the grayscale image. ASSUMPTION: image will be called 'grayscale' on dvid
         var ground_config_img = Object.assign({}, ground_config, {'type': 'image', 'label-name': 'grayscale'})
+
+        ground_config['metricData'] = this.mungeSegmentMetrics(typeData['gt-bodies']);
         var comp_config = this.props.metric_results.config['dvid-info-comp']
+        comp_config['metricData'] = this.mungeSegmentMetrics(typeData['seg-bodies']);
+
         _.each([ground_config,comp_config],function (config){
-            config.type = 'segmentation'
+            config.type = 'metric'
         })
 
         //create the layers
         _.each([ground_config_img, ground_config, comp_config], function (config){
               if(_.contains(layernames_to_load, config['label-name'])){
-                var sourceSpec = this.buildSourceSpec(server,
-                                                      config['type'],
-                                                      config['label-name'],
-                                                      uuid)
+                var sourceSpec = this.buildSourceSpec(server, config, uuid);
                 var layer = viewer.layerSpecification.getLayer( config['label-name'],
                                                                 sourceSpec)
                 var managedLayer = viewer.layerManager.addManagedLayer(layer)
@@ -120,12 +124,28 @@ var NeuroglancerTab = React.createClass({
         }.bind(this))
 
     },
-    buildSourceSpec: function(server, type, name, uuid){
-        var sourceURL = 'dvid://http://' + server + '/' + uuid + '/' + name
+    mungeSegmentMetrics: function(body_data){
+        var metricMap = _.map(body_data, function(val, key){
+                            return [parseInt(key), val[0]];
+                        });
+
         return {
-               'type': type,
+            metricName: 'fragment score',
+            IDColorMap: metricMap
+        }
+    },
+    buildSourceSpec: function(server, config, uuid){
+        var sourceURL = 'dvid://http://' + server + '/' + uuid + '/' + config['label-name'];
+        var spec = {
+               'type': config['type'],
                'source': sourceURL
         }
+
+        if(config['metricData']){
+            spec['metricData'] = config['metricData'];
+        }
+
+        return spec;
     },
     getFullUUID_Promise: function(server,uuid){
         /**
@@ -170,7 +190,8 @@ var NeuroglancerState = function(state){
     return {
         metric_results: state.metric_results,
         active: (state.ActiveTab==2 ? true : false),
-        position: state.position
+        position: state.position,
+        compType: state.compType
     }
 };
 
