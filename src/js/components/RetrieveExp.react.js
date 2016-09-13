@@ -31,12 +31,17 @@ var RetrieveExp = React.createClass({
     loadExperiment: function() {
         var value = $("#" + this.addID("selectexp") + " option:selected").val();
         this.setState({waiting: true});
-
         $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + value,
-            function (data) { 
+            function (data) {
                 var metric_data = new SegMetrics(data);
-                this.props.callback(metric_data);
-                this.setState({waiting: false})
+                this.getFullUUID_Promise(metric_data.config['dvid-info']['dvid-server'],
+                                         metric_data.config['dvid-info']['uuid'])
+                    .then(function(fulluuid){
+                        metric_data.config['dvid-info']['full-uuid'] = fulluuid;
+                        this.props.callback(metric_data);
+                        this.setState({waiting: false})
+                    }.bind(this));
+
             }.bind(this) );
     },
     retrieveExpListActual: function(server, uuid) {
@@ -71,11 +76,45 @@ var RetrieveExp = React.createClass({
         reader.onload = function (e) {
             var data = JSON.parse(reader.result);
             var metric_data = new SegMetrics(data);
-            this.props.callback(metric_data);
-            this.setState({waiting: false})
+            this.getFullUUID_Promise(
+                metric_data.config['dvid-info']['dvid-server'],
+                metric_data.config['dvid-info']['uuid'])
+                .then(function(fulluuid){
+                    metric_data.config['dvid-info']['full-uuid'] = fulluuid;
+                    this.props.callback(metric_data);
+                    this.setState({waiting: false})
+
+                }.bind(this));
         }.bind(this);
         reader.readAsText(ev.target.files[0]);
-    },   
+    },
+    getFullUUID_Promise: function(server,uuid){
+        /**
+           Creates a promise that resolves to the full uuid using the dvid API
+        **/
+        var headers = new Headers({
+           'Content-Type': 'text/plain'
+        });
+        var request = new Request('http://' + server + '/api/repo/' + uuid + '/info', {
+            'headers': headers,
+            'method': 'get'
+        });
+
+        return fetch(request)
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(json){
+                //find the full uuid given the list of nodes names in the dag
+                return _.find(_.keys(json['DAG']['Nodes']), function(fulluuid){
+                    return fulluuid.slice(0, uuid.length) === uuid
+            })}.bind(this))
+            .catch(function(err) {
+                //todo: better error handling
+                console.log(err)
+            });
+
+    },
     retrieveExpList: function(ev) {
         ev.preventDefault();
 

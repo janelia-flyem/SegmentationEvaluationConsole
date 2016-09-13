@@ -13,11 +13,11 @@ var DisplayTabs = React.createClass({
                   <li role="tab"
                       onClick={this.props.changeTab.bind(this,1)}
                       className={this.props.ActiveTab == 1 ? 'active' : ''}>
-                    <a href="#">Metrics</a></li>
+                    <a>Metrics</a></li>
                   <li role="tab"
                       onClick={this.props.changeTab.bind(this, 2)}
                       className={this.props.ActiveTab == 2 ? 'active' : ''}>
-                    <a href="#">Neuroglancer</a></li>
+                    <a>Neuroglancer</a></li>
                 </ul>
                 <div className="tab-content container-fluid">
                      <div role="tabpanel"

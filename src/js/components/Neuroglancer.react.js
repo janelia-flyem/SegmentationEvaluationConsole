@@ -2,25 +2,14 @@
 
 var React = require('react');
 var ReactRedux = require('react-redux');
+var ReactDOM = require('react-dom');
 var connect = ReactRedux.connect;
 var _ = require('underscore')
 
 
 var NeuroglancerTab = React.createClass({
     render: function () {
-        return (
-            <div className="container-fluid">
-               <div className="row">
-                   <div className='col-md-12'>
-                        <div id="neurog-body">
-                            <div id="container"></div>
-                        </div>
-                   </div>
-              </div>
-            </div>
-
-
-        );
+        return <div/>;
     },
     shouldComponentUpdate: function(nextProps, nextState){
 
@@ -32,42 +21,66 @@ var NeuroglancerTab = React.createClass({
     getLayerNames: function(metric_results){
        var config_ground_label = metric_results.config['dvid-info']['label-name']
        var config_comp_label = metric_results.config['dvid-info-comp']['label-name']
-       return ['grayscale', config_ground_label, config_comp_label].sort()
+       return ['grayscale', config_ground_label, config_comp_label];
     },
-    componentDidUpdate: function(prevProps, prevState){
-            //check to see if any layers need to be added
-            var server = this.props.metric_results.config['dvid-info']['dvid-server'];
-            var shortuuid = this.props.metric_results.config['dvid-info']['uuid'];
-            var layer_names = this.getLayerNames(this.props.metric_results);
-
-            var same_layer_names = _.isEqual(layer_names, this.prev_metric_results.layer_names);
-            var same_server = server === this.prev_metric_results.server;
-            var same_uuid = shortuuid === this.prev_metric_results.shortuuid;
-
-
-            if ( !(same_layer_names && same_server && same_uuid)){
-                //update metrics for future comparisions
-                this.prev_metric_results = {layer_names: layer_names, server:server, shortuuid:shortuuid}
-                //remove current layers
-                viewer.layerManager.clear()
-
-                //update the position to the stack midpoint
-                this.update_position_to_midpoint(this.props.metric_results)
-
-                //get full uuid, then add layers
-                //ASSUMPTION: all layers use the same server and uuid
-                this.getFullUUID_Promise(server, shortuuid)
-                    .then(function(fulluuid){
-                        this.addLayers(this.getLayerNames(this.props.metric_results), server, fulluuid)
-                    }.bind(this))
+    componentWillReceiveProps: function(props){
+            //check if neuroglancer layers need to be updated
+            //1. get current layers
+            if(!props.active){
+                return;
             }
+            var currentLayerSpecs = _.chain(viewer.layerManager.managedLayers)
+                                     .pluck('initialSpecification')
+                                     .map(function(spec){spec.found = false; return spec;}).value();
+
+            //2. build the prospective specs (minus the metric data)
+            var server = props.metric_results.config['dvid-info']['dvid-server'];
+            var uuid = props.metric_results.config['dvid-info']['full-uuid'];
+            var layer_names = this.getLayerNames(props.metric_results);
+            var new_specs = _.map(_.zip(layer_names, ['image', 'metric', 'metric']), function(val){
+                return this.buildSourceSpec(server, uuid, val[0], val[1])
+            }.bind(this));
+            new_specs[1].metricData['metricName'] = 'fragment score: ' + props.compType.typeName;
+            new_specs[2].metricData['metricName'] = new_specs[1].metricData['metricName'];
+            new_specs[2]['__comp'] = true;
+
+            //3. compare specs. Add/remove layers as needed
+            for(var i; i<new_specs.length; i++){
+              var spec = new_specs[i];
+              for(var j; j<currentLayerSpecs.length; j++){
+                var existingSpec = currentLayerSpecs[j];
+                if (this.specsMatch(spec, existingSpec)){
+                    existingSpec['found'] = true;
+                    spec['found'] = true;
+                    break;
+                }
+              }
+            }
+            var specNotFound = function(spec){
+                return !!!spec.found;
+            }
+
+            _.chain(currentLayerSpecs).filter(specNotFound).each(this.removeLayer);
+
+            var toAdd = _.filter(new_specs, specNotFound)
+            if(toAdd.length > 0){
+                //make sure the viewer knows its correct size
+                window.viewer.display.onResize();
+                _.each(toAdd, _.partial(this.addLayer, _, props))
+            }
+
             //update neuroglancer position, if needed
-            if(this.props.position !== null && prevProps.position !== this.props.position){
-                this.updateCoordinates(this.props.position)
+            if(props.position !== null && this.props.position !== props.position){
+                this.updateCoordinates(props.position);
                 //trigger a redraw
-                window.viewer.display.onResize()
+                window.viewer.display.onResize();
             }
 
+    },
+    specsMatch: function(specA, specB){
+        return specA.type === specB.type &&
+               specA.source === specB.source &&
+               (specA.type === 'metric' ? specA.metricData.metricName === specB.metricData.metricName : true);
     },
     update_position_to_midpoint: function(metric_results){
         var substacks = metric_results.data.subvolumes.ids
@@ -92,90 +105,55 @@ var NeuroglancerTab = React.createClass({
 
         this.updateCoordinates(new Float32Array(midpoint));
     },
-    addLayers: function(layernames_to_load, server, uuid){
-        //make the viewer think it's resizing so that height/width
-        //will be set to nonzero size and layers can load
-        window.viewer.display.onResize()
+    addLayer: function(spec, props){
+        //add metric data to the spec
+        if(spec.type === 'metric'){
+            var compTypeStr = props.compType.typeName + ':' + props.compType.instanceName;
+            var typeData = props.metric_results.data.types[compTypeStr];
+            var bodyName = spec['__comp'] ? 'seg-bodies' : 'gt-bodies';
+            spec.metricData.IDColorMap = this.mungeSegmentMetrics(typeData[bodyName])
+        }
 
-        //munge configs so they can be used to build layers
-        var compTypeStr = this.props.compType.typeName + ':' + this.props.compType.instanceName;
-        var typeData = this.props.metric_results.data.types[compTypeStr];
-        var ground_config = this.props.metric_results.config['dvid-info']
+        viewer.layerManager.addManagedLayer(viewer.layerSpecification.getLayer(spec.__name, spec));
 
-        //make a config for the grayscale image. ASSUMPTION: image will be called 'grayscale' on dvid
-        var ground_config_img = Object.assign({}, ground_config, {'type': 'image', 'label-name': 'grayscale'})
-
-        ground_config['metricData'] = this.mungeSegmentMetrics(typeData['gt-bodies']);
-        var comp_config = this.props.metric_results.config['dvid-info-comp']
-        comp_config['metricData'] = this.mungeSegmentMetrics(typeData['seg-bodies']);
-
-        _.each([ground_config,comp_config],function (config){
-            config.type = 'metric'
-        })
-
-        //create the layers
-        _.each([ground_config_img, ground_config, comp_config], function (config){
-              if(_.contains(layernames_to_load, config['label-name'])){
-                var sourceSpec = this.buildSourceSpec(server, config, uuid);
-                var layer = viewer.layerSpecification.getLayer( config['label-name'],
-                                                                sourceSpec)
-                var managedLayer = viewer.layerManager.addManagedLayer(layer)
-              }
-        }.bind(this))
-
+    },
+    removeLayer: function(spec){
+        var targetLayer = viewer.layerManager.getLayerByName(spec['__name']);
+        viewer.layerManager.removeManagedLayer(targetLayer);
     },
     mungeSegmentMetrics: function(body_data){
-        var metricMap = _.map(body_data, function(val, key){
+        return _.map(body_data, function(val, key){
                             return [parseInt(key), val[0]];
                         });
-
-        return {
-            metricName: 'fragment score',
-            IDColorMap: metricMap
-        }
     },
-    buildSourceSpec: function(server, config, uuid){
-        var sourceURL = 'dvid://http://' + server + '/' + uuid + '/' + config['label-name'];
+    buildSourceSpec: function(server, uuid, name, type){
+        var sourceURL = 'dvid://http://' + server + '/' + uuid + '/' + name;
         var spec = {
-               'type': config['type'],
-               'source': sourceURL
+               'type': type,
+               'source': sourceURL,
+               '__name': name
         }
 
-        if(config['metricData']){
-            spec['metricData'] = config['metricData'];
+        if(type === 'metric'){
+            spec['metricData'] = {}
         }
 
         return spec;
     },
-    getFullUUID_Promise: function(server,uuid){
-        /**
-           Creates a promise that resolves to the full uuid using the dvid API
-        **/
-        var headers = new Headers({
-           'Content-Type': 'text/plain'
-        });
-        var request = new Request('http://' + server + '/api/repo/' + uuid + '/info', {
-            'headers': headers,
-            'method': 'get'
-        });
-
-        return fetch(request)
-            .then(function(response) {
-                return response.json();
-            })
-            .then(function(json){
-                //find the full uuid given the list of nodes names in the dag
-                return _.find(_.keys(json['DAG']['Nodes']), function(fulluuid){
-                    return fulluuid.slice(0, uuid.length) === uuid
-            })}.bind(this))
-            .catch(function(err) {
-                //todo: better error handling
-                console.log(err)
-            });
-
-    },
     componentDidMount: function(){
         //call neuroglancer method that initializes the view
+        this.node = ReactDOM.findDOMNode(this);
+        var neurogBaseDom = (
+            <div className="container-fluid">
+               <div className="row">
+                   <div className='col-md-12'>
+                        <div id="neurog-body">
+                            <div id="container"></div>
+                        </div>
+                   </div>
+              </div>
+            </div>);
+        ReactDOM.render(neurogBaseDom, this.node);
         InitializeNeuroglancer({auto_show_layer_dialog:false})
         this.prev_metric_results = {layer_names: [], server: null, shortuuid: null}
     },
