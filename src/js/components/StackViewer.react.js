@@ -228,10 +228,6 @@ var StackViewer = React.createClass({
         this.props.updateNeurogPos(new Float32Array(coords))
     },
     componentWillReceiveProps: function (nextprops) {
-        if(nextprops.substacks != this.props.substacks || nextprops.comptype != this.props.comptype){
-            //metrics changed
-            this.loadSubstacks(nextprops.substacks, nextprops.comptype);
-        }
         if(this.props.active != nextprops.active){
             //visibility of the tab changed
             if(nextprops.active){
@@ -240,6 +236,15 @@ var StackViewer = React.createClass({
             else{
                 cancelAnimationFrame(this.state.viewer.animationFrame);// Stop the animation
             }
+        }
+        //only update the substacks when this panel is active
+        if(nextprops.substacks != this.props.substacks || nextprops.comptype != this.props.comptype){
+            //metrics changed
+            this.stacksNeedUpdate = true;
+        }
+        if(nextprops.active && this.stacksNeedUpdate){//update
+            this.stacksNeedUpdate = false;
+            this.loadSubstacks(nextprops.substacks, nextprops.comptype);
         }
     },
     componentDidMount: function () {
