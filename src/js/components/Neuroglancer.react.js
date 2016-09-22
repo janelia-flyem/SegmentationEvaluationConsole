@@ -159,7 +159,12 @@ var NeuroglancerTab = React.createClass({
               </div>
             </div>);
         ReactDOM.render(neurogBaseDom, this.node);
-        InitializeNeuroglancer({auto_show_layer_dialog:false})
+        InitializeNeuroglancer({auto_show_layer_dialog:false});
+        //update neuroglancer orientation
+        window.viewer.perspectiveNavigationState.zoomFactor.value = 64;
+        window.viewer.perspectiveNavigationState.pose.orientation.orientation = [-.2, .25, .05,.95]
+        window.viewer.perspectiveNavigationState.pose.orientation.changed.dispatch()
+
         this.prev_metric_results = {layer_names: [], server: null, shortuuid: null}
     },
     updateCoordinates: function(position){
