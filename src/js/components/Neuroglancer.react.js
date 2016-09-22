@@ -24,63 +24,63 @@ var NeuroglancerTab = React.createClass({
        return ['grayscale', config_ground_label, config_comp_label];
     },
     componentWillReceiveProps: function(props){
-            //check if neuroglancer layers need to be updated
-            //1. get current layers
-            if(!props.active){
-                return;
-            }
-            var currentLayerSpecs = _.chain(viewer.layerManager.managedLayers)
-                                     .pluck('initialSpecification')
-                                     .map(function(spec){spec.found = false; return spec;}).value();
+        //check if neuroglancer layers need to be updated
+        //1. get current layers
+        if(!props.active){
+            return;
+        }
+        var currentLayerSpecs = _.chain(viewer.layerManager.managedLayers)
+                                 .pluck('initialSpecification')
+                                 .map(function(spec){spec.found = false; return spec;}).value();
 
-            //2. build the prospective specs (minus the metric data)
-            var server = props.metric_results.config['dvid-info']['dvid-server'];
-            var uuid = props.metric_results.config['dvid-info']['full-uuid'];
-            var layer_names = this.getLayerNames(props.metric_results);
-            var new_specs = _.map(_.zip(layer_names, ['image', 'metric', 'metric']), function(val){
-                return this.buildSourceSpec(server, uuid, val[0], val[1])
-            }.bind(this));
-            new_specs[1].metricData['metricName'] = 'fragment score: ' + props.compType.typeName;
-            new_specs[2].metricData['metricName'] = new_specs[1].metricData['metricName'];
-            new_specs[2]['__comp'] = true;
+        //2. build the prospective specs (minus the metric data, as this incurs unnecessary computation at this stage)
+        var server = props.metric_results.config['dvid-info']['dvid-server'];
+        var uuid = props.metric_results.config['dvid-info']['full-uuid'];
+        var layer_names = this.getLayerNames(props.metric_results);
+        var new_specs = _.map(_.zip(layer_names, ['image', 'metric', 'metric']), function(val){
+            return this.buildSourceSpec(server, uuid, val[0], val[1])
+        }.bind(this));
+        new_specs[1]['compType'] = props.compType.toKey();
+        new_specs[2]['compType'] = new_specs[1]['compType'];
+        new_specs[2]['__comp'] = true;
 
-            //3. compare specs. Add/remove layers as needed
-            for(var i; i<new_specs.length; i++){
-              var spec = new_specs[i];
-              for(var j; j<currentLayerSpecs.length; j++){
-                var existingSpec = currentLayerSpecs[j];
-                if (this.specsMatch(spec, existingSpec)){
-                    existingSpec['found'] = true;
-                    spec['found'] = true;
-                    break;
-                }
-              }
+        //3. compare specs. Add/remove layers as needed
+        for(var i=0; i<new_specs.length; i++){
+          var spec = new_specs[i];
+          for(var j=0; j<currentLayerSpecs.length; j++){
+            var existingSpec = currentLayerSpecs[j];
+            if (this.specsMatch(spec, existingSpec)){
+                existingSpec['found'] = true;
+                spec['found'] = true;
+                break;
             }
-            var specNotFound = function(spec){
-                return !!!spec.found;
-            }
+          }
+        }
+        var specNotFound = function(spec){
+            return !!!spec.found;
+        }
 
-            _.chain(currentLayerSpecs).filter(specNotFound).each(this.removeLayer);
+        _.chain(currentLayerSpecs).filter(specNotFound).each(this.removeLayer);
 
-            var toAdd = _.filter(new_specs, specNotFound)
-            if(toAdd.length > 0){
-                //make sure the viewer knows its correct size
-                window.viewer.display.onResize();
-                _.each(toAdd, _.partial(this.addLayer, _, props))
-            }
+        var toAdd = _.filter(new_specs, specNotFound)
+        if(toAdd.length > 0){
+            //make sure the viewer knows its correct size
+            window.viewer.display.onResize();
+            _.each(toAdd, _.partial(this.addLayer, _, props))
+        }
 
-            //update neuroglancer position, if needed
-            if(props.position !== null && this.props.position !== props.position){
-                this.updateCoordinates(props.position);
-                //trigger a redraw
-                window.viewer.display.onResize();
-            }
+        //update neuroglancer position, if needed
+        if(props.position !== null && this.props.position !== props.position){
+            this.updateCoordinates(props.position);
+            //trigger a redraw
+            window.viewer.display.onResize();
+        }
 
     },
     specsMatch: function(specA, specB){
         return specA.type === specB.type &&
                specA.source === specB.source &&
-               (specA.type === 'metric' ? specA.metricData.metricName === specB.metricData.metricName : true);
+               (specA.type === 'metric' ? specA.compType === specB.compType : true);
     },
     update_position_to_midpoint: function(metric_results){
         var substacks = metric_results.data.subvolumes.ids
@@ -108,10 +108,13 @@ var NeuroglancerTab = React.createClass({
     addLayer: function(spec, props){
         //add metric data to the spec
         if(spec.type === 'metric'){
-            var compTypeStr = props.compType.typeName + ':' + props.compType.instanceName;
-            var typeData = props.metric_results.data.types[compTypeStr];
-            var bodyName = spec['__comp'] ? 'seg-bodies' : 'gt-bodies';
-            spec.metricData.IDColorMap = this.mungeSegmentMetrics(typeData[bodyName])
+            var metricTypes = spec['__comp'] ? ['Test Frag', 'Best Test'] : ['GT Frag', 'Worst GT'];
+
+            _.each(metricTypes, function(metricName){
+                spec.metricData[metricName] = this.mungeSegmentMetrics(
+                    props.metric_results.getBodyStats(props.compType, metricName)
+                );
+            }.bind(this));
         }
 
         viewer.layerManager.addManagedLayer(viewer.layerSpecification.getLayer(spec.__name, spec));
@@ -119,11 +122,13 @@ var NeuroglancerTab = React.createClass({
     },
     removeLayer: function(spec){
         var targetLayer = viewer.layerManager.getLayerByName(spec['__name']);
-        viewer.layerManager.removeManagedLayer(targetLayer);
+        if(targetLayer){
+            viewer.layerManager.removeManagedLayer(targetLayer);
+        }
     },
     mungeSegmentMetrics: function(body_data){
-        return _.map(body_data, function(val, key){
-                            return [parseInt(key), val[0]];
+        return _.map(body_data, function(val){
+                            return [parseInt(val[0]), val[1]];
                         });
     },
     buildSourceSpec: function(server, uuid, name, type){

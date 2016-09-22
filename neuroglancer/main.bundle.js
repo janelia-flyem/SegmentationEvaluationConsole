@@ -9772,10 +9772,15 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO) {
                         case base_1.ChunkState.GPU_MEMORY:
                             var dataInstanceKey = chunk.source.parameters.dataInstanceKey;
                             var fn = this.getTransformFn(source.chunkManager.dataTransformFns, dataInstanceKey);
+                            var dataStash = undefined;
                             if (fn) {
+                                dataStash = new Uint32Array(chunk.data.buffer.slice(0));
                                 fn(chunk);
                             }
                             chunk.copyToGPU(this.gl);
+                            if (dataStash) {
+                                chunk.data = dataStash;
+                            }
                             this.visibleChunksChanged.dispatch();
                             break;
                         case base_1.ChunkState.SYSTEM_MEMORY:
@@ -19791,25 +19796,25 @@ var frontend_1 = __webpack_require__(32);
 var key_bindings_1 = __webpack_require__(98);
 var layer_1 = __webpack_require__(42);
 var layer_dialog_1 = __webpack_require__(103);
-var layer_panel_1 = __webpack_require__(156);
+var layer_panel_1 = __webpack_require__(159);
 var layer_specification_1 = __webpack_require__(104);
-var L = __webpack_require__(159);
-var navigation_state_1 = __webpack_require__(160);
+var L = __webpack_require__(162);
+var navigation_state_1 = __webpack_require__(163);
 var overlay_1 = __webpack_require__(99);
 var perspective_panel_1 = __webpack_require__(36);
-var position_status_panel_1 = __webpack_require__(161);
+var position_status_panel_1 = __webpack_require__(164);
 var frontend_2 = __webpack_require__(59);
-var panel_1 = __webpack_require__(135);
+var panel_1 = __webpack_require__(137);
 var trackable_boolean_1 = __webpack_require__(69);
 var trackable_value_1 = __webpack_require__(66);
-var url_hash_state_1 = __webpack_require__(163);
+var url_hash_state_1 = __webpack_require__(166);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
 var geom_1 = __webpack_require__(9);
 var keyboard_shortcut_handler_1 = __webpack_require__(100);
 var worker_rpc_1 = __webpack_require__(22);
 var signals_1 = __webpack_require__(34);
-__webpack_require__(164);
+__webpack_require__(167);
 __webpack_require__(115);
 __webpack_require__(72);
 
@@ -20801,10 +20806,10 @@ var layer_specification_1 = __webpack_require__(104);
 var overlay_1 = __webpack_require__(99);
 var base_1 = __webpack_require__(60);
 var promise_1 = __webpack_require__(20);
-var associate_label_1 = __webpack_require__(148);
-var autocomplete_1 = __webpack_require__(149);
-var hidden_submit_button_1 = __webpack_require__(154);
-__webpack_require__(155);
+var associate_label_1 = __webpack_require__(151);
+var autocomplete_1 = __webpack_require__(152);
+var hidden_submit_button_1 = __webpack_require__(157);
+__webpack_require__(158);
 
 var LayerDialog = function (_overlay_1$Overlay) {
     _inherits(LayerDialog, _overlay_1$Overlay);
@@ -21067,7 +21072,7 @@ var status_1 = __webpack_require__(4);
 var disposable_1 = __webpack_require__(23);
 var json_1 = __webpack_require__(8);
 var signals_1 = __webpack_require__(34);
-var segmentation_metric_user_layer_1 = __webpack_require__(141);
+var segmentation_metric_user_layer_1 = __webpack_require__(143);
 function getVolumeWithStatusMessage(x) {
     return status_1.StatusMessage.forPromise(new Promise(function (resolve) {
         resolve(factory_1.getVolume(x));
@@ -21166,8 +21171,11 @@ var LayerListSpecification = function (_disposable_1$RefCoun) {
             if (layerType === 'metric') {
                 var metricData = spec['metricData'];
                 //TODO remove me: easier handling of testing data for dev
-                if (!metricData['IDColorMap']) {
-                    metricData['IDColorMap'] = [[333290, 0], [316812, 1], [587230, .25], [331956, .75]];
+                if (!metricData) {
+                    metricData = {
+                        'Worst': [[333290, 0], [316812, 10], [587230, 10], [331956, 10]],
+                        'Frag': [[333290, 0], [316812, 1], [587230, .25], [331956, .75]]
+                    };
                 }
                 var metricLayer = new segmentation_metric_user_layer_1.SegmentationMetricUserLayer(this, spec, metricData);
                 var _managedLayer = new ManagedUserLayerWithSpecification(name, spec, this);
@@ -31221,17 +31229,17 @@ var layer_1 = __webpack_require__(42);
 var layer_dropdown_1 = __webpack_require__(119);
 var layer_specification_1 = __webpack_require__(104);
 var frontend_1 = __webpack_require__(30);
-var segment_color_1 = __webpack_require__(126);
+var segment_color_1 = __webpack_require__(128);
 var frontend_2 = __webpack_require__(74);
-var shared_disjoint_sets_1 = __webpack_require__(131);
-var frontend_3 = __webpack_require__(133);
+var shared_disjoint_sets_1 = __webpack_require__(133);
+var frontend_3 = __webpack_require__(135);
 var renderlayer_1 = __webpack_require__(65);
-var segmentation_renderlayer_1 = __webpack_require__(138);
-var uint64_set_1 = __webpack_require__(139);
+var segmentation_renderlayer_1 = __webpack_require__(140);
+var uint64_set_1 = __webpack_require__(141);
 var json_1 = __webpack_require__(8);
 var uint64_1 = __webpack_require__(52);
 var trackable_boolean_1 = __webpack_require__(69);
-__webpack_require__(140);
+__webpack_require__(142);
 
 var SegmentationUserLayer = function (_layer_1$UserLayer) {
     _inherits(SegmentationUserLayer, _layer_1$UserLayer);
@@ -31434,6 +31442,7 @@ var segment_set_widget_1 = __webpack_require__(120);
 var uint64_entry_widget_1 = __webpack_require__(122);
 var trackable_boolean_1 = __webpack_require__(69);
 var metric_scale_widget_1 = __webpack_require__(124);
+var color_select_1 = __webpack_require__(126);
 
 var SegmentationDropdown = function (_layer_1$UserLayerDro) {
     _inherits(SegmentationDropdown, _layer_1$UserLayerDro);
@@ -31491,39 +31500,51 @@ var MetricDropdown = function (_SegmentationDropdown) {
         _this2.layer = layer;
         _this2.metricSelectedAlphaWidget = _this2.registerDisposer(new range_1.RangeWidget(_this2.layer.metricLayer.selectedAlpha));
         _this2.metricNotSelectedAlphaWidget = _this2.registerDisposer(new range_1.RangeWidget(_this2.layer.metricLayer.notSelectedAlpha));
+        _this2.colorSelectWidget = _this2.registerDisposer(new color_select_1.ColorSelect(Array.from(_this2.layer.segLayers.keys()), _this2.layer.currentLayerName));
         element.insertBefore(_this2.metricNotSelectedAlphaWidget.element, element.firstChild);
         element.insertBefore(_this2.metricSelectedAlphaWidget.element, element.firstChild);
+        element.appendChild(_this2.colorSelectWidget.element);
         _this2.metricSelectedAlphaWidget.element.style.display = 'none';
         _this2.metricNotSelectedAlphaWidget.element.style.display = 'none';
         _this2.metricSelectedAlphaWidget.promptElement.textContent = 'Opacity (on)';
         _this2.metricNotSelectedAlphaWidget.promptElement.textContent = 'Opacity (off)';
-        //add metric checkbox
-        var showMetricLayerCheckbox = _this2.registerDisposer(new trackable_boolean_1.TrackableBooleanCheckbox(layer.showMetrics));
-        var showMetricLayerLabel = document.createElement('label');
-        showMetricLayerLabel.appendChild(document.createTextNode('Show Metric Data'));
-        showMetricLayerLabel.appendChild(showMetricLayerCheckbox.element);
-        _this2.element.appendChild(showMetricLayerLabel);
-        _this2.registerSignalBinding(layer.showMetrics.changed.add(() => {
-            layer.toggleUserLayer();
-            _this2.toggleSliders();
-        }));
-        //add metric scale
-        var metricScaleWidget = _this2.registerDisposer(new metric_scale_widget_1.MetricScaleWidget(layer.metricKeyData));
-        element.appendChild(metricScaleWidget.element);
+        _this2.registerSignalBinding(layer.currentLayerName.changed.add(function () {
+            this.updateDropdown();
+            this.layer.updateCurrentSegLayer();
+        }.bind(_this2)));
+        //add metric scale widget
+        _this2.metricScaleWidget = _this2.registerDisposer(new metric_scale_widget_1.MetricScaleWidget(layer.metricLayer.metrics.get(layer.metricLayer.currentMetricName)));
+        _this2.metricScaleWidget.element.style.display = 'none';
+        element.appendChild(_this2.metricScaleWidget.element);
         return _this2;
     }
 
     _createClass(MetricDropdown, [{
-        key: 'toggleSliders',
-        value: function toggleSliders() {
-            if (this.layer.showMetrics.value) {
+        key: 'updateDropdown',
+        value: function updateDropdown() {
+            if (this.layer.shouldUpdateLayers()) {
+                this.toggleSlidersAndMetricWidget();
+            }
+            if (this.layer.shouldUpdateMetrics()) {
+                this.metricScaleWidget.dispose();
+                this.metricScaleWidget = this.registerDisposer(new metric_scale_widget_1.MetricScaleWidget(this.layer.metricLayer.metrics.get(this.layer.currentLayerName.value)));
+                this.element.appendChild(this.metricScaleWidget.element);
+            }
+        }
+    }, {
+        key: 'toggleSlidersAndMetricWidget',
+        value: function toggleSlidersAndMetricWidget() {
+            if (this.layer.visibleLayer !== this.layer.metricLayer) {
+                //new layer is the metric layer
                 this.metricSelectedAlphaWidget.element.style.display = 'flex';
                 this.metricNotSelectedAlphaWidget.element.style.display = 'flex';
+                this.metricScaleWidget.element.style.display = 'block';
                 this.selectedAlphaWidget.element.style.display = 'none';
                 this.notSelectedAlphaWidget.element.style.display = 'none';
             } else {
                 this.metricSelectedAlphaWidget.element.style.display = 'none';
                 this.metricNotSelectedAlphaWidget.element.style.display = 'none';
+                this.metricScaleWidget.element.style.display = 'none';
                 this.selectedAlphaWidget.element.style.display = 'flex';
                 this.notSelectedAlphaWidget.element.style.display = 'flex';
             }
@@ -31876,7 +31897,6 @@ var MetricScaleWidget = function (_disposable_1$RefCoun) {
         var max = document.createElement('span');
         max.className = 'metric-val-max';
         max.appendChild(document.createTextNode(metricKeyData.max));
-        element.appendChild(document.createTextNode(metricKeyData.name + ' scale:'));
         element.appendChild(barElement);
         element.appendChild(min);
         element.appendChild(max);
@@ -31896,12 +31916,6 @@ var MetricScaleWidget = function (_disposable_1$RefCoun) {
 exports.MetricScaleWidget = MetricScaleWidget;
 ;
 
-var MetricKeyData = function MetricKeyData() {
-    _classCallCheck(this, MetricKeyData);
-};
-
-exports.MetricKeyData = MetricKeyData;
-
 /***/ },
 /* 125 */
 /***/ function(module, exports) {
@@ -31910,6 +31924,79 @@ exports.MetricKeyData = MetricKeyData;
 
 /***/ },
 /* 126 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var disposable_1 = __webpack_require__(23);
+var dom_1 = __webpack_require__(7);
+__webpack_require__(127);
+
+var ColorSelect = function (_disposable_1$RefCoun) {
+    _inherits(ColorSelect, _disposable_1$RefCoun);
+
+    function ColorSelect(options, model) {
+        _classCallCheck(this, ColorSelect);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ColorSelect).call(this));
+
+        _this.model = model;
+        _this.element = document.createElement('label');
+        _this.select = document.createElement('select');
+        var element = _this.element;
+        var select = _this.select;
+
+        element.className = 'color-select-widget';
+        select.name = 'colorselect';
+        for (var optionStr of options) {
+            var optionEl = document.createElement('option');
+            optionEl.innerHTML = optionStr;
+            optionEl.value = optionStr;
+            select.appendChild(optionEl);
+        }
+        select.value = model.value; //initial state
+        element.appendChild(document.createTextNode('Color Options: '));
+        element.appendChild(select);
+        _this.registerSignalBinding(model.changed.add(_this.update, _this));
+        _this.registerEventListener(select, 'change', function (e) {
+            model.value = this.value;
+        });
+        return _this;
+    }
+
+    _createClass(ColorSelect, [{
+        key: 'update',
+        value: function update() {
+            this.select.value = this.model.value;
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            dom_1.removeFromParent(this.element);
+        }
+    }]);
+
+    return ColorSelect;
+}(disposable_1.RefCounted);
+
+exports.ColorSelect = ColorSelect;
+
+/***/ },
+/* 127 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 128 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -31933,9 +32020,9 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var hash_function_1 = __webpack_require__(127);
-var shader_1 = __webpack_require__(128);
-var colorspace_1 = __webpack_require__(130);
+var hash_function_1 = __webpack_require__(129);
+var shader_1 = __webpack_require__(130);
+var colorspace_1 = __webpack_require__(132);
 var shader_lib_1 = __webpack_require__(71);
 var signals_1 = __webpack_require__(34);
 var NUM_COMPONENTS = 2;
@@ -32114,7 +32201,7 @@ exports.SegmentColorHash = SegmentColorHash;
 ;
 
 /***/ },
-/* 127 */
+/* 129 */
 /***/ function(module, exports) {
 
 /**
@@ -32196,7 +32283,7 @@ exports.HashFunction = HashFunction;
 ;
 
 /***/ },
-/* 128 */
+/* 130 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -32226,8 +32313,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var hash_function_1 = __webpack_require__(127);
-var hash_table_1 = __webpack_require__(129);
+var hash_function_1 = __webpack_require__(129);
+var hash_table_1 = __webpack_require__(131);
 var disposable_1 = __webpack_require__(23);
 var shader_lib_1 = __webpack_require__(71);
 var texture_1 = __webpack_require__(68);
@@ -32517,7 +32604,7 @@ exports.HashMapShaderManager = HashMapShaderManager;
 ;
 
 /***/ },
-/* 129 */
+/* 131 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -32549,7 +32636,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var hash_function_1 = __webpack_require__(127);
+var hash_function_1 = __webpack_require__(129);
 var uint64_1 = __webpack_require__(52);
 exports.NUM_ALTERNATIVES = 3;
 var DEFAULT_LOAD_FACTOR = 0.9;
@@ -33152,7 +33239,7 @@ exports.HashMapUint64 = HashMapUint64;
 HashMapUint64.prototype.entryStride = 4;
 
 /***/ },
-/* 130 */
+/* 132 */
 /***/ function(module, exports) {
 
 /**
@@ -33221,7 +33308,7 @@ function hsvToRgb(out, h, s, v) {
 exports.hsvToRgb = hsvToRgb;
 
 /***/ },
-/* 131 */
+/* 133 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -33259,7 +33346,7 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
         if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var disjoint_sets_1 = __webpack_require__(132);
+var disjoint_sets_1 = __webpack_require__(134);
 var json_1 = __webpack_require__(8);
 var uint64_1 = __webpack_require__(52);
 var worker_rpc_1 = __webpack_require__(22);
@@ -33393,7 +33480,7 @@ worker_rpc_1.registerRPC(CLEAR_METHOD_ID, function (x) {
 });
 
 /***/ },
-/* 132 */
+/* 134 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -33619,7 +33706,7 @@ exports.DisjointUint64Sets = DisjointUint64Sets;
 ;
 
 /***/ },
-/* 133 */
+/* 135 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -33653,8 +33740,8 @@ var base_1 = __webpack_require__(31);
 var frontend_1 = __webpack_require__(32);
 var perspective_panel_1 = __webpack_require__(36);
 var frontend_2 = __webpack_require__(74);
-var base_2 = __webpack_require__(134);
-var panel_1 = __webpack_require__(135);
+var base_2 = __webpack_require__(136);
+var panel_1 = __webpack_require__(137);
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var json_1 = __webpack_require__(8);
@@ -33995,7 +34082,7 @@ function parameterizedSkeletonSource(parametersConstructor) {
 exports.parameterizedSkeletonSource = parameterizedSkeletonSource;
 
 /***/ },
-/* 134 */
+/* 136 */
 /***/ function(module, exports) {
 
 /**
@@ -34018,7 +34105,7 @@ exports.parameterizedSkeletonSource = parameterizedSkeletonSource;
 exports.SKELETON_LAYER_RPC_ID = 'skeleton/SkeletonLayer';
 
 /***/ },
-/* 135 */
+/* 137 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -34057,7 +34144,7 @@ var trackable_boolean_1 = __webpack_require__(69);
 var geom_1 = __webpack_require__(9);
 var mouse_drag_1 = __webpack_require__(70);
 var offscreen_1 = __webpack_require__(67);
-var scale_bar_1 = __webpack_require__(136);
+var scale_bar_1 = __webpack_require__(138);
 var signals_1 = __webpack_require__(34);
 (function (OffscreenTextures) {
     OffscreenTextures[OffscreenTextures["COLOR"] = 0] = "COLOR";
@@ -34321,7 +34408,7 @@ exports.SliceViewPanel = SliceViewPanel;
 ;
 
 /***/ },
-/* 136 */
+/* 138 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -34365,7 +34452,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-__webpack_require__(137);
+__webpack_require__(139);
 /**
  * Default set of allowed significand values.  1 is implicitly part of the set.
  */
@@ -34493,13 +34580,13 @@ exports.ScaleBarWidget = ScaleBarWidget;
 ;
 
 /***/ },
-/* 137 */
+/* 139 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 138 */
+/* 140 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -34531,9 +34618,9 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var hash_table_1 = __webpack_require__(129);
-var shader_1 = __webpack_require__(128);
-var segment_color_1 = __webpack_require__(126);
+var hash_table_1 = __webpack_require__(131);
+var shader_1 = __webpack_require__(130);
+var segment_color_1 = __webpack_require__(128);
 var frontend_1 = __webpack_require__(74);
 var renderlayer_1 = __webpack_require__(65);
 var selectedSegmentForShader = new Float32Array(8);
@@ -34739,7 +34826,7 @@ exports.SegmentationRenderLayer = SegmentationRenderLayer;
 ;
 
 /***/ },
-/* 139 */
+/* 141 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -34777,7 +34864,7 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
         if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var hash_table_1 = __webpack_require__(129);
+var hash_table_1 = __webpack_require__(131);
 var worker_rpc_1 = __webpack_require__(22);
 var signals_1 = __webpack_require__(34);
 var Uint64Set_1 = function (_worker_rpc_1$SharedO) {
@@ -34909,13 +34996,13 @@ worker_rpc_1.registerRPC('Uint64Set.clear', function (x) {
 });
 
 /***/ },
-/* 140 */
+/* 142 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 141 */
+/* 143 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -34947,14 +35034,12 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var segmentation_user_layer_1 = __webpack_require__(118);
 var layer_specification_1 = __webpack_require__(104);
-var custom_color_segmentation_renderlayer_1 = __webpack_require__(142);
-var uint64_1 = __webpack_require__(52);
-var metric_scale_widget_1 = __webpack_require__(124);
+var custom_color_segmentation_renderlayer_1 = __webpack_require__(144);
+var metric_color_util_1 = __webpack_require__(149);
 var layer_dropdown_1 = __webpack_require__(119);
-var lodash_1 = __webpack_require__(144);
-var trackable_boolean_1 = __webpack_require__(69);
-var chroma = __webpack_require__(147); //needs to be imported this way due to export style differences
-__webpack_require__(140);
+var trackable_value_1 = __webpack_require__(66);
+var lodash_1 = __webpack_require__(146);
+__webpack_require__(142);
 
 var SegmentationMetricUserLayer = function (_segmentation_user_la) {
     _inherits(SegmentationMetricUserLayer, _segmentation_user_la);
@@ -34965,29 +35050,56 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
         var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationMetricUserLayer).call(this, manager, x));
 
         _this.manager = manager;
-        _this.metricKeyData = new metric_scale_widget_1.MetricKeyData();
-        _this.showMetrics = new trackable_boolean_1.TrackableBoolean(false, false);
-        _this.metricKeyData.name = metricData['metricName'];
-        var IDColorMap = _this.mapMetricsToColors(metricData['IDColorMap']);
-        var colorPath = _this.colorPath = _this.volumePath + '#';
+        _this.segLayers = new Map();
+        //bookkeeping and setup for toggling the color state
+        _this.visibleLayer = _this.segmentationLayer;
+        _this.currentLayerName = new trackable_value_1.TrackableValue('Random Colors');
+        _this.prevLayerName = _this.currentLayerName.value;
+        _this.segLayers.set('Random Colors', _this.segmentationLayer);
+        _this.segmentationLayer.layerPosition = 0;
         if (_this.volumePath != undefined) {
-            //promise for color renderlayer
-            var colorPromise = layer_specification_1.getVolumeWithStatusMessage(_this.colorPath);
-            //assumption: seg and metric layers are the top two layers
-            _this.metricLayer = new custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer(manager.chunkManager, colorPromise, IDColorMap, _this);
-            _this.addRenderLayer(_this.metricLayer);
-            _this.hideLayer(_this.metricLayer);
-            _this.visibleSegments.changed.add(_this.syncMetricVisibleSegments, _this);
+            (function () {
+                var metrics = new Map();
+                lodash_1.each(metricData, function (metricMap, metricName) {
+                    var metricKeyData = new metric_color_util_1.MetricKeyData();
+                    metricKeyData.name = metricName;
+                    metric_color_util_1.mapMetricsToColors(metricMap, metricKeyData);
+                    metrics.set(metricName, metricKeyData);
+                }.bind(_this));
+                //use the first metric map
+                _this.metricLayer = _this.addMetricLayer(metrics);
+                //start by showing the segmentation layer
+                _this.hideLayer(_this.metricLayer);
+            })();
         }
         return _this;
     }
 
     _createClass(SegmentationMetricUserLayer, [{
+        key: 'addMetricLayer',
+        value: function addMetricLayer(metrics) {
+            var manager = this.manager;
+            //promise for color renderlayer--gets its own copy of the data
+
+            var colorPath = this.colorPath = this.volumePath + '#';
+            var colorPromise = layer_specification_1.getVolumeWithStatusMessage(this.colorPath);
+            var metricLayer = new custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer(manager.chunkManager, colorPromise, metrics, this);
+            colorPromise.then(function (volume) {
+                metricLayer.setReady(false);
+            }.bind(this));
+            for (var name of metrics.keys()) {
+                this.segLayers.set(name, metricLayer);
+            }
+            this.addRenderLayer(metricLayer);
+            metricLayer.layerPosition = this.renderLayers.length - 1;
+            this.visibleSegments.changed.add(this.syncMetricVisibleSegments, this);
+            return metricLayer;
+        }
+    }, {
         key: 'toJSON',
         value: function toJSON() {
             var x = _get(Object.getPrototypeOf(SegmentationMetricUserLayer.prototype), 'toJSON', this).call(this);
             x['type'] = 'metric';
-            x['metricData'] = { 'metricName': this.metricKeyData.name };
             if (!x['selectedAlpha']) {
                 x['selectedAlpha'] = this.selectedAlphaStash;
             }
@@ -35009,30 +35121,14 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
             }
         }
     }, {
-        key: 'mapMetricsToColors',
-        value: function mapMetricsToColors(IdMetricMap) {
-            var metricKeyData = this.metricKeyData;
-            var colors = ['Yellow', 'aquamarine', 'deepskyblue', 'mediumorchid'];
-            var metricIteratee = function (el) {
-                return el[1]; //metric value
-            };
-            var min = metricKeyData.min = lodash_1.minBy(IdMetricMap, metricIteratee)[1];
-            var max = metricKeyData.max = lodash_1.maxBy(IdMetricMap, metricIteratee)[1];
-            var scale = metricKeyData.chromaScale = chroma.scale(colors).domain([min, max]);
-            for (var metricArr of IdMetricMap) {
-                var metricVal = metricArr[1];
-                var rgb = scale(metricVal).rgba();
-                metricArr[1] = (rgb[3] << 24) + (rgb[2] << 16) + (rgb[1] << 8) + rgb[0]; //convert color to 32bit little-endian value
-                //make data key
-                var idUint64 = new uint64_1.Uint64();
-                idUint64.parseString(metricArr[0].toString());
-                metricArr[0] = idUint64.low + ',' + idUint64.high;
-                //convert val to Uint64 with rand high values
-                var randHigh = Math.floor(Math.random() * Math.pow(2, 32));
-                metricArr[1] = new uint64_1.Uint64(metricArr[1], randHigh);
+        key: 'updateVisibleSegmentsOnMetricChange',
+        value: function updateVisibleSegmentsOnMetricChange() {
+            var metricVisibleSegments = this.metricLayer.displayState.visibleSegments;
+            metricVisibleSegments.clear();
+            for (var segment of this.visibleSegments.hashTable.keys()) {
+                var colorSegment = this.metricLayer.getColorVal(segment);
+                metricVisibleSegments.add(colorSegment);
             }
-            var IDColorMap = new Map(IdMetricMap);
-            return IDColorMap;
         }
     }, {
         key: 'getValueAt',
@@ -35043,31 +35139,51 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
             return this.segmentationLayer.getValueAt(position);
         }
     }, {
-        key: 'toggleUserLayer',
-        value: function toggleUserLayer() {
-            if (this.showMetrics.value) {
-                this.showLayer(this.metricLayer);
-                this.hideLayer(this.segmentationLayer);
-            } else {
-                this.showLayer(this.segmentationLayer);
-                this.hideLayer(this.metricLayer);
-            }
+        key: 'shouldUpdateMetrics',
+        value: function shouldUpdateMetrics() {
+            var newLayer = this.segLayers.get(this.currentLayerName.value);
+            return newLayer instanceof custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer && this.currentLayerName.value !== this.metricLayer.currentMetricName;
         }
     }, {
-        key: 'showLayer',
-        value: function showLayer(layer) {
-            //make sure this layer is in front to avoid blending hidden layers
-            this.renderLayers[1] = this.renderLayers[0];
-            this.renderLayers[0] = layer;
-            layer.selectedAlpha.value = this.selectedAlphaStash;
-            layer.notSelectedAlpha.value = this.notSelectedAlphaStash;
+        key: 'shouldUpdateLayers',
+        value: function shouldUpdateLayers() {
+            var newLayer = this.segLayers.get(this.currentLayerName.value);
+            return this.visibleLayer !== newLayer;
+        }
+    }, {
+        key: 'updateCurrentSegLayer',
+        value: function updateCurrentSegLayer() {
+            if (this.currentLayerName.value === this.prevLayerName) {
+                return;
+            }
+            if (this.shouldUpdateMetrics()) {
+                //just update metrics on the metricLayer
+                this.metricLayer.updateDataTransformation(this.currentLayerName.value);
+                this.updateVisibleSegmentsOnMetricChange();
+            }
+            if (this.shouldUpdateLayers()) {
+                var oldLayer = this.visibleLayer;
+                this.visibleLayer = this.segLayers.get(this.currentLayerName.value);
+                ;
+                this.metricLayer.setReady(this.visibleLayer instanceof custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer);
+                //swap alphas
+                this.visibleLayer.selectedAlpha.value = oldLayer.selectedAlpha.value;
+                this.visibleLayer.notSelectedAlpha.value = oldLayer.notSelectedAlpha.value;
+                this.hideLayer(oldLayer);
+                //reorder layers to avoid blending hidden layers
+                oldLayer.layerPosition = this.visibleLayer.layerPosition;
+                this.visibleLayer.layerPosition = 0;
+                this.renderLayers[oldLayer.layerPosition] = oldLayer;
+                this.renderLayers[0] = this.visibleLayer;
+            }
+            //update the view
             this.layersChanged.dispatch();
+            //update history
+            this.prevLayerName = this.currentLayerName.value;
         }
     }, {
         key: 'hideLayer',
         value: function hideLayer(layer) {
-            this.selectedAlphaStash = layer.selectedAlpha.value;
-            this.notSelectedAlphaStash = layer.notSelectedAlpha.value;
             layer.selectedAlpha.value = 0;
             layer.notSelectedAlpha.value = 0;
         }
@@ -35085,7 +35201,7 @@ exports.SegmentationMetricUserLayer = SegmentationMetricUserLayer;
 ;
 
 /***/ },
-/* 142 */
+/* 144 */
 /***/ function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35100,18 +35216,19 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var segmentation_renderlayer_1 = __webpack_require__(138);
-var shader_1 = __webpack_require__(128);
+var segmentation_renderlayer_1 = __webpack_require__(140);
+var shader_1 = __webpack_require__(130);
 var renderlayer_1 = __webpack_require__(65);
-var change_tabledata_1 = __webpack_require__(143);
-var uint64_set_1 = __webpack_require__(139);
+var change_tabledata_1 = __webpack_require__(145);
+var uint64_set_1 = __webpack_require__(141);
 var uint64_1 = __webpack_require__(52);
+var lodash_1 = __webpack_require__(146);
 //TODO: pare this down to only necessary imports
 
 var CustomColorSegmentationRenderLayer = function (_segmentation_renderl) {
     _inherits(CustomColorSegmentationRenderLayer, _segmentation_renderl);
 
-    function CustomColorSegmentationRenderLayer(chunkManager, multiscaleSourcePromise, IDColorMap, displayState) {
+    function CustomColorSegmentationRenderLayer(chunkManager, multiscaleSourcePromise, metrics, displayState) {
         var selectedAlpha = arguments.length <= 4 || arguments[4] === undefined ? renderlayer_1.trackableAlphaValue(0.5) : arguments[4];
         var notSelectedAlpha = arguments.length <= 5 || arguments[5] === undefined ? renderlayer_1.trackableAlphaValue(0) : arguments[5];
 
@@ -35119,25 +35236,54 @@ var CustomColorSegmentationRenderLayer = function (_segmentation_renderl) {
 
         var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CustomColorSegmentationRenderLayer).call(this, chunkManager, multiscaleSourcePromise, displayState, selectedAlpha, notSelectedAlpha));
 
-        _this.IDColorMap = IDColorMap;
+        _this.metrics = metrics;
         _this.displayState = displayState;
         _this.selectedAlpha = selectedAlpha;
         _this.notSelectedAlpha = notSelectedAlpha;
+        //data transformation function applied to chunk data
+        _this.fn = function (IDColorMap, chunk) {
+            change_tabledata_1.updateLookupTableData(chunk.data, IDColorMap, 1, chunk.source.chunkFormat.subchunkSize, chunk.chunkDataSize);
+        };
         //copy display state
         _this.displayState = Object.assign({}, displayState);
         _this.displayState.visibleSegments = uint64_set_1.Uint64Set.makeWithCounterpart(displayState.manager.worker);
         _this.gpuHashTable = shader_1.GPUHashTable.get(_this.gl, _this.displayState.visibleSegments.hashTable);
-        multiscaleSourcePromise.then(chunkSource => {
+        _this.currentMetricName = metrics.keys().next().value;
+        var metricKeyData = _this.metrics.get(_this.currentMetricName);
+        multiscaleSourcePromise.then(function (chunkSource) {
+            this.chunkSource = chunkSource;
             var transforms = chunkManager.dataTransformFns;
-            var fn = function (IDColorMap, chunk) {
-                change_tabledata_1.updateLookupTableData(chunk.data, IDColorMap, 1, chunk.source.chunkFormat.subchunkSize, chunk.chunkDataSize);
-            }.bind({}, _this.IDColorMap);
+            var fn = this.fn.bind({}, metricKeyData.IDColorMap); //apply IDColorMap
             transforms.set(chunkSource.dataInstanceKey, fn);
-        });
+        }.bind(_this));
         return _this;
     }
 
     _createClass(CustomColorSegmentationRenderLayer, [{
+        key: 'updateDataTransformation',
+        value: function updateDataTransformation(metricName) {
+            var chunkSource = this.chunkSource;
+            var chunkManager = this.chunkManager;
+
+            if (this.currentMetricName === metricName) {
+                return;
+            }
+            this.currentMetricName = metricName;
+            var metricKeyData = this.metrics.get(metricName);
+            var fn = this.fn.bind({}, metricKeyData.IDColorMap); //apply IDColorMap
+            lodash_1.chain(chunkSource.getSources(chunkManager)).flatten().each(function (chunkSource) {
+                for (var chunk of chunkSource.chunks.values()) {
+                    var dataStash = new Uint32Array(chunk.data.buffer.slice(0));
+                    fn(chunk);
+                    chunk.copyToGPU(chunkSource.gl);
+                    chunk.data = dataStash;
+                }
+            }).value();
+            var transforms = chunkManager.dataTransformFns;
+            transforms.set(chunkSource.dataInstanceKey, fn);
+            this.setReady(true); //updates layer
+        }
+    }, {
         key: 'getShaderKey',
         value: function getShaderKey() {
             return 'customColorShader';
@@ -35180,7 +35326,7 @@ var CustomColorSegmentationRenderLayer = function (_segmentation_renderl) {
     }, {
         key: 'getColorVal',
         value: function getColorVal(id) {
-            var colorVal = this.IDColorMap.get(String(id.low) + ',' + String(id.high));
+            var colorVal = this.metrics.get(this.currentMetricName).IDColorMap.get(String(id.low) + ',' + String(id.high));
             return colorVal ? colorVal : new uint64_1.Uint64();
         }
     }]);
@@ -35191,13 +35337,13 @@ var CustomColorSegmentationRenderLayer = function (_segmentation_renderl) {
 exports.CustomColorSegmentationRenderLayer = CustomColorSegmentationRenderLayer;
 
 /***/ },
-/* 143 */
+/* 145 */
 /***/ function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var lodash_1 = __webpack_require__(144);
-var encode_common_ts_1 = __webpack_require__(146);
+var lodash_1 = __webpack_require__(146);
+var encode_common_ts_1 = __webpack_require__(148);
 /**
  * Update the lookup table data, which usually contains segment IDs, with new data provided
  * in newDataMap, which acts like a dictionary mapping segment IDs to new values.
@@ -35282,7 +35428,7 @@ function compareOffsets(a, b) {
 }
 
 /***/ },
-/* 144 */
+/* 146 */
 /***/ function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -51690,10 +51836,10 @@ var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, g
   }
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(145)(module), (function() { return this; }())))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(147)(module), (function() { return this; }())))
 
 /***/ },
-/* 145 */
+/* 147 */
 /***/ function(module, exports) {
 
 module.exports = function(module) {
@@ -51709,7 +51855,7 @@ module.exports = function(module) {
 
 
 /***/ },
-/* 146 */
+/* 148 */
 /***/ function(module, exports) {
 
 // DO NOT EDIT.  Generated from
@@ -51959,7 +52105,50 @@ function encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset,
 exports.encodeChannels = encodeChannels;
 
 /***/ },
-/* 147 */
+/* 149 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var uint64_1 = __webpack_require__(52);
+var lodash_1 = __webpack_require__(146);
+var chroma = __webpack_require__(150); //needs to be imported this way due to export style differences
+function mapMetricsToColors(IdMetricMap, metricKeyData) {
+    var colors = ['Yellow', 'aquamarine', 'deepskyblue', 'mediumorchid'];
+    var metricIteratee = function (el) {
+        return el[1]; //metric value
+    };
+    var min = metricKeyData.min = lodash_1.minBy(IdMetricMap, metricIteratee)[1];
+    var max = metricKeyData.max = lodash_1.maxBy(IdMetricMap, metricIteratee)[1];
+    var scale = metricKeyData.chromaScale = chroma.scale(colors).domain([min, max]);
+    for (var i = 0, len = IdMetricMap.length; i < len; i++) {
+        var metricArr = IdMetricMap[i];
+        var metricVal = metricArr[1];
+        var rgb = scale(metricVal).rgba();
+        metricArr[1] = (rgb[3] << 24) + (rgb[2] << 16) + (rgb[1] << 8) + rgb[0]; //convert color to 32bit little-endian value
+        //make data key
+        var idUint64 = new uint64_1.Uint64();
+        idUint64.parseString(metricArr[0].toString());
+        metricArr[0] = idUint64.low + ',' + idUint64.high;
+        //convert val to Uint64 with rand high values
+        var randHigh = Math.floor(Math.random() * Math.pow(2, 32));
+        metricArr[1] = new uint64_1.Uint64(metricArr[1], randHigh);
+    }
+    metricKeyData.IDColorMap = new Map(IdMetricMap);
+    return metricKeyData.IDColorMap;
+}
+exports.mapMetricsToColors = mapMetricsToColors;
+
+var MetricKeyData = function MetricKeyData() {
+    _classCallCheck(this, MetricKeyData);
+};
+
+exports.MetricKeyData = MetricKeyData;
+
+/***/ },
+/* 150 */
 /***/ function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module) {
@@ -54443,10 +54632,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR I
 
 }).call(this);
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(145)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(147)(module)))
 
 /***/ },
-/* 148 */
+/* 151 */
 /***/ function(module, exports) {
 
 /**
@@ -54476,7 +54665,7 @@ function associateLabelWithElement(label, element) {
 exports.associateLabelWithElement = associateLabelWithElement;
 
 /***/ },
-/* 149 */
+/* 152 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -54509,14 +54698,14 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var debounce = __webpack_require__(43);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-var dropdown_1 = __webpack_require__(150);
+var dropdown_1 = __webpack_require__(153);
 var keyboard_shortcut_handler_1 = __webpack_require__(100);
-var longest_common_prefix_1 = __webpack_require__(151);
+var longest_common_prefix_1 = __webpack_require__(154);
 var promise_1 = __webpack_require__(20);
-var scroll_into_view_1 = __webpack_require__(152);
-var associate_label_1 = __webpack_require__(148);
+var scroll_into_view_1 = __webpack_require__(155);
+var associate_label_1 = __webpack_require__(151);
 var signals_1 = __webpack_require__(34);
-__webpack_require__(153);
+__webpack_require__(156);
 var ACTIVE_COMPLETION_CLASS_NAME = 'autocomplete-completion-active';
 var AUTOCOMPLETE_INDEX_SYMBOL = Symbol('autocompleteIndex');
 function makeDefaultCompletionElement(completion) {
@@ -55002,7 +55191,7 @@ exports.AutocompleteTextInput = AutocompleteTextInput;
 ;
 
 /***/ },
-/* 150 */
+/* 153 */
 /***/ function(module, exports) {
 
 /**
@@ -55086,7 +55275,7 @@ function positionDropdown(dropdownElement, associatedElement) {
 exports.positionDropdown = positionDropdown;
 
 /***/ },
-/* 151 */
+/* 154 */
 /***/ function(module, exports) {
 
 /**
@@ -55146,7 +55335,7 @@ function longestCommonPrefix(strings) {
 exports.longestCommonPrefix = longestCommonPrefix;
 
 /***/ },
-/* 152 */
+/* 155 */
 /***/ function(module, exports) {
 
 /**
@@ -55186,13 +55375,13 @@ function scrollIntoViewIfNeeded(element) {
 exports.scrollIntoViewIfNeeded = scrollIntoViewIfNeeded;
 
 /***/ },
-/* 153 */
+/* 156 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 154 */
+/* 157 */
 /***/ function(module, exports) {
 
 /**
@@ -55234,13 +55423,13 @@ function makeHiddenSubmitButton() {
 exports.makeHiddenSubmitButton = makeHiddenSubmitButton;
 
 /***/ },
-/* 155 */
+/* 158 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 156 */
+/* 159 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -55276,11 +55465,11 @@ var layer_dialog_1 = __webpack_require__(103);
 var layer_specification_1 = __webpack_require__(104);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-var dropdown_1 = __webpack_require__(150);
+var dropdown_1 = __webpack_require__(153);
 // Sortable must be imported using non-ES6 module syntax because of how it is exported.
-var Sortable = __webpack_require__(157);
+var Sortable = __webpack_require__(160);
 __webpack_require__(72);
-__webpack_require__(158);
+__webpack_require__(161);
 
 var LayerWidget = function (_disposable_1$RefCoun) {
     _inherits(LayerWidget, _disposable_1$RefCoun);
@@ -55577,7 +55766,7 @@ exports.LayerPanel = LayerPanel;
 ;
 
 /***/ },
-/* 157 */
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/**!
@@ -56832,13 +57021,13 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/**!
 
 
 /***/ },
-/* 158 */
+/* 161 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 159 */
+/* 162 */
 /***/ function(module, exports) {
 
 /**
@@ -56894,7 +57083,7 @@ function box(flexDirection, spec) {
 exports.box = box;
 
 /***/ },
-/* 160 */
+/* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -57660,7 +57849,7 @@ exports.NavigationState = NavigationState;
 ;
 
 /***/ },
-/* 161 */
+/* 164 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -57692,7 +57881,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
-__webpack_require__(162);
+__webpack_require__(165);
 var ROUND_POSITIONS = true;
 
 var PositionStatusPanel = function (_disposable_1$RefCoun) {
@@ -57847,13 +58036,13 @@ exports.PositionStatusPanel = PositionStatusPanel;
 ;
 
 /***/ },
-/* 162 */
+/* 165 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 163 */
+/* 166 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -58042,7 +58231,7 @@ exports.unregisterTrackable = unregisterTrackable;
 updateTrackedObjectsFromHash();
 
 /***/ },
-/* 164 */
+/* 167 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin

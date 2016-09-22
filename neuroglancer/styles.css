@@ -814,6 +814,14 @@ span.CodeMirror-selectedtext { background: none; }
   position: absolute;
   left:.5em;
 }
+.color-select-widget{
+    margin-top:5px;
+    margin-bottom: 5px;
+}
+
+.color-select-widget select{
+    color: black;
+}
 /**
  * @license
  * Copyright 2016 Google Inc.
