@@ -45,12 +45,12 @@
 /***/ function(module, exports, __webpack_require__) {
 
 __webpack_require__(1);
-__webpack_require__(76);
-__webpack_require__(78);
-__webpack_require__(80);
-__webpack_require__(81);
-__webpack_require__(83);
-module.exports = __webpack_require__(85);
+__webpack_require__(82);
+__webpack_require__(84);
+__webpack_require__(86);
+__webpack_require__(87);
+__webpack_require__(89);
+module.exports = __webpack_require__(91);
 
 
 /***/ },
@@ -78,6 +78,10 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 __webpack_require__(2);
@@ -85,14 +89,16 @@ var api_1 = __webpack_require__(24);
 var base_1 = __webpack_require__(27);
 var factory_1 = __webpack_require__(28);
 var frontend_1 = __webpack_require__(30);
-var base_2 = __webpack_require__(60);
-var frontend_2 = __webpack_require__(59);
+var frontend_2 = __webpack_require__(77);
+var base_2 = __webpack_require__(61);
+var frontend_3 = __webpack_require__(60);
 var status_1 = __webpack_require__(4);
 var completion_1 = __webpack_require__(29);
 var geom_1 = __webpack_require__(9);
 var json_1 = __webpack_require__(8);
-var VolumeChunkSource = frontend_2.defineParameterizedVolumeChunkSource(base_1.VolumeSourceParameters);
+var VolumeChunkSource = frontend_3.defineParameterizedVolumeChunkSource(base_1.VolumeSourceParameters);
 var MeshSource = frontend_1.defineParameterizedMeshSource(base_1.MeshSourceParameters);
+var BaseSkeletonSource = frontend_2.parameterizedSkeletonSource(base_1.SkeletonSourceParameters);
 var SERVER_DATA_TYPES = new Map();
 SERVER_DATA_TYPES.set('UINT8', base_2.DataType.UINT8);
 SERVER_DATA_TYPES.set('FLOAT', base_2.DataType.FLOAT32);
@@ -220,6 +226,48 @@ function _getMeshSource(chunkManager, parameters) {
     return MeshSource.get(chunkManager, parameters);
 }
 exports.getMeshSource = _getMeshSource;
+
+var SkeletonSource = function (_BaseSkeletonSource) {
+    _inherits(SkeletonSource, _BaseSkeletonSource);
+
+    function SkeletonSource() {
+        _classCallCheck(this, SkeletonSource);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonSource).apply(this, arguments));
+    }
+
+    _createClass(SkeletonSource, [{
+        key: 'skeletonVertexCoordinatesInVoxels',
+        get: function () {
+            return false;
+        }
+    }]);
+
+    return SkeletonSource;
+}(BaseSkeletonSource);
+
+exports.SkeletonSource = SkeletonSource;
+;
+function getSkeletonSource(chunkManager, parameters) {
+    return SkeletonSource.get(chunkManager, parameters);
+}
+exports.getSkeletonSource = getSkeletonSource;
+var meshSourcePattern = /^([^\/]+)\/(.*)$/;
+function getMeshSourceParameters(instance, url) {
+    var match = url.match(meshSourcePattern);
+    if (match === null) {
+        throw new Error(`Invalid Brainmaps mesh URL: ${ url }`);
+    }
+    return { instance, volume_id: match[1], mesh_name: match[2] };
+}
+function getMeshSourceByUrl(instance, chunkManager, url) {
+    return _getMeshSource(chunkManager, getMeshSourceParameters(instance, url));
+}
+exports.getMeshSourceByUrl = getMeshSourceByUrl;
+function getSkeletonSourceByUrl(instance, chunkManager, url) {
+    return getSkeletonSource(chunkManager, getMeshSourceParameters(instance, url));
+}
+exports.getSkeletonSourceByUrl = getSkeletonSourceByUrl;
 var existingVolumes = new Map();
 function getVolume(instance, key) {
     var cacheKey = json_1.stableStringify({ 'instance': instance, 'key': key });
@@ -325,6 +373,8 @@ function registerBrainmapsDataSource(instance) {
     factory_1.registerDataSourceFactory(protocol, {
         description: `Google ${ api_1.INSTANCE_NAMES[instance] } API`,
         getVolume: getVolume.bind(undefined, instance),
+        getMeshSource: getMeshSourceByUrl.bind(undefined, instance),
+        getSkeletonSource: getSkeletonSourceByUrl.bind(undefined, instance),
         volumeCompleter: volumeCompleter.bind(undefined, instance)
     });
 }
@@ -8891,6 +8941,10 @@ exports.simpleStringHash = simpleStringHash;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var api_1 = __webpack_require__(24);
@@ -8937,6 +8991,22 @@ var MeshSourceParameters = function () {
 
 MeshSourceParameters.RPC_ID = 'brainmaps/MeshSource';
 exports.MeshSourceParameters = MeshSourceParameters;
+;
+
+var SkeletonSourceParameters = function (_MeshSourceParameters) {
+    _inherits(SkeletonSourceParameters, _MeshSourceParameters);
+
+    function SkeletonSourceParameters() {
+        _classCallCheck(this, SkeletonSourceParameters);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonSourceParameters).apply(this, arguments));
+    }
+
+    return SkeletonSourceParameters;
+}(MeshSourceParameters);
+
+SkeletonSourceParameters.RPC_ID = 'brainmaps/SkeletonSource';
+exports.SkeletonSourceParameters = SkeletonSourceParameters;
 ;
 
 /***/ },
@@ -9198,12 +9268,12 @@ var base_1 = __webpack_require__(31);
 var frontend_1 = __webpack_require__(32);
 var base_2 = __webpack_require__(35);
 var perspective_panel_1 = __webpack_require__(36);
-var frontend_2 = __webpack_require__(74);
+var frontend_2 = __webpack_require__(75);
 var geom_1 = __webpack_require__(9);
 var json_1 = __webpack_require__(8);
 var buffer_1 = __webpack_require__(38);
 var shader_1 = __webpack_require__(41);
-var shader_lib_1 = __webpack_require__(71);
+var shader_lib_1 = __webpack_require__(72);
 var worker_rpc_1 = __webpack_require__(22);
 
 var MeshShaderManager = function () {
@@ -9302,12 +9372,13 @@ var MeshLayer = function (_perspective_panel_1$) {
         _this.meshShaderManager = new MeshShaderManager();
         _this.shader = _this.registerDisposer(_this.meshShaderManager.getShader(_this.gl));
         frontend_2.registerRedrawWhenSegmentationDisplayStateChanged(displayState, _this);
-        var sharedObject = _this.registerDisposer(new frontend_2.SegmentationLayerSharedObject(chunkManager, displayState));
+        var sharedObject = _this.sharedObject = _this.registerDisposer(new frontend_2.SegmentationLayerSharedObject(chunkManager, displayState));
         sharedObject.RPC_TYPE_ID = base_2.MESH_LAYER_RPC_ID;
         sharedObject.initializeCounterpartWithChunkManager({
             'source': source.addCounterpartRef()
         });
         _this.setReady(true);
+        _this.visibilityCount.addDependency(sharedObject.visibilityCount);
         return _this;
     }
 
@@ -9726,6 +9797,21 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO) {
     }
 
     _createClass(ChunkQueueManager, [{
+        key: "scheduleFrontentChunkUpdate",
+        value: function scheduleFrontentChunkUpdate(key, chunk, source) {
+            var x = { 'id': key, 'state': base_1.ChunkState.GPU_MEMORY, 'source': source.rpcId };
+            var queueManager = this;
+            var pendingTail = queueManager.pendingChunkUpdatesTail;
+            if (pendingTail == null) {
+                queueManager.pendingChunkUpdates = x;
+                queueManager.pendingChunkUpdatesTail = x;
+                queueManager.scheduleChunkUpdate();
+            } else {
+                pendingTail.nextUpdate = x;
+                queueManager.pendingChunkUpdatesTail = x;
+            }
+        }
+    }, {
         key: "scheduleChunkUpdate",
         value: function scheduleChunkUpdate() {
             var deadline = this.chunkUpdateDeadline;
@@ -9770,17 +9856,7 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO) {
                 if (newState !== oldState) {
                     switch (newState) {
                         case base_1.ChunkState.GPU_MEMORY:
-                            var dataInstanceKey = chunk.source.parameters.dataInstanceKey;
-                            var fn = this.getTransformFn(source.chunkManager.dataTransformFns, dataInstanceKey);
-                            var dataStash = undefined;
-                            if (fn) {
-                                dataStash = new Uint32Array(chunk.data.buffer.slice(0));
-                                fn(chunk);
-                            }
                             chunk.copyToGPU(this.gl);
-                            if (dataStash) {
-                                chunk.data = dataStash;
-                            }
                             this.visibleChunksChanged.dispatch();
                             break;
                         case base_1.ChunkState.SYSTEM_MEMORY:
@@ -9797,18 +9873,6 @@ var ChunkQueueManager = function (_worker_rpc_1$SharedO) {
             } else {
                 this.pendingChunkUpdatesTail = null;
             }
-        }
-    }, {
-        key: "getTransformFn",
-        value: function getTransformFn(dataTransformFns, dataKey) {
-            // allow key matching when dataKey contains the key--allows for handling multiscale
-            // without needing to register new transform functions
-            for (var key of dataTransformFns.keys()) {
-                if (dataKey.includes(key)) {
-                    return dataTransformFns.get(key);
-                }
-            }
-            return null;
         }
     }]);
 
@@ -9843,7 +9907,6 @@ var ChunkManager = function (_worker_rpc_1$SharedO2) {
 
         _this2.chunkQueueManager = chunkQueueManager;
         _this2.chunkSourceCache = new Map();
-        _this2.dataTransformFns = new Map();
         _this2.registerDisposer(chunkQueueManager.addRef());
         _this2.initializeCounterpart(chunkQueueManager.rpc, { 'chunkQueueManager': chunkQueueManager.rpcId });
         return _this2;
@@ -10495,19 +10558,19 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var axes_lines_1 = __webpack_require__(37);
 var layer_1 = __webpack_require__(42);
 var layer_2 = __webpack_require__(42);
-var object_picking_1 = __webpack_require__(53);
-var rendered_data_panel_1 = __webpack_require__(54);
-var frontend_1 = __webpack_require__(59);
-var trackable_boolean_1 = __webpack_require__(69);
+var object_picking_1 = __webpack_require__(54);
+var rendered_data_panel_1 = __webpack_require__(55);
+var frontend_1 = __webpack_require__(60);
+var trackable_boolean_1 = __webpack_require__(70);
 var geom_1 = __webpack_require__(9);
-var mouse_drag_1 = __webpack_require__(70);
-var offscreen_1 = __webpack_require__(67);
-var shader_lib_1 = __webpack_require__(71);
-__webpack_require__(72);
+var mouse_drag_1 = __webpack_require__(71);
+var offscreen_1 = __webpack_require__(68);
+var shader_lib_1 = __webpack_require__(72);
 __webpack_require__(73);
+__webpack_require__(74);
 
-var PerspectiveViewRenderLayer = function (_layer_1$RenderLayer) {
-    _inherits(PerspectiveViewRenderLayer, _layer_1$RenderLayer);
+var PerspectiveViewRenderLayer = function (_layer_1$VisibilityTr) {
+    _inherits(PerspectiveViewRenderLayer, _layer_1$VisibilityTr);
 
     function PerspectiveViewRenderLayer() {
         _classCallCheck(this, PerspectiveViewRenderLayer);
@@ -10528,7 +10591,7 @@ var PerspectiveViewRenderLayer = function (_layer_1$RenderLayer) {
     }]);
 
     return PerspectiveViewRenderLayer;
-}(layer_1.RenderLayer);
+}(layer_1.VisibilityTrackedRenderLayer);
 
 exports.PerspectiveViewRenderLayer = PerspectiveViewRenderLayer;
 ;
@@ -10562,13 +10625,7 @@ var PerspectivePanel = function (_rendered_data_panel_) {
 
         var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(PerspectivePanel).call(this, context, element, viewer));
 
-        _this2.visibleLayerTracker = _this2.registerDisposer(new layer_2.VisibleRenderLayerTracker(_this2.viewer.layerManager, PerspectiveViewRenderLayer, layer => {
-            layer.redrawNeeded.add(_this2.scheduleRedraw, _this2);
-            _this2.scheduleRedraw();
-        }, layer => {
-            layer.redrawNeeded.remove(_this2.scheduleRedraw, _this2);
-            _this2.scheduleRedraw();
-        }));
+        _this2.visibleLayerTracker = layer_2.makeRenderedPanelVisibleLayerTracker(_this2.viewer.layerManager, PerspectiveViewRenderLayer, _this2);
         _this2.sliceViews = new Set();
         _this2.projectionMat = geom_1.mat4.create();
         _this2.inverseProjectionMat = geom_1.mat4.create();
@@ -11893,6 +11950,7 @@ var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var signal_binding_updater_1 = __webpack_require__(51);
 var uint64_1 = __webpack_require__(52);
+var use_count_1 = __webpack_require__(53);
 var signals_1 = __webpack_require__(34);
 
 var RenderLayer = function (_disposable_1$RefCoun) {
@@ -11946,6 +12004,32 @@ var RenderLayer = function (_disposable_1$RefCoun) {
 
 exports.RenderLayer = RenderLayer;
 ;
+/**
+ * Extends RenderLayer with functionality for tracking the number of panels in which the layer is
+ * visible.
+ */
+
+var VisibilityTrackedRenderLayer = function (_RenderLayer) {
+    _inherits(VisibilityTrackedRenderLayer, _RenderLayer);
+
+    function VisibilityTrackedRenderLayer() {
+        _classCallCheck(this, VisibilityTrackedRenderLayer);
+
+        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            args[_key2] = arguments[_key2];
+        }
+
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(VisibilityTrackedRenderLayer).call(this, ...args));
+
+        _this2.visibilityCount = _this2.registerDisposer(new use_count_1.UseCount());
+        return _this2;
+    }
+
+    return VisibilityTrackedRenderLayer;
+}(RenderLayer);
+
+exports.VisibilityTrackedRenderLayer = VisibilityTrackedRenderLayer;
+;
 
 var UserLayerDropdown = function (_disposable_1$RefCoun2) {
     _inherits(UserLayerDropdown, _disposable_1$RefCoun2);
@@ -11977,14 +12061,14 @@ var UserLayer = function (_disposable_1$RefCoun3) {
 
         _classCallCheck(this, UserLayer);
 
-        var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(UserLayer).call(this));
+        var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(UserLayer).call(this));
 
-        _this3.layersChanged = new signals_1.Signal();
-        _this3.readyStateChanged = new signals_1.Signal();
-        _this3.specificationChanged = new signals_1.Signal();
-        _this3.renderLayers = new Array();
-        renderLayers.forEach(_this3.addRenderLayer.bind(_this3));
-        return _this3;
+        _this4.layersChanged = new signals_1.Signal();
+        _this4.readyStateChanged = new signals_1.Signal();
+        _this4.specificationChanged = new signals_1.Signal();
+        _this4.renderLayers = new Array();
+        renderLayers.forEach(_this4.addRenderLayer.bind(_this4));
+        return _this4;
     }
 
     _createClass(UserLayer, [{
@@ -12058,17 +12142,17 @@ var ManagedUserLayer = function (_disposable_1$RefCoun4) {
 
         _classCallCheck(this, ManagedUserLayer);
 
-        var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(ManagedUserLayer).call(this));
+        var _this5 = _possibleConstructorReturn(this, Object.getPrototypeOf(ManagedUserLayer).call(this));
 
-        _this4.name = name;
-        _this4.visible = visible;
-        _this4.readyStateChanged = new signals_1.Signal();
-        _this4.layerChanged = new signals_1.Signal();
-        _this4.specificationChanged = new signals_1.Signal();
-        _this4.wasDisposed = false;
-        _this4.layer_ = null;
-        _this4.layer = layer;
-        return _this4;
+        _this5.name = name;
+        _this5.visible = visible;
+        _this5.readyStateChanged = new signals_1.Signal();
+        _this5.layerChanged = new signals_1.Signal();
+        _this5.specificationChanged = new signals_1.Signal();
+        _this5.wasDisposed = false;
+        _this5.layer_ = null;
+        _this5.layer = layer;
+        return _this5;
     }
 
     _createClass(ManagedUserLayer, [{
@@ -12136,18 +12220,18 @@ var LayerManager = function (_disposable_1$RefCoun5) {
     function LayerManager() {
         _classCallCheck(this, LayerManager);
 
-        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-            args[_key2] = arguments[_key2];
+        for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+            args[_key3] = arguments[_key3];
         }
 
-        var _this5 = _possibleConstructorReturn(this, Object.getPrototypeOf(LayerManager).call(this, ...args));
+        var _this6 = _possibleConstructorReturn(this, Object.getPrototypeOf(LayerManager).call(this, ...args));
 
-        _this5.managedLayers = new Array();
-        _this5.layersChanged = new signals_1.Signal();
-        _this5.readyStateChanged = new signals_1.Signal();
-        _this5.specificationChanged = new signals_1.Signal();
-        _this5.boundPositions = new WeakSet();
-        return _this5;
+        _this6.managedLayers = new Array();
+        _this6.layersChanged = new signals_1.Signal();
+        _this6.readyStateChanged = new signals_1.Signal();
+        _this6.specificationChanged = new signals_1.Signal();
+        _this6.boundPositions = new WeakSet();
+        return _this6;
     }
 
     _createClass(LayerManager, [{
@@ -12431,18 +12515,18 @@ var LayerSelectedValues = function (_disposable_1$RefCoun6) {
     function LayerSelectedValues(layerManager, mouseState) {
         _classCallCheck(this, LayerSelectedValues);
 
-        var _this6 = _possibleConstructorReturn(this, Object.getPrototypeOf(LayerSelectedValues).call(this));
+        var _this7 = _possibleConstructorReturn(this, Object.getPrototypeOf(LayerSelectedValues).call(this));
 
-        _this6.layerManager = layerManager;
-        _this6.mouseState = mouseState;
-        _this6.values = new Map();
-        _this6.changed = new signals_1.Signal();
-        _this6.needsUpdate = true;
-        _this6.registerSignalBinding(mouseState.changed.add(_this6.handleChange, _this6));
-        _this6.registerSignalBinding(layerManager.layersChanged.add(() => {
-            _this6.handleLayerChange();
+        _this7.layerManager = layerManager;
+        _this7.mouseState = mouseState;
+        _this7.values = new Map();
+        _this7.changed = new signals_1.Signal();
+        _this7.needsUpdate = true;
+        _this7.registerSignalBinding(mouseState.changed.add(_this7.handleChange, _this7));
+        _this7.registerSignalBinding(layerManager.layersChanged.add(() => {
+            _this7.handleLayerChange();
         }));
-        return _this6;
+        return _this7;
     }
     /**
      * This should be called when the layer data may have changed, due to the set of managed layers
@@ -12503,18 +12587,18 @@ var VisibleRenderLayerTracker = function (_disposable_1$RefCoun7) {
     function VisibleRenderLayerTracker(layerManager, renderLayerType, layerAdded, layerRemoved) {
         _classCallCheck(this, VisibleRenderLayerTracker);
 
-        var _this7 = _possibleConstructorReturn(this, Object.getPrototypeOf(VisibleRenderLayerTracker).call(this));
+        var _this8 = _possibleConstructorReturn(this, Object.getPrototypeOf(VisibleRenderLayerTracker).call(this));
 
-        _this7.layerManager = layerManager;
-        _this7.renderLayerType = renderLayerType;
-        _this7.layerAdded = layerAdded;
-        _this7.layerRemoved = layerRemoved;
-        _this7.visibleLayers = new Set();
-        _this7.newVisibleLayers = new Set();
-        _this7.updatePending = null;
-        _this7.registerSignalBinding(layerManager.layersChanged.add(_this7.handleLayersChanged, _this7));
-        _this7.updateVisibleLayers();
-        return _this7;
+        _this8.layerManager = layerManager;
+        _this8.renderLayerType = renderLayerType;
+        _this8.layerAdded = layerAdded;
+        _this8.layerRemoved = layerRemoved;
+        _this8.visibleLayers = new Set();
+        _this8.newVisibleLayers = new Set();
+        _this8.updatePending = null;
+        _this8.registerSignalBinding(layerManager.layersChanged.add(_this8.handleLayersChanged, _this8));
+        _this8.updateVisibleLayers();
+        return _this8;
     }
 
     _createClass(VisibleRenderLayerTracker, [{
@@ -12560,6 +12644,7 @@ var VisibleRenderLayerTracker = function (_disposable_1$RefCoun7) {
                     newVisibleLayers.add(typedLayer);
                     if (!visibleLayers.has(typedLayer)) {
                         visibleLayers.add(typedLayer);
+                        typedLayer.visibilityCount.inc();
                         layerAdded(typedLayer);
                     }
                 }
@@ -12568,6 +12653,7 @@ var VisibleRenderLayerTracker = function (_disposable_1$RefCoun7) {
                 if (!newVisibleLayers.has(_renderLayer)) {
                     visibleLayers.delete(_renderLayer);
                     layerRemoved(_renderLayer);
+                    _renderLayer.visibilityCount.dec();
                 }
             }
             newVisibleLayers.clear();
@@ -12588,6 +12674,16 @@ var VisibleRenderLayerTracker = function (_disposable_1$RefCoun7) {
 
 exports.VisibleRenderLayerTracker = VisibleRenderLayerTracker;
 ;
+function makeRenderedPanelVisibleLayerTracker(layerManager, renderLayerType, panel) {
+    return panel.registerDisposer(new VisibleRenderLayerTracker(layerManager, renderLayerType, layer => {
+        layer.redrawNeeded.add(panel.scheduleRedraw, panel);
+        panel.scheduleRedraw();
+    }, layer => {
+        layer.redrawNeeded.remove(panel.scheduleRedraw, panel);
+        panel.scheduleRedraw();
+    }));
+}
+exports.makeRenderedPanelVisibleLayerTracker = makeRenderedPanelVisibleLayerTracker;
 
 /***/ },
 /* 43 */
@@ -13347,6 +13443,145 @@ exports.Uint64 = Uint64;
 
 /***/ },
 /* 53 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var disposable_1 = __webpack_require__(23);
+var signals_1 = __webpack_require__(34);
+/**
+ * Contains a count and signals that are invoked when the count becomes zero or non-zero.
+ */
+
+var UseCount = function (_disposable_1$RefCoun) {
+    _inherits(UseCount, _disposable_1$RefCoun);
+
+    function UseCount() {
+        _classCallCheck(this, UseCount);
+
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UseCount).call(this, ...args));
+
+        _this.count = 0;
+        _this.dependencies = new Map();
+        _this.becameZero = new signals_1.Signal();
+        _this.becameNonZero = new signals_1.Signal();
+        return _this;
+    }
+
+    _createClass(UseCount, [{
+        key: 'inc',
+        value: function inc() {
+            if (++this.count === 1) {
+                this.becameNonZero.dispatch();
+            }
+        }
+    }, {
+        key: 'dec',
+        value: function dec() {
+            if (--this.count === 0) {
+                this.becameZero.dispatch();
+            }
+        }
+        /**
+         * Ensure that an additional count is added to other whenever this.count is non-zero.
+         */
+
+    }, {
+        key: 'addDependency',
+        value: function addDependency(other) {
+            var dependencies = this.dependencies;
+
+            var existingCount = dependencies.get(other);
+            if (existingCount !== undefined) {
+                dependencies.set(other, existingCount + 1);
+            } else {
+                dependencies.set(other, 1);
+                this.becameZero.add(other.dec, other);
+                this.becameNonZero.add(other.inc, other);
+                if (this.count > 0) {
+                    other.inc();
+                }
+            }
+        }
+    }, {
+        key: 'removeDependency_',
+        value: function removeDependency_(other) {
+            this.becameZero.remove(other.dec, other);
+            this.becameNonZero.remove(other.inc, other);
+            if (this.count > 0) {
+                other.dec();
+            }
+        }
+        /**
+         * Undoes the effect of addDependency.
+         */
+
+    }, {
+        key: 'removeDependency',
+        value: function removeDependency(other) {
+            var dependencies = this.dependencies;
+
+            var existing = dependencies.get(other);
+            if (existing === undefined) {
+                throw new Error('Attempted to remove non-existing dependency.');
+            }
+            if (--existing === 0) {
+                dependencies.delete(other);
+                this.removeDependency_(other);
+            } else {
+                dependencies.set(other, existing);
+            }
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            for (var other of this.dependencies.keys()) {
+                this.removeDependency_(other);
+            }
+            this.dependencies.clear();
+        }
+    }, {
+        key: 'value',
+        get: function () {
+            return this.count;
+        }
+    }]);
+
+    return UseCount;
+}(disposable_1.RefCounted);
+
+exports.UseCount = UseCount;
+;
+
+/***/ },
+/* 54 */
 /***/ function(module, exports) {
 
 /**
@@ -13421,7 +13656,7 @@ exports.PickIDManager = PickIDManager;
 ;
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -13449,10 +13684,10 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var display_context_1 = __webpack_require__(55);
+var display_context_1 = __webpack_require__(56);
 var geom_1 = __webpack_require__(9);
-var wheel_zoom_1 = __webpack_require__(57);
-__webpack_require__(58);
+var wheel_zoom_1 = __webpack_require__(58);
+__webpack_require__(59);
 exports.KEY_COMMANDS = new Map();
 
 var _loop = function (axis) {
@@ -13596,7 +13831,7 @@ exports.RenderedDataPanel = RenderedDataPanel;
 ;
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -13627,7 +13862,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var disposable_1 = __webpack_require__(23);
-var context_1 = __webpack_require__(56);
+var context_1 = __webpack_require__(57);
 var signals_1 = __webpack_require__(34);
 
 var RenderedPanel = function (_disposable_1$RefCoun) {
@@ -13808,7 +14043,7 @@ exports.DisplayContext = DisplayContext;
 ;
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -13861,7 +14096,7 @@ function initializeWebGL(canvas) {
 exports.initializeWebGL = initializeWebGL;
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports) {
 
 /**
@@ -13904,13 +14139,13 @@ function getWheelZoomAmount(event) {
 exports.getWheelZoomAmount = getWheelZoomAmount;
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -13950,13 +14185,13 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
 };
 var base_1 = __webpack_require__(31);
 var frontend_1 = __webpack_require__(32);
-var base_2 = __webpack_require__(60);
-var renderlayer_1 = __webpack_require__(65);
+var base_2 = __webpack_require__(61);
+var renderlayer_1 = __webpack_require__(66);
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var json_1 = __webpack_require__(8);
 var buffer_1 = __webpack_require__(38);
-var offscreen_1 = __webpack_require__(67);
+var offscreen_1 = __webpack_require__(68);
 var shader_1 = __webpack_require__(41);
 var worker_rpc_1 = __webpack_require__(22);
 var signals_1 = __webpack_require__(34);
@@ -14447,7 +14682,7 @@ exports.SliceViewRenderHelper = SliceViewRenderHelper;
 ;
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -14477,10 +14712,10 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var chunk_layout_1 = __webpack_require__(61);
-var array_1 = __webpack_require__(62);
-var compare_1 = __webpack_require__(63);
-var data_type_1 = __webpack_require__(64);
+var chunk_layout_1 = __webpack_require__(62);
+var array_1 = __webpack_require__(63);
+var compare_1 = __webpack_require__(64);
+var data_type_1 = __webpack_require__(65);
 exports.DATA_TYPE_BYTES = data_type_1.DATA_TYPE_BYTES;
 exports.DataType = data_type_1.DataType;
 var geom_1 = __webpack_require__(9);
@@ -15169,7 +15404,7 @@ exports.SLICEVIEW_RPC_ID = 'SliceView';
 exports.SLICEVIEW_RENDERLAYER_RPC_ID = 'sliceview/RenderLayer';
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -15247,7 +15482,7 @@ exports.ChunkLayout = ChunkLayout;
 ;
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports) {
 
 /**
@@ -15320,7 +15555,7 @@ function getFortranOrderStrides(size) {
 exports.getFortranOrderStrides = getFortranOrderStrides;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports) {
 
 /**
@@ -15349,7 +15584,7 @@ function approxEqual(a, b) {
 exports.approxEqual = approxEqual;
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports) {
 
 /**
@@ -15388,7 +15623,7 @@ exports.DATA_TYPE_BYTES[DataType.UINT64] = 8;
 exports.DATA_TYPE_BYTES[DataType.FLOAT32] = 4;
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -15428,8 +15663,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var base_1 = __webpack_require__(31);
 var layer_1 = __webpack_require__(42);
-var base_2 = __webpack_require__(60);
-var trackable_value_1 = __webpack_require__(66);
+var base_2 = __webpack_require__(61);
+var trackable_value_1 = __webpack_require__(67);
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var json_1 = __webpack_require__(8);
@@ -15926,7 +16161,7 @@ exports.RenderLayer = RenderLayer;
 ;
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -16035,7 +16270,7 @@ exports.TrackableValue = TrackableValue;
 ;
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -16066,7 +16301,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var buffer_1 = __webpack_require__(38);
-var texture_1 = __webpack_require__(68);
+var texture_1 = __webpack_require__(69);
 var trivial_shaders_1 = __webpack_require__(40);
 
 var OffscreenFramebuffer = function (_disposable_1$RefCoun) {
@@ -16284,7 +16519,7 @@ exports.OffscreenCopyHelper = OffscreenCopyHelper;
 ;
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports) {
 
 /**
@@ -16337,7 +16572,7 @@ function resizeTexture(gl, texture, width, height) {
 exports.resizeTexture = resizeTexture;
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -16503,7 +16738,7 @@ exports.ElementVisibilityFromTrackableBoolean = ElementVisibilityFromTrackableBo
 ;
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports) {
 
 /**
@@ -16548,7 +16783,7 @@ function startRelativeMouseDrag(initialEvent, handler) {
 exports.startRelativeMouseDrag = startRelativeMouseDrag;
 
 /***/ },
-/* 71 */
+/* 72 */
 /***/ function(module, exports) {
 
 /**
@@ -16753,12 +16988,6 @@ function getUint32FromVec4(v) {
 exports.getUint32FromVec4 = getUint32FromVec4;
 
 /***/ },
-/* 72 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
 /* 73 */
 /***/ function(module, exports) {
 
@@ -16766,6 +16995,12 @@ exports.getUint32FromVec4 = getUint32FromVec4;
 
 /***/ },
 /* 74 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -16795,10 +17030,11 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var base_1 = __webpack_require__(75);
+var base_1 = __webpack_require__(76);
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var uint64_1 = __webpack_require__(52);
+var use_count_1 = __webpack_require__(53);
 var worker_rpc_1 = __webpack_require__(22);
 var signals_1 = __webpack_require__(34);
 
@@ -16933,6 +17169,7 @@ var SegmentationLayerSharedObject = function (_worker_rpc_1$SharedO) {
 
         _this2.chunkManager = chunkManager;
         _this2.displayState = displayState;
+        _this2.visibilityCount = new use_count_1.UseCount();
         return _this2;
     }
 
@@ -16940,11 +17177,22 @@ var SegmentationLayerSharedObject = function (_worker_rpc_1$SharedO) {
         key: 'initializeCounterpartWithChunkManager',
         value: function initializeCounterpartWithChunkManager(options) {
             var displayState = this.displayState;
+            var visibilityCount = this.visibilityCount;
 
             options['chunkManager'] = this.chunkManager.rpcId;
             options['visibleSegments'] = displayState.visibleSegments.rpcId;
             options['segmentEquivalences'] = displayState.segmentEquivalences.rpcId;
             _get(Object.getPrototypeOf(SegmentationLayerSharedObject.prototype), 'initializeCounterpart', this).call(this, this.chunkManager.rpc, options);
+            visibilityCount.becameNonZero.add(() => {
+                if (this.rpc != null) {
+                    this.rpc.invoke(base_1.ON_VISIBILITY_CHANGE_METHOD_ID, { 'id': this.rpcId, 'visible': true });
+                }
+            });
+            visibilityCount.becameZero.add(() => {
+                if (this.rpc != null) {
+                    this.rpc.invoke(base_1.ON_VISIBILITY_CHANGE_METHOD_ID, { 'id': this.rpcId, 'visible': false });
+                }
+            });
         }
     }]);
 
@@ -16954,7 +17202,7 @@ var SegmentationLayerSharedObject = function (_worker_rpc_1$SharedO) {
 exports.SegmentationLayerSharedObject = SegmentationLayerSharedObject;
 
 /***/ },
-/* 75 */
+/* 76 */
 /***/ function(module, exports) {
 
 /**
@@ -16997,9 +17245,891 @@ function forEachVisibleSegment(state, callback) {
     }
 }
 exports.forEachVisibleSegment = forEachVisibleSegment;
+exports.ON_VISIBILITY_CHANGE_METHOD_ID = 'SegmentationLayerSharedObject.onVisibilityChange';
 
 /***/ },
-/* 76 */
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var base_1 = __webpack_require__(31);
+var frontend_1 = __webpack_require__(32);
+var perspective_panel_1 = __webpack_require__(36);
+var frontend_2 = __webpack_require__(75);
+var base_2 = __webpack_require__(78);
+var panel_1 = __webpack_require__(79);
+var disposable_1 = __webpack_require__(23);
+var geom_1 = __webpack_require__(9);
+var json_1 = __webpack_require__(8);
+var buffer_1 = __webpack_require__(38);
+var shader_1 = __webpack_require__(41);
+var shader_lib_1 = __webpack_require__(72);
+var signals_1 = __webpack_require__(34);
+
+var SkeletonShaderManager = function () {
+    function SkeletonShaderManager() {
+        _classCallCheck(this, SkeletonShaderManager);
+
+        this.tempMat = geom_1.mat4.create();
+        this.tempPickID = new Float32Array(4);
+    }
+
+    _createClass(SkeletonShaderManager, [{
+        key: 'defineShader',
+        value: function defineShader(builder) {
+            builder.addAttribute('highp vec3', 'aVertexPosition');
+            builder.addUniform('highp vec3', 'uColor');
+            builder.addUniform('highp mat4', 'uProjection');
+            builder.addUniform('highp vec4', 'uPickID');
+            builder.setVertexMain(`gl_Position = uProjection * vec4(aVertexPosition, 1.0);`);
+            builder.setFragmentMain(`emit(vec4(uColor, 1.0), uPickID);`);
+        }
+    }, {
+        key: 'beginLayer',
+        value: function beginLayer(gl, shader, renderContext, objectToDataMatrix) {
+            var dataToDevice = renderContext.dataToDevice;
+
+            var mat = geom_1.mat4.multiply(this.tempMat, dataToDevice, objectToDataMatrix);
+            gl.uniformMatrix4fv(shader.uniform('uProjection'), false, mat);
+        }
+    }, {
+        key: 'getShader',
+        value: function getShader(gl, key, emitter) {
+            return gl.memoize.get(key, () => {
+                var builder = new shader_1.ShaderBuilder(gl);
+                builder.require(emitter);
+                this.defineShader(builder);
+                return builder.build();
+            });
+        }
+    }, {
+        key: 'setColor',
+        value: function setColor(gl, shader, color) {
+            gl.uniform3fv(shader.uniform('uColor'), color);
+        }
+    }, {
+        key: 'drawSkeleton',
+        value: function drawSkeleton(gl, shader, skeletonChunk, pickID) {
+            gl.uniform4fv(shader.uniform('uPickID'), shader_lib_1.setVec4FromUint32(this.tempPickID, pickID));
+            skeletonChunk.vertexBuffer.bindToVertexAttrib(shader.attribute('aVertexPosition'),
+            /*components=*/3);
+            skeletonChunk.indexBuffer.bind();
+            gl.drawElements(gl.LINES, skeletonChunk.numIndices, gl.UNSIGNED_INT, 0);
+        }
+    }, {
+        key: 'endLayer',
+        value: function endLayer(gl, shader) {
+            gl.disableVertexAttribArray(shader.attribute('aVertexPosition'));
+        }
+    }]);
+
+    return SkeletonShaderManager;
+}();
+
+;
+
+var PerspectiveViewSkeletonLayer = function (_perspective_panel_1$) {
+    _inherits(PerspectiveViewSkeletonLayer, _perspective_panel_1$);
+
+    function PerspectiveViewSkeletonLayer(base) {
+        _classCallCheck(this, PerspectiveViewSkeletonLayer);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(PerspectiveViewSkeletonLayer).call(this));
+
+        _this.base = base;
+        _this.shader = _this.base.skeletonShaderManager.getShader(_this.gl, 'skeleton/SkeletonShaderManager:PerspectivePanel', perspective_panel_1.perspectivePanelEmit);
+        _this.registerDisposer(base);
+        _this.registerSignalBinding(base.redrawNeeded.add(() => {
+            _this.redrawNeeded.dispatch();
+        }));
+        _this.setReady(true);
+        _this.visibilityCount.addDependency(base.visibilityCount);
+        return _this;
+    }
+
+    _createClass(PerspectiveViewSkeletonLayer, [{
+        key: 'draw',
+        value: function draw(renderContext) {
+            var pickingOnly = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+            this.base.draw(renderContext, this, this.shader, pickingOnly);
+        }
+    }, {
+        key: 'drawPicking',
+        value: function drawPicking(renderContext) {
+            this.base.draw(renderContext, this, this.shader, true);
+        }
+    }, {
+        key: 'gl',
+        get: function () {
+            return this.base.gl;
+        }
+    }]);
+
+    return PerspectiveViewSkeletonLayer;
+}(perspective_panel_1.PerspectiveViewRenderLayer);
+
+exports.PerspectiveViewSkeletonLayer = PerspectiveViewSkeletonLayer;
+;
+
+var SliceViewPanelSkeletonLayer = function (_panel_1$SliceViewPan) {
+    _inherits(SliceViewPanelSkeletonLayer, _panel_1$SliceViewPan);
+
+    function SliceViewPanelSkeletonLayer(base) {
+        _classCallCheck(this, SliceViewPanelSkeletonLayer);
+
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewPanelSkeletonLayer).call(this));
+
+        _this2.base = base;
+        _this2.shader = _this2.base.skeletonShaderManager.getShader(_this2.gl, 'skeleton/SkeletonShaderManager:SliceViewPanel', panel_1.sliceViewPanelEmit);
+        _this2.registerDisposer(base);
+        _this2.registerSignalBinding(base.redrawNeeded.add(() => {
+            _this2.redrawNeeded.dispatch();
+        }));
+        _this2.setReady(true);
+        _this2.visibilityCount.addDependency(base.visibilityCount);
+        return _this2;
+    }
+
+    _createClass(SliceViewPanelSkeletonLayer, [{
+        key: 'draw',
+        value: function draw(renderContext) {
+            this.base.draw(renderContext, this, this.shader, false, 10);
+        }
+    }, {
+        key: 'gl',
+        get: function () {
+            return this.base.gl;
+        }
+    }]);
+
+    return SliceViewPanelSkeletonLayer;
+}(panel_1.SliceViewPanelRenderLayer);
+
+exports.SliceViewPanelSkeletonLayer = SliceViewPanelSkeletonLayer;
+;
+
+var SkeletonLayer = function (_disposable_1$RefCoun) {
+    _inherits(SkeletonLayer, _disposable_1$RefCoun);
+
+    function SkeletonLayer(chunkManager, source, voxelSizeObject, displayState) {
+        _classCallCheck(this, SkeletonLayer);
+
+        var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonLayer).call(this));
+
+        _this3.chunkManager = chunkManager;
+        _this3.source = source;
+        _this3.voxelSizeObject = voxelSizeObject;
+        _this3.displayState = displayState;
+        _this3.tempMat = geom_1.mat4.create();
+        _this3.skeletonShaderManager = new SkeletonShaderManager();
+        _this3.redrawNeeded = new signals_1.Signal();
+        frontend_2.registerRedrawWhenSegmentationDisplayStateChanged(displayState, _this3);
+        var sharedObject = _this3.sharedObject = _this3.registerDisposer(new frontend_2.SegmentationLayerSharedObject(chunkManager, displayState));
+        sharedObject.RPC_TYPE_ID = base_2.SKELETON_LAYER_RPC_ID;
+        sharedObject.initializeCounterpartWithChunkManager({
+            'source': source.addCounterpartRef()
+        });
+        return _this3;
+    }
+
+    _createClass(SkeletonLayer, [{
+        key: 'draw',
+        value: function draw(renderContext, layer, shader) {
+            var pickingOnly = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
+            var lineWidth = arguments[4];
+
+            if (lineWidth === undefined) {
+                lineWidth = pickingOnly ? 5 : 1;
+            }
+            var gl = this.gl;
+            var skeletonShaderManager = this.skeletonShaderManager;
+            var source = this.source;
+
+            shader.bind();
+            var objectToDataMatrix = this.tempMat;
+            geom_1.mat4.identity(objectToDataMatrix);
+            if (source.skeletonVertexCoordinatesInVoxels) {
+                geom_1.mat4.scale(objectToDataMatrix, objectToDataMatrix, this.voxelSizeObject.size);
+            }
+            skeletonShaderManager.beginLayer(gl, shader, renderContext, objectToDataMatrix);
+            var skeletons = source.chunks;
+            var pickIDs = renderContext.pickIDs;
+            var displayState = this.displayState;
+
+            gl.lineWidth(lineWidth);
+            frontend_2.forEachSegmentToDraw(displayState, skeletons, (rootObjectId, objectId, skeleton) => {
+                if (skeleton.state !== base_1.ChunkState.GPU_MEMORY) {
+                    return;
+                }
+                if (!pickingOnly) {
+                    skeletonShaderManager.setColor(gl, shader, frontend_2.getObjectColor(displayState, rootObjectId));
+                }
+                skeletonShaderManager.drawSkeleton(gl, shader, skeleton, pickIDs.register(layer, objectId));
+            });
+            skeletonShaderManager.endLayer(gl, shader);
+        }
+    }, {
+        key: 'visibilityCount',
+        get: function () {
+            return this.sharedObject.visibilityCount;
+        }
+    }, {
+        key: 'gl',
+        get: function () {
+            return this.chunkManager.chunkQueueManager.gl;
+        }
+    }]);
+
+    return SkeletonLayer;
+}(disposable_1.RefCounted);
+
+exports.SkeletonLayer = SkeletonLayer;
+;
+
+var SkeletonChunk = function (_frontend_1$Chunk) {
+    _inherits(SkeletonChunk, _frontend_1$Chunk);
+
+    function SkeletonChunk(source, x) {
+        _classCallCheck(this, SkeletonChunk);
+
+        var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonChunk).call(this, source));
+
+        _this4.vertexPositions = x['vertexPositions'];
+        var indices = _this4.indices = x['indices'];
+        _this4.numIndices = indices.length;
+        return _this4;
+    }
+
+    _createClass(SkeletonChunk, [{
+        key: 'copyToGPU',
+        value: function copyToGPU(gl) {
+            _get(Object.getPrototypeOf(SkeletonChunk.prototype), 'copyToGPU', this).call(this, gl);
+            this.vertexBuffer = buffer_1.Buffer.fromData(gl, this.vertexPositions, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+            this.indexBuffer = buffer_1.Buffer.fromData(gl, this.indices, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
+        }
+    }, {
+        key: 'freeGPUMemory',
+        value: function freeGPUMemory(gl) {
+            _get(Object.getPrototypeOf(SkeletonChunk.prototype), 'freeGPUMemory', this).call(this, gl);
+            this.vertexBuffer.dispose();
+            this.indexBuffer.dispose();
+        }
+    }]);
+
+    return SkeletonChunk;
+}(frontend_1.Chunk);
+
+exports.SkeletonChunk = SkeletonChunk;
+;
+
+var SkeletonSource = function (_frontend_1$ChunkSour) {
+    _inherits(SkeletonSource, _frontend_1$ChunkSour);
+
+    function SkeletonSource() {
+        _classCallCheck(this, SkeletonSource);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonSource).apply(this, arguments));
+    }
+
+    _createClass(SkeletonSource, [{
+        key: 'getChunk',
+        value: function getChunk(x) {
+            return new SkeletonChunk(this, x);
+        }
+        /**
+         * Specifies whether the skeleton vertex coordinates are specified in units of voxels rather than
+         * nanometers.
+         */
+
+    }, {
+        key: 'skeletonVertexCoordinatesInVoxels',
+        get: function () {
+            return true;
+        }
+    }]);
+
+    return SkeletonSource;
+}(frontend_1.ChunkSource);
+
+exports.SkeletonSource = SkeletonSource;
+;
+
+var ParameterizedSkeletonSource = function (_SkeletonSource) {
+    _inherits(ParameterizedSkeletonSource, _SkeletonSource);
+
+    function ParameterizedSkeletonSource(chunkManager, parameters) {
+        _classCallCheck(this, ParameterizedSkeletonSource);
+
+        var _this6 = _possibleConstructorReturn(this, Object.getPrototypeOf(ParameterizedSkeletonSource).call(this, chunkManager));
+
+        _this6.parameters = parameters;
+        return _this6;
+    }
+
+    _createClass(ParameterizedSkeletonSource, [{
+        key: 'initializeCounterpart',
+        value: function initializeCounterpart(rpc, options) {
+            options['parameters'] = this.parameters;
+            _get(Object.getPrototypeOf(ParameterizedSkeletonSource.prototype), 'initializeCounterpart', this).call(this, rpc, options);
+        }
+    }]);
+
+    return ParameterizedSkeletonSource;
+}(SkeletonSource);
+
+exports.ParameterizedSkeletonSource = ParameterizedSkeletonSource;
+;
+/**
+ * Defines a SkeletonSource for which all state is encapsulated in an object of type Parameters.
+ */
+function parameterizedSkeletonSource(parametersConstructor) {
+    var newConstructor = function (_ParameterizedSkeleto) {
+        _inherits(SpecializedParameterizedSkeletonSource, _ParameterizedSkeleto);
+
+        function SpecializedParameterizedSkeletonSource() {
+            _classCallCheck(this, SpecializedParameterizedSkeletonSource);
+
+            return _possibleConstructorReturn(this, Object.getPrototypeOf(SpecializedParameterizedSkeletonSource).apply(this, arguments));
+        }
+
+        _createClass(SpecializedParameterizedSkeletonSource, [{
+            key: 'toString',
+            value: function toString() {
+                return parametersConstructor.stringify(this.parameters);
+            }
+        }], [{
+            key: 'get',
+            value: function get(chunkManager, parameters) {
+                return chunkManager.getChunkSource(this, json_1.stableStringify(parameters), () => new this(chunkManager, parameters));
+            }
+        }]);
+
+        return SpecializedParameterizedSkeletonSource;
+    }(ParameterizedSkeletonSource);
+    newConstructor.prototype.RPC_TYPE_ID = parametersConstructor.RPC_ID;
+    return newConstructor;
+}
+exports.parameterizedSkeletonSource = parameterizedSkeletonSource;
+
+/***/ },
+/* 78 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+exports.SKELETON_LAYER_RPC_ID = 'skeleton/SkeletonLayer';
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var axes_lines_1 = __webpack_require__(37);
+var layer_1 = __webpack_require__(42);
+var object_picking_1 = __webpack_require__(54);
+var rendered_data_panel_1 = __webpack_require__(55);
+var frontend_1 = __webpack_require__(60);
+var trackable_boolean_1 = __webpack_require__(70);
+var geom_1 = __webpack_require__(9);
+var mouse_drag_1 = __webpack_require__(71);
+var offscreen_1 = __webpack_require__(68);
+var scale_bar_1 = __webpack_require__(80);
+(function (OffscreenTextures) {
+    OffscreenTextures[OffscreenTextures["COLOR"] = 0] = "COLOR";
+    OffscreenTextures[OffscreenTextures["PICK"] = 1] = "PICK";
+    OffscreenTextures[OffscreenTextures["NUM_TEXTURES"] = 2] = "NUM_TEXTURES";
+})(exports.OffscreenTextures || (exports.OffscreenTextures = {}));
+var OffscreenTextures = exports.OffscreenTextures;
+function sliceViewPanelEmit(builder) {
+    builder.addFragmentExtension('GL_EXT_draw_buffers');
+    builder.addFragmentCode(`
+void emit(vec4 color, vec4 pickId) {
+  gl_FragData[${ OffscreenTextures.COLOR }] = color;
+  gl_FragData[${ OffscreenTextures.PICK }] = pickId;
+}
+`);
+}
+exports.sliceViewPanelEmit = sliceViewPanelEmit;
+
+var SliceViewPanelRenderLayer = function (_layer_1$VisibilityTr) {
+    _inherits(SliceViewPanelRenderLayer, _layer_1$VisibilityTr);
+
+    function SliceViewPanelRenderLayer() {
+        _classCallCheck(this, SliceViewPanelRenderLayer);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewPanelRenderLayer).apply(this, arguments));
+    }
+
+    _createClass(SliceViewPanelRenderLayer, [{
+        key: 'draw',
+        value: function draw(renderContext) {
+            // Must be overriden by subclass.
+        }
+    }]);
+
+    return SliceViewPanelRenderLayer;
+}(layer_1.VisibilityTrackedRenderLayer);
+
+exports.SliceViewPanelRenderLayer = SliceViewPanelRenderLayer;
+;
+
+var SliceViewPanel = function (_rendered_data_panel_) {
+    _inherits(SliceViewPanel, _rendered_data_panel_);
+
+    function SliceViewPanel(context, element, sliceView, viewer) {
+        _classCallCheck(this, SliceViewPanel);
+
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewPanel).call(this, context, element, viewer));
+
+        _this2.sliceView = sliceView;
+        _this2.axesLineHelper = axes_lines_1.AxesLineHelper.get(_this2.gl);
+        _this2.sliceViewRenderHelper = frontend_1.SliceViewRenderHelper.get(_this2.gl, 'SliceViewRenderHelper', sliceViewPanelEmit);
+        _this2.colorFactor = geom_1.vec4.fromValues(1, 1, 1, 1);
+        _this2.backgroundColor = geom_1.vec4.fromValues(0.5, 0.5, 0.5, 1.0);
+        _this2.pickIDs = new object_picking_1.PickIDManager();
+        _this2.visibleLayerTracker = layer_1.makeRenderedPanelVisibleLayerTracker(_this2.viewer.layerManager, SliceViewPanelRenderLayer, _this2);
+        _this2.offscreenFramebuffer = new offscreen_1.OffscreenFramebuffer(_this2.gl, { numDataBuffers: OffscreenTextures.NUM_TEXTURES });
+        _this2.offscreenCopyHelper = offscreen_1.OffscreenCopyHelper.get(_this2.gl);
+        _this2.scaleBarWidget = _this2.registerDisposer(new scale_bar_1.ScaleBarWidget());
+        _this2.registerDisposer(sliceView);
+        _this2.registerSignalBinding(sliceView.viewChanged.add(context.scheduleRedraw, context));
+        _this2.registerSignalBinding(viewer.showAxisLines.changed.add(() => {
+            _this2.scheduleRedraw();
+        }));
+        {
+            var scaleBar = _this2.scaleBarWidget.element;
+            _this2.registerDisposer(new trackable_boolean_1.ElementVisibilityFromTrackableBoolean(viewer.showScaleBar, scaleBar));
+            _this2.element.appendChild(scaleBar);
+        }
+        return _this2;
+    }
+
+    _createClass(SliceViewPanel, [{
+        key: 'draw',
+        value: function draw() {
+            var sliceView = this.sliceView;
+
+            if (!sliceView.hasValidViewport) {
+                return;
+            }
+            sliceView.updateRendering();
+            var gl = this.gl;
+            var width = sliceView.width;
+            var height = sliceView.height;
+            var dataToDevice = sliceView.dataToDevice;
+
+            this.offscreenFramebuffer.bind(width, height);
+            gl.disable(gl.SCISSOR_TEST);
+            this.gl.clearColor(0.0, 0.0, 0.0, 0.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            // Draw axes lines.
+            // FIXME: avoid use of temporary matrix
+            var mat = geom_1.mat4.create();
+            this.sliceViewRenderHelper.draw(sliceView.offscreenFramebuffer.dataTextures[0], geom_1.identityMat4, this.colorFactor, this.backgroundColor, 0, 0, 1, 1);
+            var visibleLayers = this.visibleLayerTracker.getVisibleLayers();
+            var pickIDs = this.pickIDs;
+
+            pickIDs.clear();
+            var renderContext = { dataToDevice: sliceView.dataToDevice, pickIDs: pickIDs };
+            for (var renderLayer of visibleLayers) {
+                renderLayer.draw(renderContext);
+            }
+            if (this.viewer.showAxisLines.value) {
+                // Construct matrix that maps [-1, +1] x/y range to the full viewport data
+                // coordinates.
+                geom_1.mat4.copy(mat, dataToDevice);
+                for (var i = 0; i < 3; ++i) {
+                    mat[12 + i] = 0;
+                }
+                for (var _i = 0; _i < 4; ++_i) {
+                    mat[2 + 4 * _i] = 0;
+                }
+                var axisLength = Math.min(width, height) / 4 * 1.5;
+                var pixelSize = sliceView.pixelSize;
+                for (var _i2 = 0; _i2 < 12; ++_i2) {
+                    // pixelSize is nm / pixel
+                    //
+                    mat[_i2] *= axisLength * pixelSize;
+                }
+                gl.WEBGL_draw_buffers.drawBuffersWEBGL([gl.WEBGL_draw_buffers.COLOR_ATTACHMENT0_WEBGL]);
+                this.axesLineHelper.draw(mat);
+            }
+            this.offscreenFramebuffer.unbind();
+            // Draw the texture over the whole viewport.
+            this.setGLViewport();
+            this.offscreenCopyHelper.draw(this.offscreenFramebuffer.dataTextures[OffscreenTextures.COLOR]);
+            // Update the scale bar if needed.
+            {
+                var scaleBarWidget = this.scaleBarWidget;
+                var dimensions = scaleBarWidget.dimensions;
+
+                dimensions.targetLengthInPixels = Math.min(width / 4, 100);
+                dimensions.nanometersPerPixel = sliceView.pixelSize;
+                scaleBarWidget.update();
+            }
+        }
+    }, {
+        key: 'onResize',
+        value: function onResize() {
+            this.sliceView.setViewportSize(this.element.clientWidth, this.element.clientHeight);
+        }
+    }, {
+        key: 'updateMouseState',
+        value: function updateMouseState(mouseState) {
+            mouseState.pickedRenderLayer = null;
+            var sliceView = this.sliceView;
+            if (!sliceView.hasValidViewport) {
+                return false;
+            }
+            var width = sliceView.width;
+            var height = sliceView.height;
+            var offscreenFramebuffer = this.offscreenFramebuffer;
+
+            if (!offscreenFramebuffer.hasSize(width, height)) {
+                return false;
+            }
+            var out = mouseState.position;
+            var glWindowX = this.mouseX;
+            var y = this.mouseY;
+            geom_1.vec3.set(out, glWindowX - width / 2, y - height / 2, 0);
+            geom_1.vec3.transformMat4(out, out, sliceView.viewportToData);
+            var glWindowY = height - y;
+            this.pickIDs.setMouseState(mouseState, offscreenFramebuffer.readPixelAsUint32(OffscreenTextures.PICK, glWindowX, glWindowY));
+            return true;
+        }
+    }, {
+        key: 'onMousedown',
+        value: function onMousedown(e) {
+            var _this3 = this;
+
+            if (e.target !== this.element) {
+                return;
+            }
+            _get(Object.getPrototypeOf(SliceViewPanel.prototype), 'onMousedown', this).call(this, e);
+            if (!this.sliceView.hasValidViewport) {
+                return;
+            }
+            if (e.button === 0) {
+                var mouseState = this.viewer.mouseState;
+
+                if (mouseState.updateUnconditionally()) {
+                    (function () {
+                        var initialPosition = geom_1.vec3.clone(_this3.viewer.mouseState.position);
+                        mouse_drag_1.startRelativeMouseDrag(e, (event, deltaX, deltaY) => {
+                            var position = _this3.viewer.navigationState.position;
+
+                            if (event.shiftKey) {
+                                var viewportAxes = _this3.sliceView.viewportAxes;
+
+                                _this3.viewer.navigationState.pose.rotateAbsolute(viewportAxes[1], deltaX / 4.0 * Math.PI / 180.0, initialPosition);
+                                _this3.viewer.navigationState.pose.rotateAbsolute(viewportAxes[0], deltaY / 4.0 * Math.PI / 180.0, initialPosition);
+                            } else {
+                                var pos = position.spatialCoordinates;
+                                geom_1.vec3.set(pos, deltaX, deltaY, 0);
+                                geom_1.vec3.transformMat4(pos, pos, _this3.sliceView.viewportToData);
+                                position.changed.dispatch();
+                            }
+                        });
+                    })();
+                }
+            }
+        }
+        /**
+         * Zooms by the specified factor, maintaining the data position that projects to the current mouse
+         * position.
+         */
+
+    }, {
+        key: 'zoomByMouse',
+        value: function zoomByMouse(factor) {
+            var navigationState = this.navigationState;
+
+            if (!navigationState.valid) {
+                return;
+            }
+            var sliceView = this.sliceView;
+            var width = sliceView.width;
+            var height = sliceView.height;
+            var mouseX = this.mouseX;
+            var mouseY = this.mouseY;
+
+            mouseX -= width / 2;
+            mouseY -= height / 2;
+            var oldZoom = this.navigationState.zoomFactor.value;
+            // oldPosition + (mouseX * viewportAxes[0] + mouseY * viewportAxes[1]) * oldZoom
+            //     === newPosition + (mouseX * viewportAxes[0] + mouseY * viewportAxes[1]) * newZoom
+            // Therefore, we compute newPosition by:
+            // newPosition = oldPosition + (viewportAxes[0] * mouseX +
+            //                              viewportAxes[1] * mouseY) * (oldZoom - newZoom).
+            navigationState.zoomBy(factor);
+            var newZoom = navigationState.zoomFactor.value;
+            var spatialCoordinates = navigationState.position.spatialCoordinates;
+
+            geom_1.vec3.scaleAndAdd(spatialCoordinates, spatialCoordinates, sliceView.viewportAxes[0], mouseX * (oldZoom - newZoom));
+            geom_1.vec3.scaleAndAdd(spatialCoordinates, spatialCoordinates, sliceView.viewportAxes[1], mouseY * (oldZoom - newZoom));
+            navigationState.position.changed.dispatch();
+        }
+    }, {
+        key: 'navigationState',
+        get: function () {
+            return this.sliceView.navigationState;
+        }
+    }]);
+
+    return SliceViewPanel;
+}(rendered_data_panel_1.RenderedDataPanel);
+
+exports.SliceViewPanel = SliceViewPanel;
+;
+
+/***/ },
+/* 80 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * Facility for drawing a scale bar to indicate pixel size in physical length
+ * units.
+ *
+ * The physical length with which the scale bar is labeled will be of the form:
+ *
+ *   significand * 10^exponent
+ *
+ * Any exponent may be used, but the significand in the range [1, 10] will be
+ * equal to one of a
+ * discrete set of allowed significand values, in order to ensure that the scale
+ * bar is easy to
+ * understand.
+ */
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var disposable_1 = __webpack_require__(23);
+var dom_1 = __webpack_require__(7);
+__webpack_require__(81);
+/**
+ * Default set of allowed significand values.  1 is implicitly part of the set.
+ */
+var DEFAULT_ALLOWED_SIGNIFICANDS = [1.5, 2, 3, 5, 7.5, 10];
+var ALLOWED_UNITS = [{ unit: 'km', lengthInNanometers: 1e12 }, { unit: 'm', lengthInNanometers: 1e9 }, { unit: 'mm', lengthInNanometers: 1e6 }, { unit: 'µm', lengthInNanometers: 1e3 }, { unit: 'nm', lengthInNanometers: 1 }, { unit: 'pm', lengthInNanometers: 1e-3 }];
+
+var ScaleBarDimensions = function () {
+    function ScaleBarDimensions() {
+        _classCallCheck(this, ScaleBarDimensions);
+
+        /**
+         * Allowed significand values.  1 is not included, but is always considered
+         * part of the set.
+         */
+        this.allowedSignificands = DEFAULT_ALLOWED_SIGNIFICANDS;
+        this.prevNanometersPerPixel = 0;
+        this.prevTargetLengthInPixels = 0;
+    }
+    /**
+     * Updates physicalLength, physicalUnit, and lengthInPixels to be the optimal
+     * values corresponding
+     * to targetLengthInPixels and nanometersPerPixel.
+     *
+     * @returns true if the scale bar has changed, false if it is unchanged.
+     */
+
+
+    _createClass(ScaleBarDimensions, [{
+        key: 'update',
+        value: function update() {
+            var nanometersPerPixel = this.nanometersPerPixel;
+            var targetLengthInPixels = this.targetLengthInPixels;
+
+            if (this.prevNanometersPerPixel === nanometersPerPixel && this.prevTargetLengthInPixels === targetLengthInPixels) {
+                return false;
+            }
+            this.prevNanometersPerPixel = nanometersPerPixel;
+            this.prevTargetLengthInPixels = targetLengthInPixels;
+            var targetNanometers = targetLengthInPixels * nanometersPerPixel;
+            var exponent = Math.floor(Math.log(targetNanometers) / Math.LN10);
+            var tenToThePowerExponent = Math.pow(10, exponent);
+            var targetSignificand = targetNanometers / tenToThePowerExponent;
+            // Determine significand value in this.allowedSignificands that is closest
+            // to targetSignificand.
+            var bestSignificand = 1;
+            var allowedSignificands = this.allowedSignificands;
+
+            for (var allowedSignificand of this.allowedSignificands) {
+                if (Math.abs(allowedSignificand - targetSignificand) < Math.abs(bestSignificand - targetSignificand)) {
+                    bestSignificand = allowedSignificand;
+                } else {
+                    // If distance did not decrease, then it can only increase from here.
+                    break;
+                }
+            }
+            var physicalNanometers = bestSignificand * tenToThePowerExponent;
+            var numAllowedUnits = ALLOWED_UNITS.length;
+            var unit = ALLOWED_UNITS[numAllowedUnits - 1];
+            for (var i = 0; i < numAllowedUnits; ++i) {
+                var allowedUnit = ALLOWED_UNITS[i];
+                if (physicalNanometers >= allowedUnit.lengthInNanometers) {
+                    unit = allowedUnit;
+                    break;
+                }
+            }
+            this.lengthInPixels = Math.round(physicalNanometers / nanometersPerPixel);
+            this.physicalUnit = unit.unit;
+            this.physicalLength = physicalNanometers / unit.lengthInNanometers;
+            return true;
+        }
+    }]);
+
+    return ScaleBarDimensions;
+}();
+
+exports.ScaleBarDimensions = ScaleBarDimensions;
+;
+
+var ScaleBarWidget = function (_disposable_1$RefCoun) {
+    _inherits(ScaleBarWidget, _disposable_1$RefCoun);
+
+    function ScaleBarWidget() {
+        var dimensions = arguments.length <= 0 || arguments[0] === undefined ? new ScaleBarDimensions() : arguments[0];
+
+        _classCallCheck(this, ScaleBarWidget);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ScaleBarWidget).call(this));
+
+        _this.dimensions = dimensions;
+        _this.element = document.createElement('div');
+        _this.textNode = document.createTextNode('');
+        _this.barElement = document.createElement('div');
+        var element = _this.element;
+        var textNode = _this.textNode;
+        var barElement = _this.barElement;
+
+        element.className = 'scale-bar-container';
+        element.appendChild(textNode);
+        element.appendChild(barElement);
+        barElement.className = 'scale-bar';
+        return _this;
+    }
+
+    _createClass(ScaleBarWidget, [{
+        key: 'update',
+        value: function update() {
+            var dimensions = this.dimensions;
+
+            if (dimensions.update()) {
+                this.textNode.textContent = `${ dimensions.physicalLength } ${ dimensions.physicalUnit }`;
+                this.barElement.style.width = `${ dimensions.lengthInPixels }px`;
+            }
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            dom_1.removeFromParent(this.element);
+        }
+    }]);
+
+    return ScaleBarWidget;
+}(disposable_1.RefCounted);
+
+exports.ScaleBarWidget = ScaleBarWidget;
+;
+
+/***/ },
+/* 81 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -17024,9 +18154,9 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var factory_1 = __webpack_require__(28);
-var base_1 = __webpack_require__(77);
-var base_2 = __webpack_require__(60);
-var frontend_1 = __webpack_require__(59);
+var base_1 = __webpack_require__(83);
+var base_2 = __webpack_require__(61);
+var frontend_1 = __webpack_require__(60);
 var completion_1 = __webpack_require__(29);
 var geom_1 = __webpack_require__(9);
 var http_request_1 = __webpack_require__(25);
@@ -17272,7 +18402,7 @@ factory_1.registerDataSourceFactory('ndstore', {
 });
 
 /***/ },
-/* 77 */
+/* 83 */
 /***/ function(module, exports) {
 
 /**
@@ -17316,7 +18446,7 @@ exports.VolumeChunkSourceParameters = VolumeChunkSourceParameters;
 ;
 
 /***/ },
-/* 78 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -17346,10 +18476,11 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var base_1 = __webpack_require__(79);
+var base_1 = __webpack_require__(85);
 var factory_1 = __webpack_require__(28);
-var base_2 = __webpack_require__(60);
-var frontend_1 = __webpack_require__(59);
+var frontend_1 = __webpack_require__(77);
+var base_2 = __webpack_require__(61);
+var frontend_2 = __webpack_require__(60);
 var status_1 = __webpack_require__(4);
 var completion_1 = __webpack_require__(29);
 var geom_1 = __webpack_require__(9);
@@ -17392,7 +18523,8 @@ var DataInstanceInfo = function DataInstanceInfo(obj, name, base) {
 
 exports.DataInstanceInfo = DataInstanceInfo;
 ;
-var DVIDVolumeChunkSource = frontend_1.defineParameterizedVolumeChunkSource(base_1.VolumeChunkSourceParameters);
+var DVIDVolumeChunkSource = frontend_2.defineParameterizedVolumeChunkSource(base_1.VolumeChunkSourceParameters);
+var SkeletonSource = frontend_1.parameterizedSkeletonSource(base_1.SkeletonSourceParameters);
 
 var VolumeDataInstanceInfo = function (_DataInstanceInfo) {
     _inherits(VolumeDataInstanceInfo, _DataInstanceInfo);
@@ -17493,7 +18625,7 @@ exports.TileLevelInfo = TileLevelInfo;
  * provides blank tiles if the dimension asked for is not there.
  */
 var TILE_DIMS = [[0, 1], [0, 2], [1, 2]];
-var TileChunkSource = frontend_1.defineParameterizedVolumeChunkSource(base_1.TileChunkSourceParameters);
+var TileChunkSource = frontend_2.defineParameterizedVolumeChunkSource(base_1.TileChunkSourceParameters);
 
 var TileDataInstanceInfo = function (_DataInstanceInfo2) {
     _inherits(TileDataInstanceInfo, _DataInstanceInfo2);
@@ -17641,7 +18773,6 @@ var RepositoryInfo = function RepositoryInfo(obj) {
     for (var key of instanceKeys) {
         try {
             this.dataInstances.set(key, parseDataInstance(dataInstanceObjs[key], key, instanceKeys));
-            this.dataInstances.set(key + '#', parseDataInstance(dataInstanceObjs[key], key, instanceKeys));
         } catch (parseError) {
             var message = `Failed to parse data instance ${ JSON.stringify(key) }: ${ parseError.message }`;
             console.log(message);
@@ -17861,11 +18992,32 @@ exports.volumeCompleter = volumeCompleter;
 factory_1.registerDataSourceFactory('dvid', {
     description: 'DVID',
     volumeCompleter: volumeCompleter,
-    getVolume: getVolume
+    getVolume: getVolume,
+    getSkeletonSource: getSkeletonSourceByUrl
 });
+function getSkeletonSource(chunkManager, parameters) {
+    return SkeletonSource.get(chunkManager, parameters);
+}
+exports.getSkeletonSource = getSkeletonSource;
+// example: http://emdata1:7000/d5053e99753848e599a641925aa2d38f/bodies1104_skeletons/
+var skeletonSourcePattern = /^((?:http|https):\/\/[^\/]+)\/([^\/]+)\/([^\/]+_skeletons)$/;
+function getSkeletonSourceParameters(url) {
+    var match = url.match(skeletonSourcePattern);
+    if (match === null) {
+        throw new Error(`Invalid DVID skeleton URL: ${ url }`);
+    }
+    var baseUrls = [match[1]];
+    var nodeKey = match[2];
+    var dataInstanceKey = match[3];
+    return { baseUrls: baseUrls, nodeKey: nodeKey, dataInstanceKey: dataInstanceKey };
+}
+function getSkeletonSourceByUrl(chunkManager, url) {
+    return getSkeletonSource(chunkManager, getSkeletonSourceParameters(url));
+}
+exports.getSkeletonSourceByUrl = getSkeletonSourceByUrl;
 
 /***/ },
-/* 79 */
+/* 85 */
 /***/ function(module, exports) {
 
 "use strict";
@@ -17933,8 +19085,31 @@ var TileChunkSourceParameters = function (_DVIDSourceParameters2) {
 TileChunkSourceParameters.RPC_ID = 'dvid/TileChunkSource';
 exports.TileChunkSourceParameters = TileChunkSourceParameters;
 
+var SkeletonSourceParameters = function (_DVIDSourceParameters3) {
+    _inherits(SkeletonSourceParameters, _DVIDSourceParameters3);
+
+    function SkeletonSourceParameters() {
+        _classCallCheck(this, SkeletonSourceParameters);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonSourceParameters).apply(this, arguments));
+    }
+
+    _createClass(SkeletonSourceParameters, null, [{
+        key: 'stringify',
+        value: function stringify(parameters) {
+            return `dvid:skeleton:${ parameters['baseUrls'][0] }/${ parameters['nodeKey'] }/${ parameters['dataInstanceKey'] }`;
+        }
+    }]);
+
+    return SkeletonSourceParameters;
+}(DVIDSourceParameters);
+
+SkeletonSourceParameters.RPC_ID = 'dvid/SkeletonSource';
+exports.SkeletonSourceParameters = SkeletonSourceParameters;
+;
+
 /***/ },
-/* 80 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -17958,7 +19133,7 @@ exports.TileChunkSourceParameters = TileChunkSourceParameters;
  */
 
 var factory_1 = __webpack_require__(28);
-var frontend_1 = __webpack_require__(76);
+var frontend_1 = __webpack_require__(82);
 var HOSTNAMES = ['http://openconnecto.me', 'http://www.openconnecto.me'];
 function getVolume(path) {
     return frontend_1.getShardedVolume(HOSTNAMES, path);
@@ -17975,7 +19150,7 @@ factory_1.registerDataSourceFactory('openconnectome', {
 });
 
 /***/ },
-/* 81 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18002,10 +19177,10 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var factory_1 = __webpack_require__(28);
-var base_1 = __webpack_require__(82);
+var base_1 = __webpack_require__(88);
 var frontend_1 = __webpack_require__(30);
-var base_2 = __webpack_require__(60);
-var frontend_2 = __webpack_require__(59);
+var base_2 = __webpack_require__(61);
+var frontend_2 = __webpack_require__(60);
 var geom_1 = __webpack_require__(9);
 var http_request_1 = __webpack_require__(25);
 var json_1 = __webpack_require__(8);
@@ -18129,7 +19304,7 @@ factory_1.registerDataSourceFactory('precomputed', {
 });
 
 /***/ },
-/* 82 */
+/* 88 */
 /***/ function(module, exports) {
 
 /**
@@ -18199,7 +19374,7 @@ exports.MeshSourceParameters = MeshSourceParameters;
 ;
 
 /***/ },
-/* 83 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18224,10 +19399,10 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var factory_1 = __webpack_require__(28);
-var base_1 = __webpack_require__(84);
+var base_1 = __webpack_require__(90);
 var frontend_1 = __webpack_require__(30);
-var base_2 = __webpack_require__(60);
-var frontend_2 = __webpack_require__(59);
+var base_2 = __webpack_require__(61);
+var frontend_2 = __webpack_require__(60);
 var geom_1 = __webpack_require__(9);
 var http_request_1 = __webpack_require__(25);
 var json_1 = __webpack_require__(8);
@@ -18374,7 +19549,7 @@ factory_1.registerDataSourceFactory('python', {
 });
 
 /***/ },
-/* 84 */
+/* 90 */
 /***/ function(module, exports) {
 
 /**
@@ -18444,7 +19619,7 @@ exports.MeshSourceParameters = MeshSourceParameters;
 ;
 
 /***/ },
-/* 85 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18464,8 +19639,8 @@ exports.MeshSourceParameters = MeshSourceParameters;
  */
 "use strict";
 
-var default_key_bindings_1 = __webpack_require__(86);
-var default_viewer_1 = __webpack_require__(87);
+var default_key_bindings_1 = __webpack_require__(92);
+var default_viewer_1 = __webpack_require__(93);
 // let neuroglancerElement =
 function InitializeNeuroglancer(config) {
   var viewer = window['viewer'] = default_viewer_1.makeDefaultViewer(config);
@@ -18475,7 +19650,7 @@ exports.InitializeNeuroglancer = InitializeNeuroglancer;
 window.InitializeNeuroglancer = InitializeNeuroglancer;
 
 /***/ },
-/* 86 */
+/* 92 */
 /***/ function(module, exports) {
 
 /**
@@ -18518,6 +19693,7 @@ function makeDefaultKeyBindings(keyMap) {
     keyMap.bind('keyl', 'recolor');
     keyMap.bind('keyx', 'clear-segments');
     keyMap.bind('keys', 'toggle-show-slices');
+    keyMap.bind('keyo', 'toggle-show-segments-on-hover');
     keyMap.bind('keyb', 'toggle-scale-bar');
     keyMap.bind('keya', 'toggle-axis-lines');
     for (var i = 1; i <= 9; ++i) {
@@ -18530,7 +19706,7 @@ function makeDefaultKeyBindings(keyMap) {
 exports.makeDefaultKeyBindings = makeDefaultKeyBindings;
 
 /***/ },
-/* 87 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18550,10 +19726,10 @@ exports.makeDefaultKeyBindings = makeDefaultKeyBindings;
  */
 "use strict";
 
-__webpack_require__(88);
-__webpack_require__(89);
-var display_context_1 = __webpack_require__(55);
-var viewer_1 = __webpack_require__(97);
+__webpack_require__(94);
+__webpack_require__(95);
+var display_context_1 = __webpack_require__(56);
+var viewer_1 = __webpack_require__(103);
 function makeDefaultViewer(config) {
   var display = new display_context_1.DisplayContext(document.getElementById('container'));
   return new viewer_1.Viewer(display, config);
@@ -18561,13 +19737,13 @@ function makeDefaultViewer(config) {
 exports.makeDefaultViewer = makeDefaultViewer;
 
 /***/ },
-/* 88 */
+/* 94 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 89 */
+/* 95 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18587,11 +19763,11 @@ exports.makeDefaultViewer = makeDefaultViewer;
  */
 "use strict";
 
-__webpack_require__(90);
-__webpack_require__(93);
+__webpack_require__(96);
+__webpack_require__(99);
 
 /***/ },
-/* 90 */
+/* 96 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18621,14 +19797,14 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var base_1 = __webpack_require__(60);
-var frontend_1 = __webpack_require__(59);
-var single_texture_chunk_format_1 = __webpack_require__(91);
+var base_1 = __webpack_require__(61);
+var frontend_1 = __webpack_require__(60);
+var single_texture_chunk_format_1 = __webpack_require__(97);
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var uint64_1 = __webpack_require__(52);
-var one_dimensional_texture_access_1 = __webpack_require__(92);
-var shader_lib_1 = __webpack_require__(71);
+var one_dimensional_texture_access_1 = __webpack_require__(98);
+var shader_lib_1 = __webpack_require__(72);
 
 var TextureLayout = function (_disposable_1$RefCoun) {
     _inherits(TextureLayout, _disposable_1$RefCoun);
@@ -18914,7 +20090,7 @@ frontend_1.registerChunkFormatHandler((gl, spec) => {
 });
 
 /***/ },
-/* 91 */
+/* 97 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -18944,9 +20120,9 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var frontend_1 = __webpack_require__(59);
+var frontend_1 = __webpack_require__(60);
 var disposable_1 = __webpack_require__(23);
-var texture_1 = __webpack_require__(68);
+var texture_1 = __webpack_require__(69);
 var textureUnitSymbol = Symbol('SingleTextureVolumeChunk.textureUnit');
 var textureLayoutSymbol = Symbol('SingleTextureVolumeChunk.textureLayout');
 
@@ -19048,7 +20224,7 @@ exports.SingleTextureVolumeChunk = SingleTextureVolumeChunk;
 ;
 
 /***/ },
-/* 92 */
+/* 98 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -19080,7 +20256,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var array_1 = __webpack_require__(62);
+var array_1 = __webpack_require__(63);
 /**
  * Computes a texture layout with [width, height] equal to [x, y*z] or [x*y, z] if possible.  This
  * makes 3-d access more likely to be friendly to the texture cache.  If not possible, just uses
@@ -19188,7 +20364,7 @@ exports.OneDimensionalTextureAccessHelper = OneDimensionalTextureAccessHelper;
 ;
 
 /***/ },
-/* 93 */
+/* 99 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -19218,17 +20394,17 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var base_1 = __webpack_require__(60);
-var decode_uint32_1 = __webpack_require__(94);
-var decode_uint64_1 = __webpack_require__(96);
-var frontend_1 = __webpack_require__(59);
-var renderlayer_1 = __webpack_require__(65);
-var single_texture_chunk_format_1 = __webpack_require__(91);
+var base_1 = __webpack_require__(61);
+var decode_uint32_1 = __webpack_require__(100);
+var decode_uint64_1 = __webpack_require__(102);
+var frontend_1 = __webpack_require__(60);
+var renderlayer_1 = __webpack_require__(66);
+var single_texture_chunk_format_1 = __webpack_require__(97);
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
 var uint64_1 = __webpack_require__(52);
-var one_dimensional_texture_access_1 = __webpack_require__(92);
-var shader_lib_1 = __webpack_require__(71);
+var one_dimensional_texture_access_1 = __webpack_require__(98);
+var shader_lib_1 = __webpack_require__(72);
 
 var TextureLayout = function (_disposable_1$RefCoun) {
     _inherits(TextureLayout, _disposable_1$RefCoun);
@@ -19416,10 +20592,18 @@ var CompressedSegmentationVolumeChunk = function (_single_texture_chunk2) {
         key: 'setTextureData',
         value: function setTextureData(gl) {
             var data = this.data;
+
+            var dataStash = this.data;
+            if (this.source.transform !== undefined) {
+                // don't persist chunk data transformations
+                dataStash = new Uint32Array(this.data.buffer.slice(0));
+                this.source.transform(this);
+            }
             var chunkFormat = this.chunkFormat;
 
             var textureLayout = this.textureLayout = chunkFormat.getTextureLayout(gl, this.chunkDataSize, data.length);
             chunkFormat.setTextureData(gl, textureLayout, data);
+            this.data = dataStash;
         }
     }, {
         key: 'getChannelValueAt',
@@ -19482,7 +20666,7 @@ frontend_1.registerChunkFormatHandler((gl, spec) => {
 });
 
 /***/ },
-/* 94 */
+/* 100 */
 /***/ function(module, exports, __webpack_require__) {
 
 // DO NOT EDIT.  Generated from
@@ -19508,7 +20692,7 @@ frontend_1.registerChunkFormatHandler((gl, spec) => {
  * Support for decompressing uint64 segment label chunks.
  */
 
-var decode_common_1 = __webpack_require__(95);
+var decode_common_1 = __webpack_require__(101);
 /**
  * Reads the single value at the specified dataPosition in a single-channel compressed segmentation.
  *
@@ -19585,7 +20769,7 @@ function decodeChannels(out, data, baseOffset, chunkDataSize, blockSize) {
 exports.decodeChannels = decodeChannels;
 
 /***/ },
-/* 95 */
+/* 101 */
 /***/ function(module, exports) {
 
 /**
@@ -19654,7 +20838,7 @@ function decodeValueOffset(data, baseOffset, chunkDataSize, blockSize, dataPosit
 exports.decodeValueOffset = decodeValueOffset;
 
 /***/ },
-/* 96 */
+/* 102 */
 /***/ function(module, exports, __webpack_require__) {
 
 // DO NOT EDIT.  Generated from
@@ -19680,7 +20864,7 @@ exports.decodeValueOffset = decodeValueOffset;
  * Support for decompressing uint64 segment label chunks.
  */
 
-var decode_common_1 = __webpack_require__(95);
+var decode_common_1 = __webpack_require__(101);
 /**
  * Reads the single value at the specified dataPosition in a single-channel compressed segmentation.
  *
@@ -19760,7 +20944,7 @@ function decodeChannels(out, data, baseOffset, chunkDataSize, blockSize) {
 exports.decodeChannels = decodeChannels;
 
 /***/ },
-/* 97 */
+/* 103 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -19793,30 +20977,30 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var debounce = __webpack_require__(43);
 var base_1 = __webpack_require__(31);
 var frontend_1 = __webpack_require__(32);
-var key_bindings_1 = __webpack_require__(98);
+var key_bindings_1 = __webpack_require__(104);
 var layer_1 = __webpack_require__(42);
-var layer_dialog_1 = __webpack_require__(103);
-var layer_panel_1 = __webpack_require__(159);
-var layer_specification_1 = __webpack_require__(104);
-var L = __webpack_require__(162);
-var navigation_state_1 = __webpack_require__(163);
-var overlay_1 = __webpack_require__(99);
+var layer_dialog_1 = __webpack_require__(109);
+var layer_panel_1 = __webpack_require__(160);
+var layer_specification_1 = __webpack_require__(110);
+var L = __webpack_require__(163);
+var navigation_state_1 = __webpack_require__(164);
+var overlay_1 = __webpack_require__(105);
 var perspective_panel_1 = __webpack_require__(36);
-var position_status_panel_1 = __webpack_require__(164);
-var frontend_2 = __webpack_require__(59);
-var panel_1 = __webpack_require__(137);
-var trackable_boolean_1 = __webpack_require__(69);
-var trackable_value_1 = __webpack_require__(66);
-var url_hash_state_1 = __webpack_require__(166);
+var position_status_panel_1 = __webpack_require__(165);
+var frontend_2 = __webpack_require__(60);
+var panel_1 = __webpack_require__(79);
+var trackable_boolean_1 = __webpack_require__(70);
+var trackable_value_1 = __webpack_require__(67);
+var url_hash_state_1 = __webpack_require__(167);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
 var geom_1 = __webpack_require__(9);
-var keyboard_shortcut_handler_1 = __webpack_require__(100);
+var keyboard_shortcut_handler_1 = __webpack_require__(106);
 var worker_rpc_1 = __webpack_require__(22);
 var signals_1 = __webpack_require__(34);
-__webpack_require__(167);
-__webpack_require__(115);
-__webpack_require__(72);
+__webpack_require__(168);
+__webpack_require__(121);
+__webpack_require__(73);
 
 var FourPanelLayout = function (_disposable_1$RefCoun) {
     _inherits(FourPanelLayout, _disposable_1$RefCoun);
@@ -20050,7 +21234,7 @@ var Viewer = function (_disposable_1$RefCoun3) {
             });
         };
 
-        for (var command of ['recolor', 'clear-segments']) {
+        for (var command of ['recolor', 'clear-segments', 'toggle-show-segments-on-hover']) {
             _loop2(command);
         }
         keyCommands.set('toggle-axis-lines', function () {
@@ -20059,7 +21243,7 @@ var Viewer = function (_disposable_1$RefCoun3) {
         keyCommands.set('toggle-scale-bar', function () {
             this.showScaleBar.toggle();
         });
-        _this3.keyCommands.set('toggle-show-slices', function () {
+        keyCommands.set('toggle-show-slices', function () {
             this.showPerspectiveSliceViews.toggle();
         });
         // This needs to happen after the global keyboard shortcut handler for the viewer has been
@@ -20202,7 +21386,7 @@ exports.Viewer = Viewer;
 ;
 
 /***/ },
-/* 98 */
+/* 104 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -20230,8 +21414,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var overlay_1 = __webpack_require__(99);
-__webpack_require__(102);
+var overlay_1 = __webpack_require__(105);
+__webpack_require__(108);
 function formatKeyName(name) {
     if (name.startsWith('key')) {
         return name.substring(3);
@@ -20301,7 +21485,7 @@ var KeyBindingHelpDialog = function (_overlay_1$Overlay) {
 exports.KeyBindingHelpDialog = KeyBindingHelpDialog;
 
 /***/ },
-/* 99 */
+/* 105 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -20332,8 +21516,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var disposable_1 = __webpack_require__(23);
-var keyboard_shortcut_handler_1 = __webpack_require__(100);
-__webpack_require__(101);
+var keyboard_shortcut_handler_1 = __webpack_require__(106);
+__webpack_require__(107);
 exports.overlaysOpen = 0;
 var KEY_MAP = new keyboard_shortcut_handler_1.KeySequenceMap();
 KEY_MAP.bind('escape', 'close');
@@ -20384,7 +21568,7 @@ exports.Overlay = Overlay;
 ;
 
 /***/ },
-/* 100 */
+/* 106 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -20761,19 +21945,19 @@ var GlobalKeyboardShortcutHandler = function (_disposable_1$RefCoun2) {
 exports.GlobalKeyboardShortcutHandler = GlobalKeyboardShortcutHandler;
 
 /***/ },
-/* 101 */
+/* 107 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 102 */
+/* 108 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 103 */
+/* 109 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -20802,14 +21986,14 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var factory_1 = __webpack_require__(28);
-var layer_specification_1 = __webpack_require__(104);
-var overlay_1 = __webpack_require__(99);
-var base_1 = __webpack_require__(60);
+var layer_specification_1 = __webpack_require__(110);
+var overlay_1 = __webpack_require__(105);
+var base_1 = __webpack_require__(61);
 var promise_1 = __webpack_require__(20);
-var associate_label_1 = __webpack_require__(151);
-var autocomplete_1 = __webpack_require__(152);
-var hidden_submit_button_1 = __webpack_require__(157);
-__webpack_require__(158);
+var associate_label_1 = __webpack_require__(152);
+var autocomplete_1 = __webpack_require__(153);
+var hidden_submit_button_1 = __webpack_require__(158);
+__webpack_require__(159);
 
 var LayerDialog = function (_overlay_1$Overlay) {
     _inherits(LayerDialog, _overlay_1$Overlay);
@@ -21035,7 +22219,7 @@ exports.LayerDialog = LayerDialog;
 ;
 
 /***/ },
-/* 104 */
+/* 110 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -21064,15 +22248,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var factory_1 = __webpack_require__(28);
-var image_user_layer_1 = __webpack_require__(105);
+var image_user_layer_1 = __webpack_require__(111);
 var layer_1 = __webpack_require__(42);
-var segmentation_user_layer_1 = __webpack_require__(118);
-var base_1 = __webpack_require__(60);
+var segmentation_metric_user_layer_1 = __webpack_require__(124);
+var segmentation_user_layer_1 = __webpack_require__(136);
+var base_1 = __webpack_require__(61);
 var status_1 = __webpack_require__(4);
 var disposable_1 = __webpack_require__(23);
 var json_1 = __webpack_require__(8);
 var signals_1 = __webpack_require__(34);
-var segmentation_metric_user_layer_1 = __webpack_require__(143);
 function getVolumeWithStatusMessage(x) {
     return status_1.StatusMessage.forPromise(new Promise(function (resolve) {
         resolve(factory_1.getVolume(x));
@@ -21170,13 +22354,6 @@ var LayerListSpecification = function (_disposable_1$RefCoun) {
             });
             if (layerType === 'metric') {
                 var metricData = spec['metricData'];
-                //TODO remove me: easier handling of testing data for dev
-                if (!metricData) {
-                    metricData = {
-                        'Worst': [[333290, 0], [316812, 10], [587230, 10], [331956, 10]],
-                        'Frag': [[333290, 0], [316812, 1], [587230, .25], [331956, .75]]
-                    };
-                }
                 var metricLayer = new segmentation_metric_user_layer_1.SegmentationMetricUserLayer(this, spec, metricData);
                 var _managedLayer = new ManagedUserLayerWithSpecification(name, spec, this);
                 _managedLayer.layer = metricLayer;
@@ -21247,7 +22424,7 @@ exports.LayerListSpecification = LayerListSpecification;
 ;
 
 /***/ },
-/* 105 */
+/* 111 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -21277,23 +22454,23 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-__webpack_require__(106);
-var CodeMirror = __webpack_require__(107);
+__webpack_require__(112);
+var CodeMirror = __webpack_require__(113);
 var debounce = __webpack_require__(43);
 var layer_1 = __webpack_require__(42);
-var layer_specification_1 = __webpack_require__(104);
-var overlay_1 = __webpack_require__(99);
-var image_renderlayer_1 = __webpack_require__(108);
-var renderlayer_1 = __webpack_require__(65);
+var layer_specification_1 = __webpack_require__(110);
+var overlay_1 = __webpack_require__(105);
+var image_renderlayer_1 = __webpack_require__(114);
+var renderlayer_1 = __webpack_require__(66);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-var range_1 = __webpack_require__(110);
-__webpack_require__(112);
-__webpack_require__(113);
-__webpack_require__(114);
-__webpack_require__(115);
-__webpack_require__(116);
-__webpack_require__(117)(CodeMirror);
+var range_1 = __webpack_require__(116);
+__webpack_require__(118);
+__webpack_require__(119);
+__webpack_require__(120);
+__webpack_require__(121);
+__webpack_require__(122);
+__webpack_require__(123)(CodeMirror);
 /**
  * Time in milliseconds during which the input field must not be modified before the shader is
  * recompiled.
@@ -21547,7 +22724,7 @@ var ShaderCodeOverlay = function (_overlay_1$Overlay) {
 ;
 
 /***/ },
-/* 106 */
+/* 112 */
 /***/ function(module, exports, __webpack_require__) {
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -21555,7 +22732,7 @@ var ShaderCodeOverlay = function (_overlay_1$Overlay) {
 
 (function(mod) {
   if (true) // CommonJS
-    mod(__webpack_require__(107));
+    mod(__webpack_require__(113));
   else if (typeof define == "function" && define.amd) // AMD
     define(["../../lib/codemirror"], mod);
   else // Plain browser env
@@ -21792,7 +22969,7 @@ var ShaderCodeOverlay = function (_overlay_1$Overlay) {
 
 
 /***/ },
-/* 107 */
+/* 113 */
 /***/ function(module, exports, __webpack_require__) {
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -30720,7 +31897,7 @@ var ShaderCodeOverlay = function (_overlay_1$Overlay) {
 
 
 /***/ },
-/* 108 */
+/* 114 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -30750,15 +31927,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var renderlayer_1 = __webpack_require__(65);
-var trackable_value_1 = __webpack_require__(66);
+var renderlayer_1 = __webpack_require__(66);
+var trackable_value_1 = __webpack_require__(67);
 var json_1 = __webpack_require__(8);
 exports.FRAGMENT_MAIN_START = '//NEUROGLANCER_IMAGE_RENDERLAYER_FRAGMENT_MAIN_START';
 var DEFAULT_FRAGMENT_MAIN = `void main() {
   emitGrayscale(toNormalized(getDataValue()));
 }
 `;
-var glsl_COLORMAPS = __webpack_require__(109);
+var glsl_COLORMAPS = __webpack_require__(115);
 function getTrackableFragmentMain() {
     var value = arguments.length <= 0 || arguments[0] === undefined ? DEFAULT_FRAGMENT_MAIN : arguments[0];
 
@@ -30834,13 +32011,13 @@ exports.ImageRenderLayer = ImageRenderLayer;
 ;
 
 /***/ },
-/* 109 */
+/* 115 */
 /***/ function(module, exports) {
 
 module.exports = "/**\n * @license\n * Copyright 2016 Google Inc.\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\nvec3 colormapJet(float x) {\n  vec3 result;\n  result.r = x < 0.89 ? ((x - 0.35) / 0.31) : (1.0 - (x - 0.89) / 0.11 * 0.5);\n  result.g = x < 0.64 ? ((x - 0.125) * 4.0) : (1.0 - (x - 0.64) / 0.27);\n  result.b = x < 0.34 ? (0.5 + x * 0.5 / 0.11) : (1.0 - (x - 0.34) / 0.31);\n  return clamp(result, 0.0, 1.0);\n}\n"
 
 /***/ },
-/* 110 */
+/* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -30872,7 +32049,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-__webpack_require__(111);
+__webpack_require__(117);
 
 var RangeWidget = function (_disposable_1$RefCoun) {
     _inherits(RangeWidget, _disposable_1$RefCoun);
@@ -30945,43 +32122,43 @@ exports.RangeWidget = RangeWidget;
 ;
 
 /***/ },
-/* 111 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 112 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 113 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 114 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 115 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 116 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
 /* 117 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 118 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 119 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 120 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 121 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 122 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 123 */
 /***/ function(module, exports) {
 
 module.exports = function(CodeMirror) {
@@ -31194,1098 +32371,9 @@ module.exports = function(CodeMirror) {
 
 
 /***/ },
-/* 118 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var factory_1 = __webpack_require__(28);
-var layer_1 = __webpack_require__(42);
-var layer_dropdown_1 = __webpack_require__(119);
-var layer_specification_1 = __webpack_require__(104);
-var frontend_1 = __webpack_require__(30);
-var segment_color_1 = __webpack_require__(128);
-var frontend_2 = __webpack_require__(74);
-var shared_disjoint_sets_1 = __webpack_require__(133);
-var frontend_3 = __webpack_require__(135);
-var renderlayer_1 = __webpack_require__(65);
-var segmentation_renderlayer_1 = __webpack_require__(140);
-var uint64_set_1 = __webpack_require__(141);
-var json_1 = __webpack_require__(8);
-var uint64_1 = __webpack_require__(52);
-var trackable_boolean_1 = __webpack_require__(69);
-__webpack_require__(142);
-
-var SegmentationUserLayer = function (_layer_1$UserLayer) {
-    _inherits(SegmentationUserLayer, _layer_1$UserLayer);
-
-    function SegmentationUserLayer(manager, x) {
-        _classCallCheck(this, SegmentationUserLayer);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationUserLayer).call(this, []));
-
-        _this.manager = manager;
-        _this.segmentColorHash = segment_color_1.SegmentColorHash.getDefault();
-        _this.segmentSelectionState = new frontend_2.SegmentSelectionState();
-        _this.selectedAlpha = renderlayer_1.trackableAlphaValue(0.5);
-        _this.notSelectedAlpha = renderlayer_1.trackableAlphaValue(0);
-        _this.visibleSegments = uint64_set_1.Uint64Set.makeWithCounterpart(_this.manager.worker);
-        _this.segmentEquivalences = shared_disjoint_sets_1.SharedDisjointUint64Sets.makeWithCounterpart(_this.manager.worker);
-        _this.wasDisposed = false;
-        _this.showSegmentsOnHover = new trackable_boolean_1.TrackableBoolean(false, false);
-        _this.visibleSegments.changed.add(() => {
-            _this.specificationChanged.dispatch();
-        });
-        _this.segmentEquivalences.changed.add(() => {
-            _this.specificationChanged.dispatch();
-        });
-        _this.segmentSelectionState.bindTo(manager.layerSelectedValues, _this);
-        _this.selectedAlpha.changed.add(() => {
-            _this.specificationChanged.dispatch();
-        });
-        _this.notSelectedAlpha.changed.add(() => {
-            _this.specificationChanged.dispatch();
-        });
-        _this.selectedAlpha.restoreState(x['selectedAlpha']);
-        _this.notSelectedAlpha.restoreState(x['notSelectedAlpha']);
-        var volumePath = _this.volumePath = json_1.verifyOptionalString(x['source']);
-        var meshPath = _this.meshPath = json_1.verifyOptionalString(x['mesh']);
-        var skeletonsPath = _this.skeletonsPath = json_1.verifyOptionalString(x['skeletons']);
-        if (volumePath !== undefined) {
-            var volumePromise = layer_specification_1.getVolumeWithStatusMessage(volumePath);
-            volumePromise.then(volume => {
-                if (!_this.wasDisposed) {
-                    if (!_this.meshLayer) {
-                        var meshSource = volume.getMeshSource(_this.manager.chunkManager);
-                        if (meshSource != null) {
-                            _this.addMesh(meshSource);
-                        }
-                    }
-                }
-            });
-            _this.segmentationLayer = new segmentation_renderlayer_1.SegmentationRenderLayer(manager.chunkManager, volumePromise, _this, _this.selectedAlpha, _this.notSelectedAlpha);
-            _this.addRenderLayer(_this.segmentationLayer);
-        }
-        if (meshPath !== undefined) {
-            var meshLod = x['meshLod'];
-            if (typeof meshLod !== 'number') {
-                meshLod = undefined;
-            }
-            _this.meshLod = meshLod;
-            _this.addMesh(factory_1.getMeshSource(manager.chunkManager, meshPath, meshLod));
-        }
-        if (skeletonsPath !== undefined) {
-            var base = new frontend_3.SkeletonLayer(manager.chunkManager, factory_1.getSkeletonSource(manager.chunkManager, skeletonsPath), manager.voxelSize, _this);
-            _this.addRenderLayer(new frontend_3.PerspectiveViewSkeletonLayer(base));
-            _this.addRenderLayer(new frontend_3.SliceViewPanelSkeletonLayer(base));
-        }
-        json_1.verifyObjectProperty(x, 'equivalences', y => {
-            _this.segmentEquivalences.restoreState(y);
-        });
-        json_1.verifyObjectProperty(x, 'segments', y => {
-            if (y !== undefined) {
-                (function () {
-                    var visibleSegments = _this.visibleSegments;
-                    var segmentEquivalences = _this.segmentEquivalences;
-
-                    json_1.parseArray(y, value => {
-                        var id = uint64_1.Uint64.parseString(String(value), 10);
-                        visibleSegments.add(segmentEquivalences.get(id));
-                    });
-                })();
-            }
-        });
-        return _this;
-    }
-
-    _createClass(SegmentationUserLayer, [{
-        key: 'disposed',
-        value: function disposed() {
-            _get(Object.getPrototypeOf(SegmentationUserLayer.prototype), 'disposed', this).call(this);
-            this.wasDisposed = true;
-        }
-    }, {
-        key: 'addMesh',
-        value: function addMesh(meshSource) {
-            this.meshLayer = new frontend_1.MeshLayer(this.manager.chunkManager, meshSource, this);
-            this.addRenderLayer(this.meshLayer);
-        }
-    }, {
-        key: 'toJSON',
-        value: function toJSON() {
-            var x = { 'type': 'segmentation' };
-            x['source'] = this.volumePath;
-            x['mesh'] = this.meshPath;
-            x['meshLod'] = this.meshLod;
-            x['skeletons'] = this.skeletonsPath;
-            x['selectedAlpha'] = this.selectedAlpha.toJSON();
-            x['notSelectedAlpha'] = this.notSelectedAlpha.toJSON();
-            var visibleSegments = this.visibleSegments;
-
-            if (visibleSegments.size > 0) {
-                x['segments'] = visibleSegments.toJSON();
-            }
-            var segmentEquivalences = this.segmentEquivalences;
-
-            if (segmentEquivalences.size > 0) {
-                x['equivalences'] = segmentEquivalences.toJSON();
-            }
-            return x;
-        }
-    }, {
-        key: 'transformPickedValue',
-        value: function transformPickedValue(value) {
-            if (value == null) {
-                return value;
-            }
-            var segmentEquivalences = this.segmentEquivalences;
-
-            if (segmentEquivalences.size === 0) {
-                return value;
-            }
-            if (typeof value === 'number') {
-                value = new uint64_1.Uint64(value, 0);
-            }
-            var mappedValue = segmentEquivalences.get(value);
-            if (uint64_1.Uint64.equal(mappedValue, value)) {
-                return value;
-            }
-            return new frontend_2.Uint64MapEntry(value, mappedValue);
-        }
-    }, {
-        key: 'makeDropdown',
-        value: function makeDropdown(element) {
-            return new layer_dropdown_1.SegmentationDropdown(element, this);
-        }
-    }, {
-        key: 'handleAction',
-        value: function handleAction(action) {
-            switch (action) {
-                case 'recolor':
-                    {
-                        this.segmentColorHash.randomize();
-                        break;
-                    }
-                case 'clear-segments':
-                    {
-                        this.visibleSegments.clear();
-                        break;
-                    }
-                case 'select':
-                    {
-                        var segmentSelectionState = this.segmentSelectionState;
-
-                        if (segmentSelectionState.hasSelectedSegment) {
-                            var segment = segmentSelectionState.selectedSegment;
-                            var visibleSegments = this.visibleSegments;
-
-                            if (visibleSegments.has(segment)) {
-                                visibleSegments.delete(segment);
-                            } else {
-                                visibleSegments.add(segment);
-                            }
-                        }
-                        break;
-                    }
-            }
-        }
-    }]);
-
-    return SegmentationUserLayer;
-}(layer_1.UserLayer);
-
-exports.SegmentationUserLayer = SegmentationUserLayer;
-;
-
-/***/ },
-/* 119 */
-/***/ function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var layer_1 = __webpack_require__(42);
-var range_1 = __webpack_require__(110);
-var segment_set_widget_1 = __webpack_require__(120);
-var uint64_entry_widget_1 = __webpack_require__(122);
-var trackable_boolean_1 = __webpack_require__(69);
-var metric_scale_widget_1 = __webpack_require__(124);
-var color_select_1 = __webpack_require__(126);
-
-var SegmentationDropdown = function (_layer_1$UserLayerDro) {
-    _inherits(SegmentationDropdown, _layer_1$UserLayerDro);
-
-    function SegmentationDropdown(element, layer) {
-        _classCallCheck(this, SegmentationDropdown);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationDropdown).call(this));
-
-        _this.element = element;
-        _this.layer = layer;
-        _this.visibleSegmentWidget = _this.registerDisposer(new segment_set_widget_1.SegmentSetWidget(_this.layer));
-        _this.addSegmentWidget = _this.registerDisposer(new uint64_entry_widget_1.Uint64EntryWidget());
-        _this.selectedAlphaWidget = _this.registerDisposer(new range_1.RangeWidget(_this.layer.selectedAlpha));
-        _this.notSelectedAlphaWidget = _this.registerDisposer(new range_1.RangeWidget(_this.layer.notSelectedAlpha));
-        element.classList.add('segmentation-dropdown');
-        var selectedAlphaWidget = _this.selectedAlphaWidget;
-        var notSelectedAlphaWidget = _this.notSelectedAlphaWidget;
-
-        selectedAlphaWidget.promptElement.textContent = 'Opacity (on)';
-        notSelectedAlphaWidget.promptElement.textContent = 'Opacity (off)';
-        element.appendChild(_this.selectedAlphaWidget.element);
-        element.appendChild(_this.notSelectedAlphaWidget.element);
-        _this.addSegmentWidget.element.classList.add('add-segment');
-        _this.addSegmentWidget.element.title = 'Add segment ID';
-        element.appendChild(_this.registerDisposer(_this.addSegmentWidget).element);
-        _this.registerSignalBinding(_this.addSegmentWidget.valueEntered.add(value => {
-            _this.layer.visibleSegments.add(value);
-        }));
-        element.appendChild(_this.registerDisposer(_this.visibleSegmentWidget).element);
-        //add show segments on hover checkbox
-        var showSegmentsOnHoverCheckbox = _this.registerDisposer(new trackable_boolean_1.TrackableBooleanCheckbox(layer.showSegmentsOnHover));
-        var showSegmentsOnHoverLabel = document.createElement('label');
-        showSegmentsOnHoverLabel.appendChild(document.createTextNode('Show Segments On Hover'));
-        showSegmentsOnHoverLabel.appendChild(showSegmentsOnHoverCheckbox.element);
-        _this.element.appendChild(showSegmentsOnHoverLabel);
-        return _this;
-    }
-
-    return SegmentationDropdown;
-}(layer_1.UserLayerDropdown);
-
-exports.SegmentationDropdown = SegmentationDropdown;
-;
-
-var MetricDropdown = function (_SegmentationDropdown) {
-    _inherits(MetricDropdown, _SegmentationDropdown);
-
-    function MetricDropdown(element, layer) {
-        _classCallCheck(this, MetricDropdown);
-
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(MetricDropdown).call(this, element, layer));
-
-        _this2.element = element;
-        _this2.layer = layer;
-        _this2.metricSelectedAlphaWidget = _this2.registerDisposer(new range_1.RangeWidget(_this2.layer.metricLayer.selectedAlpha));
-        _this2.metricNotSelectedAlphaWidget = _this2.registerDisposer(new range_1.RangeWidget(_this2.layer.metricLayer.notSelectedAlpha));
-        _this2.colorSelectWidget = _this2.registerDisposer(new color_select_1.ColorSelect(Array.from(_this2.layer.segLayers.keys()), _this2.layer.currentLayerName));
-        element.insertBefore(_this2.metricNotSelectedAlphaWidget.element, element.firstChild);
-        element.insertBefore(_this2.metricSelectedAlphaWidget.element, element.firstChild);
-        element.appendChild(_this2.colorSelectWidget.element);
-        _this2.metricSelectedAlphaWidget.element.style.display = 'none';
-        _this2.metricNotSelectedAlphaWidget.element.style.display = 'none';
-        _this2.metricSelectedAlphaWidget.promptElement.textContent = 'Opacity (on)';
-        _this2.metricNotSelectedAlphaWidget.promptElement.textContent = 'Opacity (off)';
-        _this2.registerSignalBinding(layer.currentLayerName.changed.add(function () {
-            this.updateDropdown();
-            this.layer.updateCurrentSegLayer();
-        }.bind(_this2)));
-        //add metric scale widget
-        _this2.metricScaleWidget = _this2.registerDisposer(new metric_scale_widget_1.MetricScaleWidget(layer.metricLayer.metrics.get(layer.metricLayer.currentMetricName)));
-        _this2.metricScaleWidget.element.style.display = 'none';
-        element.appendChild(_this2.metricScaleWidget.element);
-        return _this2;
-    }
-
-    _createClass(MetricDropdown, [{
-        key: 'updateDropdown',
-        value: function updateDropdown() {
-            if (this.layer.shouldUpdateLayers()) {
-                this.toggleSlidersAndMetricWidget();
-            }
-            if (this.layer.shouldUpdateMetrics()) {
-                this.metricScaleWidget.dispose();
-                this.metricScaleWidget = this.registerDisposer(new metric_scale_widget_1.MetricScaleWidget(this.layer.metricLayer.metrics.get(this.layer.currentLayerName.value)));
-                this.element.appendChild(this.metricScaleWidget.element);
-            }
-        }
-    }, {
-        key: 'toggleSlidersAndMetricWidget',
-        value: function toggleSlidersAndMetricWidget() {
-            if (this.layer.visibleLayer !== this.layer.metricLayer) {
-                //new layer is the metric layer
-                this.metricSelectedAlphaWidget.element.style.display = 'flex';
-                this.metricNotSelectedAlphaWidget.element.style.display = 'flex';
-                this.metricScaleWidget.element.style.display = 'block';
-                this.selectedAlphaWidget.element.style.display = 'none';
-                this.notSelectedAlphaWidget.element.style.display = 'none';
-            } else {
-                this.metricSelectedAlphaWidget.element.style.display = 'none';
-                this.metricNotSelectedAlphaWidget.element.style.display = 'none';
-                this.metricScaleWidget.element.style.display = 'none';
-                this.selectedAlphaWidget.element.style.display = 'flex';
-                this.notSelectedAlphaWidget.element.style.display = 'flex';
-            }
-        }
-    }]);
-
-    return MetricDropdown;
-}(SegmentationDropdown);
-
-exports.MetricDropdown = MetricDropdown;
-;
-
-/***/ },
-/* 120 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var disposable_1 = __webpack_require__(23);
-var uint64_1 = __webpack_require__(52);
-__webpack_require__(72);
-__webpack_require__(121);
-var temp = new uint64_1.Uint64();
-
-var SegmentSetWidget = function (_disposable_1$RefCoun) {
-    _inherits(SegmentSetWidget, _disposable_1$RefCoun);
-
-    function SegmentSetWidget(displayState) {
-        _classCallCheck(this, SegmentSetWidget);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentSetWidget).call(this));
-
-        _this.displayState = displayState;
-        _this.element = document.createElement('div');
-        _this.clearButton = document.createElement('button');
-        _this.itemContainer = document.createElement('span');
-        _this.items = new Map();
-        var element = _this.element;
-        var clearButton = _this.clearButton;
-        var itemContainer = _this.itemContainer;
-
-        element.className = 'segment-set-widget noselect';
-        clearButton.className = 'clear-button';
-        clearButton.title = 'Remove all segment IDs';
-        _this.registerEventListener(clearButton, 'click', () => {
-            _this.visibleSegments.clear();
-        });
-        itemContainer.className = 'item-container';
-        element.appendChild(itemContainer);
-        itemContainer.appendChild(clearButton);
-        _this.registerSignalBinding(displayState.visibleSegments.changed.add(_this.handleSetChanged, _this));
-        _this.registerSignalBinding(displayState.segmentColorHash.changed.add(_this.handleColorChanged, _this));
-        for (var x of displayState.visibleSegments) {
-            _this.addElement(x.toString());
-        }
-        _this.updateClearButtonVisibility();
-        return _this;
-    }
-
-    _createClass(SegmentSetWidget, [{
-        key: 'updateClearButtonVisibility',
-        value: function updateClearButtonVisibility() {
-            var clearButton = this.clearButton;
-
-            clearButton.style.display = this.displayState.visibleSegments.size > 0 ? '' : 'none';
-        }
-    }, {
-        key: 'handleSetChanged',
-        value: function handleSetChanged(x, added) {
-            this.updateClearButtonVisibility();
-            var items = this.items;
-
-            if (x === null) {
-                // Cleared.
-                var itemContainer = this.itemContainer;
-                var clearButton = this.clearButton;
-
-                while (true) {
-                    var lastElement = itemContainer.lastElementChild;
-                    if (lastElement === clearButton) {
-                        break;
-                    }
-                    itemContainer.removeChild(lastElement);
-                }
-                items.clear();
-            } else if (added) {
-                this.addElement(x.toString());
-            } else {
-                var s = x.toString();
-                var itemElement = items.get(s);
-                itemElement.parentElement.removeChild(itemElement);
-                items.delete(s);
-            }
-        }
-    }, {
-        key: 'addElement',
-        value: function addElement(s) {
-            var itemElement = document.createElement('button');
-            itemElement.className = 'segment-button';
-            itemElement.textContent = s;
-            itemElement.title = `Remove segment ID ${ s }`;
-            var widget = this;
-            itemElement.addEventListener('click', function () {
-                temp.tryParseString(this.textContent);
-                widget.visibleSegments.delete(temp);
-            });
-            itemElement.addEventListener('mouseenter', function () {
-                temp.tryParseString(this.textContent);
-                widget.segmentSelectionState.set(temp);
-            });
-            itemElement.addEventListener('mouseleave', function () {
-                temp.tryParseString(this.textContent);
-                widget.segmentSelectionState.set(null);
-            });
-            this.setItemColor(itemElement);
-            this.itemContainer.appendChild(itemElement);
-            this.items.set(s, itemElement);
-        }
-    }, {
-        key: 'setItemColor',
-        value: function setItemColor(itemElement) {
-            temp.tryParseString(itemElement.textContent);
-            itemElement.style.backgroundColor = this.segmentColorHash.computeCssColor(temp);
-        }
-    }, {
-        key: 'handleColorChanged',
-        value: function handleColorChanged() {
-            this.items.forEach(itemElement => {
-                this.setItemColor(itemElement);
-            });
-        }
-    }, {
-        key: 'disposed',
-        value: function disposed() {
-            var element = this.element;
-            var parentElement = element.parentElement;
-
-            if (parentElement) {
-                parentElement.removeChild(element);
-            }
-            _get(Object.getPrototypeOf(SegmentSetWidget.prototype), 'disposed', this).call(this);
-        }
-    }, {
-        key: 'visibleSegments',
-        get: function () {
-            return this.displayState.visibleSegments;
-        }
-    }, {
-        key: 'segmentColorHash',
-        get: function () {
-            return this.displayState.segmentColorHash;
-        }
-    }, {
-        key: 'segmentSelectionState',
-        get: function () {
-            return this.displayState.segmentSelectionState;
-        }
-    }]);
-
-    return SegmentSetWidget;
-}(disposable_1.RefCounted);
-
-exports.SegmentSetWidget = SegmentSetWidget;
-;
-
-/***/ },
-/* 121 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 122 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var disposable_1 = __webpack_require__(23);
-var dom_1 = __webpack_require__(7);
-var uint64_1 = __webpack_require__(52);
-var signals_1 = __webpack_require__(34);
-__webpack_require__(72);
-__webpack_require__(123);
-
-var Uint64EntryWidget = function (_disposable_1$RefCoun) {
-    _inherits(Uint64EntryWidget, _disposable_1$RefCoun);
-
-    function Uint64EntryWidget() {
-        _classCallCheck(this, Uint64EntryWidget);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Uint64EntryWidget).call(this));
-
-        _this.element = document.createElement('form');
-        _this.label = document.createElement('label');
-        _this.input = document.createElement('input');
-        _this.value = new uint64_1.Uint64();
-        _this.valueEntered = new signals_1.Signal();
-        var element = _this.element;
-        var label = _this.label;
-        var input = _this.input;
-
-        element.className = 'uint64-entry noselect';
-        element.appendChild(label);
-        label.appendChild(input);
-        _this.registerEventListener(element, 'submit', event => {
-            event.preventDefault();
-            if (_this.validateInput()) {
-                _this.input.value = '';
-                _this.input.classList.remove('valid-input', 'invalid-input');
-                _this.valueEntered.dispatch(_this.value);
-            }
-        });
-        _this.registerEventListener(element, 'input', () => {
-            if (_this.input.value === '') {
-                _this.input.classList.remove('valid-input', 'invalid-input');
-                return;
-            }
-            if (_this.validateInput()) {
-                _this.input.classList.remove('invalid-input');
-            } else {
-                _this.input.classList.add('invalid-input');
-            }
-        });
-        return _this;
-    }
-
-    _createClass(Uint64EntryWidget, [{
-        key: 'validateInput',
-        value: function validateInput() {
-            return this.value.tryParseString(this.input.value);
-        }
-    }, {
-        key: 'disposed',
-        value: function disposed() {
-            dom_1.removeFromParent(this.element);
-            _get(Object.getPrototypeOf(Uint64EntryWidget.prototype), 'disposed', this).call(this);
-        }
-    }]);
-
-    return Uint64EntryWidget;
-}(disposable_1.RefCounted);
-
-exports.Uint64EntryWidget = Uint64EntryWidget;
-;
-
-/***/ },
-/* 123 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
 /* 124 */
 /***/ function(module, exports, __webpack_require__) {
 
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var disposable_1 = __webpack_require__(23);
-var dom_1 = __webpack_require__(7);
-__webpack_require__(125);
-
-var MetricScaleWidget = function (_disposable_1$RefCoun) {
-    _inherits(MetricScaleWidget, _disposable_1$RefCoun);
-
-    function MetricScaleWidget(metricKeyData) {
-        _classCallCheck(this, MetricScaleWidget);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(MetricScaleWidget).call(this));
-
-        _this.element = document.createElement('div');
-        _this.metricKeyData = metricKeyData;
-        var element = _this.element;
-
-        element.className = 'metric-scale-widget';
-        var barElement = document.createElement('div');
-        barElement.className = 'metric-scale-bar';
-        var step = (metricKeyData.max - metricKeyData.min) / 50;
-        var metricVal = void 0,
-            color = void 0;
-        for (var i = 0; i < 51; i++) {
-            var span = document.createElement('span');
-            span.className = 'metric-grad-step';
-            metricVal = metricKeyData.min + i * step;
-            color = metricKeyData.chromaScale(metricVal).hex();
-            span.style = 'background-color:' + color + ';';
-            barElement.appendChild(span);
-        }
-        //add min/max text spans
-        var min = document.createElement('span');
-        min.appendChild(document.createTextNode(metricKeyData.min));
-        min.className = 'metric-val-min';
-        var max = document.createElement('span');
-        max.className = 'metric-val-max';
-        max.appendChild(document.createTextNode(metricKeyData.max));
-        element.appendChild(barElement);
-        element.appendChild(min);
-        element.appendChild(max);
-        return _this;
-    }
-
-    _createClass(MetricScaleWidget, [{
-        key: 'disposed',
-        value: function disposed() {
-            dom_1.removeFromParent(this.element);
-        }
-    }]);
-
-    return MetricScaleWidget;
-}(disposable_1.RefCounted);
-
-exports.MetricScaleWidget = MetricScaleWidget;
-;
-
-/***/ },
-/* 125 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 126 */
-/***/ function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var disposable_1 = __webpack_require__(23);
-var dom_1 = __webpack_require__(7);
-__webpack_require__(127);
-
-var ColorSelect = function (_disposable_1$RefCoun) {
-    _inherits(ColorSelect, _disposable_1$RefCoun);
-
-    function ColorSelect(options, model) {
-        _classCallCheck(this, ColorSelect);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ColorSelect).call(this));
-
-        _this.model = model;
-        _this.element = document.createElement('label');
-        _this.select = document.createElement('select');
-        var element = _this.element;
-        var select = _this.select;
-
-        element.className = 'color-select-widget';
-        select.name = 'colorselect';
-        for (var optionStr of options) {
-            var optionEl = document.createElement('option');
-            optionEl.innerHTML = optionStr;
-            optionEl.value = optionStr;
-            select.appendChild(optionEl);
-        }
-        select.value = model.value; //initial state
-        element.appendChild(document.createTextNode('Color Options: '));
-        element.appendChild(select);
-        _this.registerSignalBinding(model.changed.add(_this.update, _this));
-        _this.registerEventListener(select, 'change', function (e) {
-            model.value = this.value;
-        });
-        return _this;
-    }
-
-    _createClass(ColorSelect, [{
-        key: 'update',
-        value: function update() {
-            this.select.value = this.model.value;
-        }
-    }, {
-        key: 'disposed',
-        value: function disposed() {
-            dom_1.removeFromParent(this.element);
-        }
-    }]);
-
-    return ColorSelect;
-}(disposable_1.RefCounted);
-
-exports.ColorSelect = ColorSelect;
-
-/***/ },
-/* 127 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 128 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var hash_function_1 = __webpack_require__(129);
-var shader_1 = __webpack_require__(130);
-var colorspace_1 = __webpack_require__(132);
-var shader_lib_1 = __webpack_require__(71);
-var signals_1 = __webpack_require__(34);
-var NUM_COMPONENTS = 2;
-
-var SegmentColorShaderManager = function () {
-    function SegmentColorShaderManager(prefix) {
-        _classCallCheck(this, SegmentColorShaderManager);
-
-        this.prefix = prefix;
-        this.aName = this.prefix + '_a';
-        this.bName = this.prefix + '_b';
-    }
-
-    _createClass(SegmentColorShaderManager, [{
-        key: 'defineShader',
-        value: function defineShader(builder) {
-            var aName = this.aName;
-            var bName = this.bName;
-
-            builder.addUniform('highp vec4', aName, 2 * NUM_COMPONENTS);
-            builder.addUniform('highp float', bName, 2 * NUM_COMPONENTS);
-            builder.addFragmentCode(shader_lib_1.glsl_uint64);
-            builder.addFragmentCode(shader_1.glsl_hashFunction);
-            builder.addFragmentCode(shader_lib_1.glsl_hsvToRgb);
-            var s = `
-vec3 ${ this.prefix }(uint64_t x) {
-  vec${ NUM_COMPONENTS } v;
-  float primeModulus = float(${ hash_function_1.PRIME_MODULUS });
-`;
-            for (var i = 0; i < NUM_COMPONENTS; ++i) {
-                var bIndex = 2 * i;
-                var aIndex = 2 * i;
-                s += `
-  v[${ i }] = computeHash(x, ${ aName }[${ aIndex }], ${ aName }[${ aIndex + 1 }], ${ bName }[${ bIndex }], ${ bName }[${ bIndex + 1 }], primeModulus, 1.0 / 256.0);
-`;
-            }
-            s += `
-  vec3 hsv = vec3(v.x, 0.5 + v.y * 0.5, 1.0);
-  return hsvToRgb(hsv);
-}
-`;
-            builder.addFragmentCode(s);
-        }
-    }, {
-        key: 'enable',
-        value: function enable(gl, shader, segmentColorHash) {
-            gl.uniform4fv(shader.uniform(this.aName), segmentColorHash.a_);
-            gl.uniform1fv(shader.uniform(this.bName), segmentColorHash.b_);
-        }
-    }]);
-
-    return SegmentColorShaderManager;
-}();
-
-exports.SegmentColorShaderManager = SegmentColorShaderManager;
-;
-function fract(x) {
-    return x - Math.floor(x);
-}
-var tempOutput = new Float32Array(NUM_COMPONENTS);
-var tempColor = new Float32Array(3);
-
-var SegmentColorHash = function () {
-    function SegmentColorHash(hashFunctions) {
-        _classCallCheck(this, SegmentColorHash);
-
-        this.a_ = new Float32Array(4 * 2 * NUM_COMPONENTS);
-        this.b_ = new Float32Array(2 * NUM_COMPONENTS);
-        this.changed = new signals_1.Signal();
-        if (hashFunctions == null) {
-            this.hashFunctions = new Array(NUM_COMPONENTS);
-            this.randomize_();
-        } else {
-            this.hashFunctions = hashFunctions;
-        }
-        this.computeGPUCoefficients_();
-    }
-
-    _createClass(SegmentColorHash, [{
-        key: 'compute',
-        value: function compute(out, x) {
-            var low = x.low;
-            var high = x.high;
-            var hashFunctions = this.hashFunctions;
-
-            for (var i = 0; i < 2; ++i) {
-                tempOutput[i] = fract(hashFunctions[i].compute(low, high) / 256.0);
-            }
-            colorspace_1.hsvToRgb(out, tempOutput[0], 0.5 + 0.5 * tempOutput[1], 1.0);
-            return out;
-        }
-    }, {
-        key: 'computeCssColor',
-        value: function computeCssColor(x) {
-            this.compute(tempColor, x);
-            return `rgb(${ tempColor[0] * 100 }%,${ tempColor[1] * 100 }%,${ tempColor[2] * 100 }%)`;
-        }
-    }, {
-        key: 'debugCompute',
-        value: function debugCompute(out, x) {
-            function mod(a, b) {
-                return a % b;
-            }
-            var low = x.low;
-            var high = x.high;
-
-            var b = this.b_;
-            var modulus = hash_function_1.PRIME_MODULUS;
-            for (var i = 0; i < 2; ++i) {
-                var bIndex = 2 * i;
-                var aIndex = 2 * i;
-                var sums = new Float32Array(2);
-                for (var j = 0; j < 4; ++j) {
-                    sums[0] += this.a_[aIndex * 4 + j] * (low >> j * 8 & 0xFF);
-                    sums[1] += this.a_[(aIndex + 1) * 4 + j] * (high >> j * 8 & 0xFF);
-                }
-                var dotResult = mod(sums[0] + sums[1], modulus);
-                var dotResult2 = mod(dotResult * dotResult, modulus);
-                var y = mod(dotResult2 * b[bIndex + 1], modulus);
-                var modResult = mod(b[bIndex] + dotResult + y, modulus);
-                console.log(`b = ${ b[bIndex] }, sums=${ sums[0] } ${ sums[1] }, dotResult=${ dotResult }, prod = ${ dotResult * dotResult } dotResult2=${ dotResult2 }, y=${ y }, modResult=${ modResult }`);
-                out[i] = fract(modResult * (1.0 / 256.0));
-            }
-            return out;
-        }
-    }, {
-        key: 'randomize_',
-        value: function randomize_() {
-            for (var i = 0; i < 2; ++i) {
-                this.hashFunctions[i] = hash_function_1.HashFunction.generate();
-            }
-        }
-    }, {
-        key: 'randomize',
-        value: function randomize() {
-            this.randomize_();
-            this.computeGPUCoefficients_();
-            this.changed.dispatch();
-        }
-    }, {
-        key: 'toString',
-        value: function toString() {
-            return `new SegmentColorHash([${ this.hashFunctions }])`;
-        }
-    }, {
-        key: 'computeGPUCoefficients_',
-        value: function computeGPUCoefficients_() {
-            var hashFunctions = this.hashFunctions;
-            var a = this.a_;
-            var b = this.b_;
-            var aScalar = 1.0;
-            var bScalar = 1.0;
-            for (var i = 0; i < NUM_COMPONENTS; ++i) {
-                var h = hashFunctions[i];
-                var bIndex = 2 * i;
-                var aIndex = 4 * (2 * i);
-                b[bIndex] = h.b * bScalar;
-                b[bIndex + 1] = h.c * bScalar;
-                for (var j = 0; j < 4; ++j) {
-                    a[aIndex + j] = h.a0[j] * aScalar;
-                    a[aIndex + 4 + j] = h.a1[j] * aScalar;
-                }
-            }
-        }
-    }], [{
-        key: 'getDefault',
-        value: function getDefault() {
-            return new SegmentColorHash([new hash_function_1.HashFunction(Float32Array.of(609, 2364, 3749, 2289), Float32Array.of(2840, 1186, 3660, 1833), 1718, 1109), new hash_function_1.HashFunction(Float32Array.of(3466, 3835, 3345, 2040), Float32Array.of(3382, 901, 18, 3444), 1534, 1432)]);
-        }
-    }]);
-
-    return SegmentColorHash;
-}();
-
-exports.SegmentColorHash = SegmentColorHash;
-;
-
-/***/ },
-/* 129 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-exports.PRIME_MODULUS = 4093;
-
-var HashFunction = function () {
-    function HashFunction(a0, a1, b, c) {
-        _classCallCheck(this, HashFunction);
-
-        this.a0 = a0;
-        this.a1 = a1;
-        this.b = b;
-        this.c = c;
-    }
-
-    _createClass(HashFunction, [{
-        key: "computeDotProduct",
-        value: function computeDotProduct(low, high) {
-            var a0 = this.a0;
-            var a1 = this.a1;
-
-            var a0DotLow = a0[0] * (low & 0xFF) + a0[1] * (low >> 8 & 0xFF) + a0[2] * (low >> 16 & 0xFF) + a0[3] * (low >> 24 & 0xFF);
-            var a1DotHigh = a1[0] * (high & 0xFF) + a1[1] * (high >> 8 & 0xFF) + a1[2] * (high >> 16 & 0xFF) + a1[3] * (high >> 24 & 0xFF);
-            return a0DotLow + a1DotHigh;
-        }
-    }, {
-        key: "compute",
-        value: function compute(low, high) {
-            var b = this.b;
-            var c = this.c;
-
-            var x = this.computeDotProduct(low, high);
-            var x2 = x * x % exports.PRIME_MODULUS;
-            var result = (x + x2 * c + b) % exports.PRIME_MODULUS;
-            return result;
-        }
-    }, {
-        key: "toString",
-        value: function toString() {
-            return `new HashFunction(Float32Array.of(${ this.a0 }), Float32Array.of(${ this.a1 }), ${ this.b }, ${ this.c })`;
-        }
-    }], [{
-        key: "generate",
-        value: function generate() {
-            function genCoeff() {
-                return Math.floor(Math.random() * exports.PRIME_MODULUS);
-            }
-            function genVector() {
-                return Float32Array.of(genCoeff(), genCoeff(), genCoeff(), genCoeff());
-            }
-            return new HashFunction(genVector(), genVector(), genCoeff(), genCoeff());
-        }
-    }]);
-
-    return HashFunction;
-}();
-
-exports.HashFunction = HashFunction;
-;
-
-/***/ },
-/* 130 */
-/***/ function(module, exports, __webpack_require__) {
-
 /**
  * @license
  * Copyright 2016 Google Inc.
@@ -32313,2733 +32401,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var hash_function_1 = __webpack_require__(129);
-var hash_table_1 = __webpack_require__(131);
-var disposable_1 = __webpack_require__(23);
-var shader_lib_1 = __webpack_require__(71);
-var texture_1 = __webpack_require__(68);
-exports.glsl_hashFunction = [shader_lib_1.glsl_uint64, shader_lib_1.glsl_exactDot, shader_lib_1.glsl_imod, `
-float computeHash(uint64_t x, vec4 a0, vec4 a1, float b, float c, float modulus, float scalar) {
-  x.low *= 255.0;
-  x.high *= 255.0;
-  float dotResult = imod(exactDot(a0, x.low) + exactDot(a1, x.high), modulus);
-  float dotResult2 = imod(dotResult * dotResult, modulus);
-  float y = imod(dotResult2 * c, modulus);
-  float modResult = imod(dotResult + y + b, modulus);
-  return fract(modResult * scalar);
-}
-`];
-
-var GPUHashTable = function (_disposable_1$RefCoun) {
-    _inherits(GPUHashTable, _disposable_1$RefCoun);
-
-    function GPUHashTable(gl, hashTable) {
-        _classCallCheck(this, GPUHashTable);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(GPUHashTable).call(this));
-
-        _this.gl = gl;
-        _this.hashTable = hashTable;
-        _this.hashFunctions = null;
-        _this.generation = -1;
-        _this.texture = null;
-        var numAlternatives = hashTable.hashFunctions.length;
-        _this.a = new Float32Array(4 * (numAlternatives * 4));
-        _this.b = new Float32Array(numAlternatives * 4 + 5);
-        // createTexture should never actually return null.
-        _this.texture = gl.createTexture();
-        return _this;
-    }
-
-    _createClass(GPUHashTable, [{
-        key: 'computeCoefficients',
-        value: function computeCoefficients() {
-            var hashTable = this.hashTable;
-
-            var hashFunctions = hashTable.hashFunctions;
-            if (this.hashFunctions === hashFunctions) {
-                return;
-            }
-            this.hashFunctions = hashFunctions;
-            var a = this.a;
-            var b = this.b;
-
-            var numAlternatives = hashFunctions.length;
-            var width = hashTable.width;
-            var height = hashTable.height;
-
-            var scalar = [1.0 / width, 1.0 / height];
-            for (var i = 0; i < 2; ++i) {
-                b[numAlternatives * 4 + i] = hash_function_1.PRIME_MODULUS;
-                b[numAlternatives * 4 + 3 + i] = scalar[i];
-            }
-            b[numAlternatives * 4 + 2] = 1 / (hashTable.entryStride * width);
-            for (var alt = 0; alt < numAlternatives; ++alt) {
-                var curFunctions = hashFunctions[alt];
-                for (var _i = 0; _i < 2; ++_i) {
-                    var h = curFunctions[_i];
-                    var bIndex = alt * 4 + 2 * _i;
-                    var aIndex = 4 * (alt * 4 + 2 * _i);
-                    // Add 0.5 to b to give maximum margin of error.
-                    //
-                    // For the x coordinate (i == 0), since each position is used to address entryStride texels
-                    // (for the low and high uint32 key values, and possibly associated entry values), we only
-                    // add 0.5 / entryStride.
-                    b[bIndex] = h.b + (_i === 0 ? 0.5 / hashTable.entryStride : 0.5);
-                    b[bIndex + 1] = h.c;
-                    for (var j = 0; j < 4; ++j) {
-                        a[aIndex + j] = h.a0[j];
-                        a[aIndex + 4 + j] = h.a1[j];
-                    }
-                }
-            }
-        }
-    }, {
-        key: 'copyToGPU',
-        value: function copyToGPU() {
-            this.computeCoefficients();
-            var hashTable = this.hashTable;
-            var generation = hashTable.generation;
-
-            if (this.generation === generation) {
-                return;
-            }
-            this.generation = generation;
-            var width = hashTable.width;
-            var height = hashTable.height;
-            var gl = this.gl;
-            var texture = this.texture;
-
-            gl.activeTexture(gl.TEXTURE0 + gl.tempTextureUnit);
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-            texture_1.setRawTextureParameters(gl);
-            var format = gl.RGBA;
-            hashTable.tableWithMungedEmptyKey(table => {
-                gl.texImage2D(gl.TEXTURE_2D,
-                /*level=*/0, format,
-                /*width=*/width * hashTable.entryStride,
-                /*height=*/height,
-                /*border=*/0, format, gl.UNSIGNED_BYTE, new Uint8Array(table.buffer));
-            });
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        }
-    }, {
-        key: 'disposed',
-        value: function disposed() {
-            var gl = this.gl;
-
-            gl.deleteTexture(this.texture);
-            this.texture = null;
-            this.gl = undefined;
-            this.hashTable = undefined;
-            this.hashFunctions = null;
-            _get(Object.getPrototypeOf(GPUHashTable.prototype), 'disposed', this).call(this);
-        }
-    }], [{
-        key: 'get',
-        value: function get(gl, hashTable) {
-            return gl.memoize.get(hashTable, () => new this(gl, hashTable));
-        }
-    }]);
-
-    return GPUHashTable;
-}(disposable_1.RefCounted);
-
-exports.GPUHashTable = GPUHashTable;
-;
-
-var HashSetShaderManager = function () {
-    function HashSetShaderManager(prefix) {
-        var numAlternatives = arguments.length <= 1 || arguments[1] === undefined ? hash_table_1.NUM_ALTERNATIVES : arguments[1];
-
-        _classCallCheck(this, HashSetShaderManager);
-
-        this.prefix = prefix;
-        this.numAlternatives = numAlternatives;
-        this.textureUnitSymbol = Symbol.for(`gpuhashtable:${ this.prefix }`);
-        this.aName = this.prefix + '_a';
-        this.bName = this.prefix + '_b';
-        this.samplerName = this.prefix + '_sampler';
-    }
-
-    _createClass(HashSetShaderManager, [{
-        key: 'defineShader',
-        value: function defineShader(builder) {
-            var aName = this.aName;
-            var bName = this.bName;
-            var samplerName = this.samplerName;
-            var numAlternatives = this.numAlternatives;
-
-            builder.addUniform('highp vec4', aName, numAlternatives * 4);
-            builder.addUniform('highp float', bName, numAlternatives * 4 + 5);
-            builder.addTextureSampler2D(samplerName, this.textureUnitSymbol);
-            builder.addFragmentCode(exports.glsl_hashFunction);
-            var s = '';
-            for (var alt = 0; alt < numAlternatives; ++alt) {
-                for (var i = 0; i < 2; ++i) {
-                    var bIndex = alt * 4 + 2 * i;
-                    var aIndex = alt * 4 + 2 * i;
-                    s += `
-float ${ this.prefix }_computeHash_${ alt }_${ i }(uint64_t x) {
-  float primeModulus = ${ bName }[${ numAlternatives * 4 + i }];
-  float scalar = ${ bName }[${ numAlternatives * 4 + 3 + i }];
-  return computeHash(x, ${ aName }[${ aIndex }], ${ aName }[${ aIndex + 1 }], ${ bName }[${ bIndex }], ${ bName }[${ bIndex + 1 }], primeModulus, scalar);
-}
-`;
-                }
-                s += `
-vec2 ${ this.prefix }_computeHash_${ alt }(uint64_t x) {
-  vec2 v;
-  v[0] = ${ this.prefix }_computeHash_${ alt }_0(x);
-  v[1] = ${ this.prefix }_computeHash_${ alt }_1(x);
-  return v;
-}
-`;
-            }
-            s += `
-bool ${ this.hasFunctionName }(uint64_t x) {
-  float highOffset = ${ bName }[${ numAlternatives * 4 + 2 }];
-`;
-            for (var _alt = 0; _alt < numAlternatives; ++_alt) {
-                s += `
-  {
-    vec2 v = ${ this.prefix }_computeHash_${ _alt }(x);
-    vec4 lowResult = texture2D(${ samplerName }, v);
-    vec4 highResult = texture2D(${ samplerName }, vec2(v.x + highOffset, v.y));
-    if (lowResult == x.low && highResult == x.high) {
-      return true;
-    }
-  }
-`;
-            }
-            s += `
-  return false;
-}
-`;
-            builder.addFragmentCode(s);
-        }
-    }, {
-        key: 'enable',
-        value: function enable(gl, shader, hashTable) {
-            hashTable.copyToGPU();
-            var textureUnit = shader.textureUnit(this.textureUnitSymbol);
-            gl.activeTexture(gl.TEXTURE0 + textureUnit);
-            gl.bindTexture(gl.TEXTURE_2D, hashTable.texture);
-            gl.uniform4fv(shader.uniform(this.aName), hashTable.a);
-            gl.uniform1fv(shader.uniform(this.bName), hashTable.b);
-        }
-    }, {
-        key: 'disable',
-        value: function disable(gl, shader) {
-            var textureUnit = shader.textureUnit(this.textureUnitSymbol);
-            gl.activeTexture(gl.TEXTURE0 + textureUnit);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        }
-    }, {
-        key: 'hasFunctionName',
-        get: function () {
-            return `${ this.prefix }_has`;
-        }
-    }]);
-
-    return HashSetShaderManager;
-}();
-
-exports.HashSetShaderManager = HashSetShaderManager;
-;
-
-var HashMapShaderManager = function (_HashSetShaderManager) {
-    _inherits(HashMapShaderManager, _HashSetShaderManager);
-
-    function HashMapShaderManager() {
-        _classCallCheck(this, HashMapShaderManager);
-
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashMapShaderManager).apply(this, arguments));
-    }
-
-    _createClass(HashMapShaderManager, [{
-        key: 'defineShader',
-        value: function defineShader(builder) {
-            _get(Object.getPrototypeOf(HashMapShaderManager.prototype), 'defineShader', this).call(this, builder);
-            var bName = this.bName;
-            var samplerName = this.samplerName;
-            var numAlternatives = this.numAlternatives;
-
-            var s = `
-bool ${ this.getFunctionName }(uint64_t x, out uint64_t value) {
-  float highOffset = ${ bName }[${ numAlternatives * 4 + 2 }];
-`;
-            for (var alt = 0; alt < numAlternatives; ++alt) {
-                s += `
-  {
-    vec2 v = ${ this.prefix }_computeHash_${ alt }(x);
-    vec4 lowResult = texture2D(${ samplerName }, v);
-    vec4 highResult = texture2D(${ samplerName }, vec2(v.x + highOffset, v.y));
-    if (lowResult == x.low && highResult == x.high) {
-      value.low = texture2D(${ samplerName }, vec2(v.x + 2.0 * highOffset, v.y));
-      value.high = texture2D(${ samplerName }, vec2(v.x + 3.0 * highOffset, v.y));
-      return true;
-    }
-  }
-`;
-            }
-            s += `
-  return false;
-}
-`;
-            builder.addFragmentCode(s);
-        }
-    }, {
-        key: 'getFunctionName',
-        get: function () {
-            return `${ this.prefix }_get`;
-        }
-    }]);
-
-    return HashMapShaderManager;
-}(HashSetShaderManager);
-
-exports.HashMapShaderManager = HashMapShaderManager;
-;
-
-/***/ },
-/* 131 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var hash_function_1 = __webpack_require__(129);
-var uint64_1 = __webpack_require__(52);
-exports.NUM_ALTERNATIVES = 3;
-var DEFAULT_LOAD_FACTOR = 0.9;
-var DEBUG = false;
-// Key that needs to be inserted.  Temporary variables used during insert.  These can safely be
-// global because control never leaves functions defined in this module while these are in use.
-var pendingLow = 0,
-    pendingHigh = 0,
-    backupPendingLow = 0,
-    backupPendingHigh = 0;
-
-var HashTableBase = function () {
-    function HashTableBase() {
-        var hashFunctions = arguments.length <= 0 || arguments[0] === undefined ? HashTableBase.generateHashFunctions(exports.NUM_ALTERNATIVES) : arguments[0];
-
-        _classCallCheck(this, HashTableBase);
-
-        this.loadFactor = DEFAULT_LOAD_FACTOR;
-        this.size = 0;
-        this.growFactor = 1.2;
-        this.maxHeight = 8192;
-        this.emptyLow = 4294967295;
-        this.emptyHigh = 4294967295;
-        this.maxRehashAttempts = 5;
-        this.maxAttempts = 5;
-        this.maxWidth = 4096 / this.entryStride;
-        this.generation = 0;
-        this.mungedEmptyKey = -1;
-        this.hashFunctions = hashFunctions;
-        this.allocate(4, 1);
-    }
-
-    _createClass(HashTableBase, [{
-        key: 'updateHashFunctions',
-        value: function updateHashFunctions(numHashes) {
-            this.hashFunctions = HashTableBase.generateHashFunctions(numHashes);
-            this.mungedEmptyKey = -1;
-        }
-        /**
-         * Invokes callback with a modified version of the hash table data array.
-         *
-         * Replaces all slots that appear to be valid entries for (emptyLow, emptyHigh), i.e. slots that
-         * contain (emptyLow, emptyHigh) and to which (emptyLow, emptyHigh) hashes, with (mungedEmptyKey,
-         * mungedEmptyKey).
-         *
-         * mungedEmptyKey is chosen to be a 32-bit value with the property that the 64-bit value
-         * (mungedEmptyKey, mungedEmptyKey) does not hash to any of the same slots as (emptyLow,
-         * emptyHigh).
-         *
-         * This allows the modified data array to be used for lookups without special casing the empty
-         * key.
-         */
-
-    }, {
-        key: 'tableWithMungedEmptyKey',
-        value: function tableWithMungedEmptyKey(callback) {
-            var numHashes = this.hashFunctions.length;
-            var emptySlots = new Array(numHashes);
-            for (var i = 0; i < numHashes; ++i) {
-                emptySlots[i] = this.getHash(i, this.emptyLow, this.emptyHigh);
-            }
-            var mungedEmptyKey = this.mungedEmptyKey;
-
-            if (mungedEmptyKey === -1) {
-                chooseMungedEmptyKey: while (true) {
-                    mungedEmptyKey = Math.random() * 0x1000000 >>> 0;
-                    for (var _i = 0; _i < numHashes; ++_i) {
-                        var h = this.getHash(_i, mungedEmptyKey, mungedEmptyKey);
-                        for (var j = 0; j < numHashes; ++j) {
-                            if (emptySlots[j] === h) {
-                                continue chooseMungedEmptyKey;
-                            }
-                        }
-                    }
-                    this.mungedEmptyKey = mungedEmptyKey;
-                    break;
-                }
-            }
-            var table = this.table;
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-
-            for (var _i2 = 0; _i2 < numHashes; ++_i2) {
-                var _h = emptySlots[_i2];
-                if (table[_h] === emptyLow && table[_h + 1] === emptyHigh) {
-                    table[_h] = mungedEmptyKey;
-                    table[_h + 1] = mungedEmptyKey;
-                }
-            }
-            try {
-                callback(table);
-            } finally {
-                for (var _i3 = 0; _i3 < numHashes; ++_i3) {
-                    var _h2 = emptySlots[_i3];
-                    if (table[_h2] === mungedEmptyKey && table[_h2 + 1] === mungedEmptyKey) {
-                        table[_h2] = emptyLow;
-                        table[_h2 + 1] = emptyHigh;
-                    }
-                }
-            }
-        }
-    }, {
-        key: 'getHash',
-        value: function getHash(hashIndex, low, high) {
-            var hashes = this.hashFunctions[hashIndex];
-            var width = this.width,
-                height = this.height;
-            var x = hashes[0].compute(low, high) % width;
-            var y = hashes[1].compute(low, high) % height;
-            return this.entryStride * (y * this.width + x);
-        }
-        /**
-         * Iterates over the Uint64 keys contained in the hash set.
-         *
-         * The same temp value will be modified and yielded at every iteration.
-         */
-
-    }, {
-        key: 'keys',
-        value: function* keys() {
-            var temp = arguments.length <= 0 || arguments[0] === undefined ? new uint64_1.Uint64() : arguments[0];
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-            var entryStride = this.entryStride;
-            var table = this.table;
-
-            for (var i = 0, length = table.length; i < length; i += entryStride) {
-                var low = table[i],
-                    high = table[i + 1];
-                if (low !== emptyLow || high !== emptyHigh) {
-                    temp.low = low;
-                    temp.high = high;
-                    yield temp;
-                }
-            }
-        }
-    }, {
-        key: 'indexOfPair',
-        value: function indexOfPair(low, high) {
-            var table = this.table;
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-
-            if (low === emptyLow && high === emptyHigh) {
-                return -1;
-            }
-            for (var i = 0, numHashes = this.hashFunctions.length; i < numHashes; ++i) {
-                var h = this.getHash(i, low, high);
-                if (table[h] === low && table[h + 1] === high) {
-                    return h;
-                }
-            }
-            return -1;
-        }
-        /**
-         * Returns the offset into the hash table of the specified element, or -1 if the element is not
-         * present.
-         */
-
-    }, {
-        key: 'indexOf',
-        value: function indexOf(x) {
-            return this.indexOfPair(x.low, x.high);
-        }
-        /**
-         * Changes the empty key to a value that is not equal to the current empty key and is not present
-         * in the table.
-         *
-         * This is called when an attempt is made to insert the empty key.
-         */
-
-    }, {
-        key: 'chooseAnotherEmptyKey',
-        value: function chooseAnotherEmptyKey() {
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-            var table = this.table;
-            var entryStride = this.entryStride;
-
-            var newLow = void 0,
-                newHigh = void 0;
-            while (true) {
-                newLow = Math.random() * 0x100000000 >>> 0;
-                newHigh = Math.random() * 0x100000000 >>> 0;
-                if (newLow === emptyLow && newHigh === emptyHigh) {
-                    continue;
-                }
-                if (this.hasPair(newLow, newHigh)) {
-                    continue;
-                }
-                break;
-            }
-            this.emptyLow = newLow;
-            this.emptyHigh = newHigh;
-            // Replace empty keys in the table.
-            for (var h = 0, length = table.length; h < length; h += entryStride) {
-                if (table[h] === emptyLow && table[h + 1] === emptyHigh) {
-                    table[h] = newLow;
-                    table[h + 1] = newHigh;
-                }
-            }
-        }
-        /**
-         * Returns true iff the specified element is present.
-         */
-
-    }, {
-        key: 'has',
-        value: function has(x) {
-            return this.indexOf(x) !== -1;
-        }
-        /**
-         * Returns true iff the specified element is present.
-         */
-
-    }, {
-        key: 'hasPair',
-        value: function hasPair(low, high) {
-            return this.indexOfPair(low, high) !== -1;
-        }
-    }, {
-        key: 'delete',
-        value: function _delete(x) {
-            var index = this.indexOf(x);
-            if (index !== -1) {
-                var table = this.table;
-
-                table[index] = this.emptyLow;
-                table[index + 1] = this.emptyHigh;
-                ++this.generation;
-                this.size--;
-                return true;
-            }
-            return false;
-        }
-    }, {
-        key: 'clearTable',
-        value: function clearTable() {
-            var table = this.table;
-            var entryStride = this.entryStride;
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-
-            var length = table.length;
-            for (var h = 0; h < length; h += entryStride) {
-                table[h] = emptyLow;
-                table[h + 1] = emptyHigh;
-            }
-        }
-    }, {
-        key: 'clear',
-        value: function clear() {
-            if (this.size === 0) {
-                return false;
-            }
-            this.size = 0;
-            ++this.generation;
-            this.clearTable();
-            return true;
-        }
-    }, {
-        key: 'swapPending',
-        value: function swapPending(table, offset) {
-            var tempLow = pendingLow,
-                tempHigh = pendingHigh;
-            this.storePending(table, offset);
-            table[offset] = tempLow;
-            table[offset + 1] = tempHigh;
-        }
-    }, {
-        key: 'storePending',
-        value: function storePending(table, offset) {
-            pendingLow = table[offset];
-            pendingHigh = table[offset + 1];
-        }
-    }, {
-        key: 'backupPending',
-        value: function backupPending() {
-            backupPendingLow = pendingLow;
-            backupPendingHigh = pendingHigh;
-        }
-    }, {
-        key: 'restorePending',
-        value: function restorePending() {
-            pendingLow = backupPendingLow;
-            pendingHigh = backupPendingHigh;
-        }
-    }, {
-        key: 'tryToInsert',
-        value: function tryToInsert() {
-            if (DEBUG) {
-                console.log(`tryToInsert: ${ pendingLow }, ${ pendingHigh }`);
-            }
-            var attempt = 0;
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-            var maxAttempts = this.maxAttempts;
-            var table = this.table;
-
-            var numHashes = this.hashFunctions.length;
-            var tableIndex = Math.floor(Math.random() * numHashes);
-            while (true) {
-                var h = this.getHash(tableIndex, pendingLow, pendingHigh);
-                this.swapPending(table, h);
-                if (pendingLow === emptyLow && pendingHigh === emptyHigh) {
-                    return true;
-                }
-                if (++attempt === maxAttempts) {
-                    break;
-                }
-                tableIndex = (tableIndex + Math.floor(Math.random() * (numHashes - 1)) + 1) % numHashes;
-            }
-            return false;
-        }
-    }, {
-        key: 'allocate',
-        value: function allocate(width, height) {
-            var tableSize = width * height;
-            this.width = width;
-            this.height = height;
-            var entryStride = this.entryStride;
-
-            this.table = new Uint32Array(tableSize * entryStride);
-            this.maxAttempts = tableSize;
-            this.clearTable();
-            this.capacity = tableSize * this.loadFactor;
-            this.mungedEmptyKey = -1;
-        }
-    }, {
-        key: 'rehash',
-        value: function rehash(oldTable, width, height) {
-            if (DEBUG) {
-                console.log('rehash begin');
-            }
-            this.allocate(width, height);
-            this.updateHashFunctions(this.hashFunctions.length);
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-            var entryStride = this.entryStride;
-
-            for (var h = 0, length = oldTable.length; h < length; h += entryStride) {
-                var low = oldTable[h],
-                    high = oldTable[h + 1];
-                if (low !== emptyLow || high !== emptyHigh) {
-                    this.storePending(oldTable, h);
-                    if (!this.tryToInsert()) {
-                        if (DEBUG) {
-                            console.log('rehash failed');
-                        }
-                        return false;
-                    }
-                }
-            }
-            if (DEBUG) {
-                console.log('rehash end');
-            }
-            return true;
-        }
-    }, {
-        key: 'grow',
-        value: function grow(desiredTableSize) {
-            if (DEBUG) {
-                console.log(`grow: ${ desiredTableSize }`);
-            }
-            var oldTable = this.table;
-            var width = this.width;
-            var height = this.height;
-            var maxWidth = this.maxWidth;
-            var maxHeight = this.maxHeight;
-
-            while (true) {
-                var origTableSize = width * height;
-                width = Math.min(maxWidth, Math.ceil(desiredTableSize / this.height));
-                if (width * height < desiredTableSize) {
-                    height = Math.min(maxHeight, Math.ceil(desiredTableSize / width));
-                }
-                var tableSize = width * height;
-                if (tableSize < desiredTableSize && tableSize === origTableSize) {
-                    throw new Error('Maximum table size exceeded');
-                }
-                for (var rehashAttempt = 0; rehashAttempt < this.maxRehashAttempts; ++rehashAttempt) {
-                    if (this.rehash(oldTable, width, height)) {
-                        if (DEBUG) {
-                            console.log(`grow end`);
-                        }
-                        return;
-                    }
-                }
-                desiredTableSize = Math.ceil(this.growFactor * desiredTableSize);
-            }
-        }
-    }, {
-        key: 'insertInternal',
-        value: function insertInternal() {
-            ++this.generation;
-            if (pendingLow === this.emptyLow && pendingHigh === this.emptyHigh) {
-                this.chooseAnotherEmptyKey();
-            }
-            if (++this.size > this.capacity) {
-                this.backupPending();
-                this.grow(Math.ceil(this.growFactor * this.width * this.height));
-                this.restorePending();
-            }
-            while (!this.tryToInsert()) {
-                this.backupPending();
-                this.grow(this.width * this.height);
-                this.restorePending();
-            }
-        }
-    }], [{
-        key: 'generateHashFunctions',
-        value: function generateHashFunctions() {
-            var numAlternatives = arguments.length <= 0 || arguments[0] === undefined ? exports.NUM_ALTERNATIVES : arguments[0];
-
-            var hashFunctions = [];
-            for (var alt = 0; alt < numAlternatives; ++alt) {
-                var curFunctions = [hash_function_1.HashFunction.generate(), hash_function_1.HashFunction.generate()];
-                hashFunctions.push(curFunctions);
-            }
-            return hashFunctions;
-        }
-    }]);
-
-    return HashTableBase;
-}();
-
-exports.HashTableBase = HashTableBase;
-;
-
-var HashSetUint64 = function (_HashTableBase) {
-    _inherits(HashSetUint64, _HashTableBase);
-
-    function HashSetUint64() {
-        _classCallCheck(this, HashSetUint64);
-
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashSetUint64).apply(this, arguments));
-    }
-
-    _createClass(HashSetUint64, [{
-        key: 'add',
-        value: function add(x) {
-            var low = x.low;
-            var high = x.high;
-
-            if (this.hasPair(low, high)) {
-                return false;
-            }
-            if (DEBUG) {
-                console.log(`add: ${ low },${ high }`);
-            }
-            pendingLow = low;
-            pendingHigh = high;
-            this.insertInternal();
-            return true;
-        }
-        /**
-         * Iterates over the keys.  The same temporary value will be modified and yielded at every
-         * iteration.
-         */
-
-    }, {
-        key: Symbol.iterator,
-        value: function () {
-            return this.keys();
-        }
-    }]);
-
-    return HashSetUint64;
-}(HashTableBase);
-
-exports.HashSetUint64 = HashSetUint64;
-;
-HashSetUint64.prototype.entryStride = 2;
-// Value that needs to be inserted.  Temporary variables used during insert.  These can safely be
-// global because control never leaves functions defined in this module while these are in use.
-var pendingValueLow = 0,
-    pendingValueHigh = 0,
-    backupPendingValueLow = 0,
-    backupPendingValueHigh = 0;
-
-var HashMapUint64 = function (_HashTableBase2) {
-    _inherits(HashMapUint64, _HashTableBase2);
-
-    function HashMapUint64() {
-        _classCallCheck(this, HashMapUint64);
-
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashMapUint64).apply(this, arguments));
-    }
-
-    _createClass(HashMapUint64, [{
-        key: 'set',
-        value: function set(key, value) {
-            var low = key.low;
-            var high = key.high;
-
-            if (this.hasPair(low, high)) {
-                return false;
-            }
-            if (DEBUG) {
-                console.log(`add: ${ low },${ high } -> ${ value.low },${ value.high }`);
-            }
-            pendingLow = low;
-            pendingHigh = high;
-            pendingValueLow = value.low;
-            pendingValueHigh = value.high;
-            this.insertInternal();
-            return true;
-        }
-    }, {
-        key: 'get',
-        value: function get(key, value) {
-            var h = this.indexOf(key);
-            if (h === -1) {
-                return false;
-            }
-            var table = this.table;
-
-            value.low = table[h + 2];
-            value.high = table[h + 3];
-            return true;
-        }
-    }, {
-        key: 'swapPending',
-        value: function swapPending(table, offset) {
-            var tempLow = pendingValueLow,
-                tempHigh = pendingValueHigh;
-            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'swapPending', this).call(this, table, offset);
-            table[offset + 2] = tempLow;
-            table[offset + 3] = tempHigh;
-        }
-    }, {
-        key: 'storePending',
-        value: function storePending(table, offset) {
-            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'storePending', this).call(this, table, offset);
-            pendingValueLow = table[offset + 2];
-            pendingValueHigh = table[offset + 3];
-        }
-    }, {
-        key: 'backupPending',
-        value: function backupPending() {
-            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'backupPending', this).call(this);
-            backupPendingValueLow = pendingValueLow;
-            backupPendingValueHigh = pendingValueHigh;
-        }
-    }, {
-        key: 'restorePending',
-        value: function restorePending() {
-            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'restorePending', this).call(this);
-            pendingValueLow = backupPendingValueLow;
-            pendingValueHigh = backupPendingValueHigh;
-        }
-        /**
-         * Iterates over entries.  The same temporary value will be modified and yielded at every
-         * iteration.
-         */
-
-    }, {
-        key: Symbol.iterator,
-        value: function () {
-            return this.entries();
-        }
-        /**
-         * Iterates over entries.  The same temporary value will be modified and yielded at every
-         * iteration.
-         */
-
-    }, {
-        key: 'entries',
-        value: function* entries() {
-            var temp = arguments.length <= 0 || arguments[0] === undefined ? [new uint64_1.Uint64(), new uint64_1.Uint64()] : arguments[0];
-            var emptyLow = this.emptyLow;
-            var emptyHigh = this.emptyHigh;
-            var entryStride = this.entryStride;
-            var table = this.table;
-
-            var _temp = _slicedToArray(temp, 2);
-
-            var key = _temp[0];
-            var value = _temp[1];
-
-            for (var i = 0, length = table.length; i < length; i += entryStride) {
-                var low = table[i],
-                    high = table[i + 1];
-                if (low !== emptyLow || high !== emptyHigh) {
-                    key.low = low;
-                    key.high = high;
-                    value.low = table[i + 2];
-                    value.high = table[i + 3];
-                    yield temp;
-                }
-            }
-        }
-    }]);
-
-    return HashMapUint64;
-}(HashTableBase);
-
-exports.HashMapUint64 = HashMapUint64;
-;
-HashMapUint64.prototype.entryStride = 4;
-
-/***/ },
-/* 132 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * Converts an HSV color (with h, s, v in [0,1]) to RGB (in range [0,1]).
- *
- * Based on goog/color/color.js in the Google Closure library.
- */
-
-function hsvToRgb(out, h, s, v) {
-    h *= 6;
-    var hueIndex = Math.floor(h);
-    var remainder = h - hueIndex;
-    var val1 = v * (1 - s);
-    var val2 = v * (1 - s * remainder);
-    var val3 = v * (1 - s * (1 - remainder));
-    switch (hueIndex % 6) {
-        case 0:
-            out[0] = v;
-            out[1] = val3;
-            out[2] = val1;
-            break;
-        case 1:
-            out[0] = val2;
-            out[1] = v;
-            out[2] = val1;
-            break;
-        case 2:
-            out[0] = val1;
-            out[1] = v;
-            out[2] = val3;
-            break;
-        case 3:
-            out[0] = val1;
-            out[1] = val2;
-            out[2] = v;
-            break;
-        case 4:
-            out[0] = val3;
-            out[1] = val1;
-            out[2] = v;
-            break;
-        case 5:
-            out[0] = v;
-            out[1] = val1;
-            out[2] = val2;
-            break;
-    }
-    return out;
-}
-exports.hsvToRgb = hsvToRgb;
-
-/***/ },
-/* 133 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
-    var c = arguments.length,
-        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
-        d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
-        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    }return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var disjoint_sets_1 = __webpack_require__(134);
+var lodash_1 = __webpack_require__(125);
+var layer_dropdown_1 = __webpack_require__(127);
+var layer_specification_1 = __webpack_require__(110);
+var segmentation_user_layer_1 = __webpack_require__(136);
+var custom_color_segmentation_renderlayer_1 = __webpack_require__(147);
+var trackable_value_1 = __webpack_require__(67);
 var json_1 = __webpack_require__(8);
-var uint64_1 = __webpack_require__(52);
-var worker_rpc_1 = __webpack_require__(22);
-var signals_1 = __webpack_require__(34);
-var RPC_TYPE_ID = 'DisjointUint64Sets';
-var ADD_METHOD_ID = 'DisjointUint64Sets.add';
-var CLEAR_METHOD_ID = 'DisjointUint64Sets.clear';
-var SharedDisjointUint64Sets = function (_worker_rpc_1$SharedO) {
-    _inherits(SharedDisjointUint64Sets, _worker_rpc_1$SharedO);
-
-    function SharedDisjointUint64Sets() {
-        _classCallCheck(this, SharedDisjointUint64Sets);
-
-        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-        }
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SharedDisjointUint64Sets).call(this, ...args));
-
-        _this.disjointSets = new disjoint_sets_1.DisjointUint64Sets();
-        _this.changed = new signals_1.Signal();
-        return _this;
-    }
-
-    _createClass(SharedDisjointUint64Sets, [{
-        key: "disposed",
-        value: function disposed() {
-            this.disjointSets = undefined;
-            this.changed = undefined;
-            _get(Object.getPrototypeOf(SharedDisjointUint64Sets.prototype), "disposed", this).call(this);
-        }
-    }, {
-        key: "link",
-        value: function link(a, b) {
-            if (this.disjointSets.link(a, b)) {
-                var rpc = this.rpc;
-
-                if (rpc) {
-                    rpc.invoke(ADD_METHOD_ID, { 'id': this.rpcId, 'al': a.low, 'ah': a.high, 'bl': b.low, 'bh': b.high });
-                }
-                this.changed.dispatch();
-            }
-        }
-    }, {
-        key: "get",
-        value: function get(x) {
-            return this.disjointSets.get(x);
-        }
-    }, {
-        key: "clear",
-        value: function clear() {
-            if (this.disjointSets.clear()) {
-                var rpc = this.rpc;
-
-                if (rpc) {
-                    rpc.invoke(CLEAR_METHOD_ID, { 'id': this.rpcId });
-                }
-                this.changed.dispatch();
-            }
-        }
-    }, {
-        key: "setElements",
-        value: function setElements(a) {
-            return this.disjointSets.setElements(a);
-        }
-    }, {
-        key: "toJSON",
-        value: function toJSON() {
-            return this.disjointSets.toJSON();
-        }
-        /**
-         * Restores the state from a JSON representation.
-         */
-
-    }, {
-        key: "restoreState",
-        value: function restoreState(obj) {
-            var _this2 = this;
-
-            this.clear();
-            if (obj !== undefined) {
-                (function () {
-                    var ids = [new uint64_1.Uint64(), new uint64_1.Uint64()];
-                    json_1.parseArray(obj, z => {
-                        json_1.parseArray(z, (s, index) => {
-                            ids[index % 2].parseString(String(s), 10);
-                            if (index !== 0) {
-                                _this2.link(ids[0], ids[1]);
-                            }
-                        });
-                    });
-                })();
-            }
-        }
-    }, {
-        key: "size",
-        get: function () {
-            return this.disjointSets.size;
-        }
-    }], [{
-        key: "makeWithCounterpart",
-        value: function makeWithCounterpart(rpc) {
-            var obj = new this();
-            obj.initializeCounterpart(rpc);
-            return obj;
-        }
-    }]);
-
-    return SharedDisjointUint64Sets;
-}(worker_rpc_1.SharedObjectCounterpart);
-SharedDisjointUint64Sets = __decorate([worker_rpc_1.registerSharedObject(RPC_TYPE_ID)], SharedDisjointUint64Sets);
-exports.SharedDisjointUint64Sets = SharedDisjointUint64Sets;
-;
-var tempA = new uint64_1.Uint64();
-var tempB = new uint64_1.Uint64();
-worker_rpc_1.registerRPC(ADD_METHOD_ID, function (x) {
-    var obj = this.get(x['id']);
-    tempA.low = x['al'];
-    tempA.high = x['ah'];
-    tempB.low = x['bl'];
-    tempB.high = x['bh'];
-    if (obj.disjointSets.link(tempA, tempB)) {
-        obj.changed.dispatch();
-    }
-});
-worker_rpc_1.registerRPC(CLEAR_METHOD_ID, function (x) {
-    var obj = this.get(x['id']);
-    if (obj.disjointSets.clear()) {
-        obj.changed.dispatch();
-    }
-});
-
-/***/ },
-/* 134 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var uint64_1 = __webpack_require__(52);
-var rankSymbol = Symbol('disjoint_sets:rank');
-var parentSymbol = Symbol('disjoint_sets:parent');
-var nextSymbol = Symbol('disjoint_sets:next');
-var prevSymbol = Symbol('disjoint_sets:prev');
-function findRepresentative(v) {
-    // First pass: find the root, which will be stored in ancestor.
-    var old = v;
-    var ancestor = v[parentSymbol];
-    while (ancestor !== v) {
-        v = ancestor;
-        ancestor = v[parentSymbol];
-    }
-    // Second pass: set all of the parent pointers along the path from the
-    // original element `old' to refer directly to the root `ancestor'.
-    v = old[parentSymbol];
-    while (ancestor !== v) {
-        old[parentSymbol] = ancestor;
-        old = v;
-        v = old[parentSymbol];
-    }
-    return ancestor;
-}
-function linkUnequalSetRepresentatives(i, j) {
-    var iRank = i[rankSymbol];
-    var jRank = j[rankSymbol];
-    if (iRank > jRank) {
-        j[parentSymbol] = i;
-        return i;
-    }
-    i[parentSymbol] = j;
-    if (iRank === jRank) {
-        j[rankSymbol] = jRank + 1;
-    }
-    return j;
-}
-function spliceCircularLists(i, j) {
-    var iPrev = i[prevSymbol];
-    var jPrev = j[prevSymbol];
-    // Connect end of i to beginning of j.
-    j[prevSymbol] = iPrev;
-    iPrev[nextSymbol] = j;
-    // Connect end of j to beginning of i.
-    i[prevSymbol] = jPrev;
-    jPrev[nextSymbol] = i;
-}
-function* setElementIterator(i) {
-    var j = i;
-    do {
-        yield j;
-        j = j[nextSymbol];
-    } while (j !== i);
-}
-function initializeElement(v) {
-    v[parentSymbol] = v;
-    v[rankSymbol] = 0;
-    v[nextSymbol] = v[prevSymbol] = v;
-}
-var minSymbol = Symbol('disjoint_sets:min');
-function isRootElement(v) {
-    return v[parentSymbol] === v;
-}
-/**
- * Represents a collection of disjoint sets of Uint64 values.
- *
- * Supports merging sets, retrieving the minimum Uint64 value contained in a set (the representative
- * value), and iterating over the elements contained in a set.
- */
-
-var DisjointUint64Sets = function () {
-    function DisjointUint64Sets() {
-        _classCallCheck(this, DisjointUint64Sets);
-
-        this.map = new Map();
-        this.generation = 0;
-    }
-
-    _createClass(DisjointUint64Sets, [{
-        key: 'get',
-        value: function get(x) {
-            var key = x.toString();
-            var element = this.map.get(key);
-            if (element === undefined) {
-                return x;
-            }
-            return findRepresentative(element)[minSymbol];
-        }
-    }, {
-        key: 'isMinElement',
-        value: function isMinElement(x) {
-            var y = this.get(x);
-            return y === x || uint64_1.Uint64.equal(y, x);
-        }
-    }, {
-        key: 'makeSet',
-        value: function makeSet(x) {
-            var key = x.toString();
-            var map = this.map;
-
-            var element = map.get(key);
-            if (element === undefined) {
-                element = x.clone();
-                initializeElement(element);
-                element[minSymbol] = element;
-                map.set(key, element);
-                return element;
-            }
-            return findRepresentative(element);
-        }
-    }, {
-        key: 'link',
-        value: function link(a, b) {
-            a = this.makeSet(a);
-            b = this.makeSet(b);
-            if (a === b) {
-                return false;
-            }
-            this.generation++;
-            var newNode = linkUnequalSetRepresentatives(a, b);
-            spliceCircularLists(a, b);
-            var aMin = a[minSymbol];
-            var bMin = b[minSymbol];
-            newNode[minSymbol] = uint64_1.Uint64.less(aMin, bMin) ? aMin : bMin;
-            return true;
-        }
-    }, {
-        key: 'setElements',
-        value: function* setElements(a) {
-            var key = a.toString();
-            var element = this.map.get(key);
-            if (element === undefined) {
-                yield a;
-            } else {
-                yield* setElementIterator(element);
-            }
-        }
-    }, {
-        key: 'clear',
-        value: function clear() {
-            var map = this.map;
-
-            if (map.size === 0) {
-                return false;
-            }
-            ++this.generation;
-            map.clear();
-            return true;
-        }
-    }, {
-        key: 'mappings',
-        value: function* mappings() {
-            var temp = arguments.length <= 0 || arguments[0] === undefined ? new Array(2) : arguments[0];
-
-            for (var element of this.map.values()) {
-                temp[0] = element;
-                temp[1] = findRepresentative(element)[minSymbol];
-                yield temp;
-            }
-        }
-    }, {
-        key: Symbol.iterator,
-        value: function () {
-            return this.mappings();
-        }
-        /**
-         * Returns an array of arrays of strings, where the arrays contained in the outer array correspond
-         * to the disjoint sets, and the strings are the base-10 string representations of the members of
-         * each set.  The members are sorted in numerical order, and the sets are sorted in numerical
-         * order of their smallest elements.
-         */
-
-    }, {
-        key: 'toJSON',
-        value: function toJSON() {
-            var sets = new Array();
-            for (var element of this.map.values()) {
-                if (isRootElement(element)) {
-                    var members = new Array();
-                    for (var member of setElementIterator(element)) {
-                        members.push(member);
-                    }
-                    members.sort(uint64_1.Uint64.compare);
-                    sets.push(members);
-                }
-            }
-            sets.sort((a, b) => uint64_1.Uint64.compare(a[0], b[0]));
-            return sets.map(set => set.map(element => element.toString()));
-        }
-    }, {
-        key: 'size',
-        get: function () {
-            return this.map.size;
-        }
-    }]);
-
-    return DisjointUint64Sets;
-}();
-
-exports.DisjointUint64Sets = DisjointUint64Sets;
-;
-
-/***/ },
-/* 135 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var base_1 = __webpack_require__(31);
-var frontend_1 = __webpack_require__(32);
-var perspective_panel_1 = __webpack_require__(36);
-var frontend_2 = __webpack_require__(74);
-var base_2 = __webpack_require__(136);
-var panel_1 = __webpack_require__(137);
-var disposable_1 = __webpack_require__(23);
-var geom_1 = __webpack_require__(9);
-var json_1 = __webpack_require__(8);
-var buffer_1 = __webpack_require__(38);
-var shader_1 = __webpack_require__(41);
-var shader_lib_1 = __webpack_require__(71);
-var signals_1 = __webpack_require__(34);
-
-var SkeletonShaderManager = function () {
-    function SkeletonShaderManager() {
-        _classCallCheck(this, SkeletonShaderManager);
-
-        this.tempMat = geom_1.mat4.create();
-        this.tempPickID = new Float32Array(4);
-    }
-
-    _createClass(SkeletonShaderManager, [{
-        key: 'defineShader',
-        value: function defineShader(builder) {
-            builder.addAttribute('highp vec3', 'aVertexPosition');
-            builder.addUniform('highp vec3', 'uColor');
-            builder.addUniform('highp mat4', 'uProjection');
-            builder.addUniform('highp vec4', 'uPickID');
-            builder.setVertexMain(`gl_Position = uProjection * vec4(aVertexPosition, 1.0);`);
-            builder.setFragmentMain(`emit(vec4(uColor, 1.0), uPickID);`);
-        }
-    }, {
-        key: 'beginLayer',
-        value: function beginLayer(gl, shader, renderContext, objectToDataMatrix) {
-            var dataToDevice = renderContext.dataToDevice;
-
-            var mat = geom_1.mat4.multiply(this.tempMat, dataToDevice, objectToDataMatrix);
-            gl.uniformMatrix4fv(shader.uniform('uProjection'), false, mat);
-        }
-    }, {
-        key: 'getShader',
-        value: function getShader(gl, key, emitter) {
-            return gl.memoize.get(key, () => {
-                var builder = new shader_1.ShaderBuilder(gl);
-                builder.require(emitter);
-                this.defineShader(builder);
-                return builder.build();
-            });
-        }
-    }, {
-        key: 'setColor',
-        value: function setColor(gl, shader, color) {
-            gl.uniform3fv(shader.uniform('uColor'), color);
-        }
-    }, {
-        key: 'drawSkeleton',
-        value: function drawSkeleton(gl, shader, skeletonChunk, pickID) {
-            gl.uniform4fv(shader.uniform('uPickID'), shader_lib_1.setVec4FromUint32(this.tempPickID, pickID));
-            skeletonChunk.vertexBuffer.bindToVertexAttrib(shader.attribute('aVertexPosition'),
-            /*components=*/3);
-            skeletonChunk.indexBuffer.bind();
-            gl.drawElements(gl.LINES, skeletonChunk.numIndices, gl.UNSIGNED_INT, 0);
-        }
-    }, {
-        key: 'endLayer',
-        value: function endLayer(gl, shader) {
-            gl.disableVertexAttribArray(shader.attribute('aVertexPosition'));
-        }
-    }]);
-
-    return SkeletonShaderManager;
-}();
-
-;
-
-var PerspectiveViewSkeletonLayer = function (_perspective_panel_1$) {
-    _inherits(PerspectiveViewSkeletonLayer, _perspective_panel_1$);
-
-    function PerspectiveViewSkeletonLayer(base) {
-        _classCallCheck(this, PerspectiveViewSkeletonLayer);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(PerspectiveViewSkeletonLayer).call(this));
-
-        _this.base = base;
-        _this.shader = _this.base.skeletonShaderManager.getShader(_this.gl, 'skeleton/SkeletonShaderManager:PerspectivePanel', perspective_panel_1.perspectivePanelEmit);
-        _this.registerDisposer(base);
-        _this.registerSignalBinding(base.redrawNeeded.add(() => {
-            _this.redrawNeeded.dispatch();
-        }));
-        _this.setReady(true);
-        return _this;
-    }
-
-    _createClass(PerspectiveViewSkeletonLayer, [{
-        key: 'draw',
-        value: function draw(renderContext) {
-            var pickingOnly = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-
-            this.base.draw(renderContext, this, this.shader, pickingOnly);
-        }
-    }, {
-        key: 'drawPicking',
-        value: function drawPicking(renderContext) {
-            this.base.draw(renderContext, this, this.shader, true);
-        }
-    }, {
-        key: 'gl',
-        get: function () {
-            return this.base.gl;
-        }
-    }]);
-
-    return PerspectiveViewSkeletonLayer;
-}(perspective_panel_1.PerspectiveViewRenderLayer);
-
-exports.PerspectiveViewSkeletonLayer = PerspectiveViewSkeletonLayer;
-;
-
-var SliceViewPanelSkeletonLayer = function (_panel_1$SliceViewPan) {
-    _inherits(SliceViewPanelSkeletonLayer, _panel_1$SliceViewPan);
-
-    function SliceViewPanelSkeletonLayer(base) {
-        _classCallCheck(this, SliceViewPanelSkeletonLayer);
-
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewPanelSkeletonLayer).call(this));
-
-        _this2.base = base;
-        _this2.shader = _this2.base.skeletonShaderManager.getShader(_this2.gl, 'skeleton/SkeletonShaderManager:SliceViewPanel', panel_1.sliceViewPanelEmit);
-        _this2.registerDisposer(base);
-        _this2.registerSignalBinding(base.redrawNeeded.add(() => {
-            _this2.redrawNeeded.dispatch();
-        }));
-        _this2.setReady(true);
-        return _this2;
-    }
-
-    _createClass(SliceViewPanelSkeletonLayer, [{
-        key: 'draw',
-        value: function draw(renderContext) {
-            this.base.draw(renderContext, this, this.shader, false, 10);
-        }
-    }, {
-        key: 'gl',
-        get: function () {
-            return this.base.gl;
-        }
-    }]);
-
-    return SliceViewPanelSkeletonLayer;
-}(panel_1.SliceViewPanelRenderLayer);
-
-exports.SliceViewPanelSkeletonLayer = SliceViewPanelSkeletonLayer;
-;
-
-var SkeletonLayer = function (_disposable_1$RefCoun) {
-    _inherits(SkeletonLayer, _disposable_1$RefCoun);
-
-    function SkeletonLayer(chunkManager, source, voxelSizeObject, displayState) {
-        _classCallCheck(this, SkeletonLayer);
-
-        var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonLayer).call(this));
-
-        _this3.chunkManager = chunkManager;
-        _this3.source = source;
-        _this3.voxelSizeObject = voxelSizeObject;
-        _this3.displayState = displayState;
-        _this3.tempMat = geom_1.mat4.create();
-        _this3.skeletonShaderManager = new SkeletonShaderManager();
-        _this3.redrawNeeded = new signals_1.Signal();
-        frontend_2.registerRedrawWhenSegmentationDisplayStateChanged(displayState, _this3);
-        var sharedObject = _this3.registerDisposer(new frontend_2.SegmentationLayerSharedObject(chunkManager, displayState));
-        sharedObject.RPC_TYPE_ID = base_2.SKELETON_LAYER_RPC_ID;
-        sharedObject.initializeCounterpartWithChunkManager({
-            'source': source.addCounterpartRef()
-        });
-        return _this3;
-    }
-
-    _createClass(SkeletonLayer, [{
-        key: 'draw',
-        value: function draw(renderContext, layer, shader) {
-            var pickingOnly = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
-            var lineWidth = arguments[4];
-
-            if (lineWidth === undefined) {
-                lineWidth = pickingOnly ? 5 : 1;
-            }
-            var gl = this.gl;
-            var skeletonShaderManager = this.skeletonShaderManager;
-
-            shader.bind();
-            var objectToDataMatrix = this.tempMat;
-            geom_1.mat4.identity(objectToDataMatrix);
-            geom_1.mat4.scale(objectToDataMatrix, objectToDataMatrix, this.voxelSizeObject.size);
-            skeletonShaderManager.beginLayer(gl, shader, renderContext, objectToDataMatrix);
-            var skeletons = this.source.chunks;
-            var pickIDs = renderContext.pickIDs;
-            var displayState = this.displayState;
-
-            gl.lineWidth(lineWidth);
-            frontend_2.forEachSegmentToDraw(displayState, skeletons, (rootObjectId, objectId, skeleton) => {
-                if (skeleton.state !== base_1.ChunkState.GPU_MEMORY) {
-                    return;
-                }
-                if (!pickingOnly) {
-                    skeletonShaderManager.setColor(gl, shader, frontend_2.getObjectColor(displayState, rootObjectId));
-                }
-                skeletonShaderManager.drawSkeleton(gl, shader, skeleton, pickIDs.register(layer, objectId));
-            });
-            skeletonShaderManager.endLayer(gl, shader);
-        }
-    }, {
-        key: 'gl',
-        get: function () {
-            return this.chunkManager.chunkQueueManager.gl;
-        }
-    }]);
-
-    return SkeletonLayer;
-}(disposable_1.RefCounted);
-
-exports.SkeletonLayer = SkeletonLayer;
-;
-
-var SkeletonChunk = function (_frontend_1$Chunk) {
-    _inherits(SkeletonChunk, _frontend_1$Chunk);
-
-    function SkeletonChunk(source, x) {
-        _classCallCheck(this, SkeletonChunk);
-
-        var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonChunk).call(this, source));
-
-        _this4.data = x['data'];
-        return _this4;
-    }
-
-    _createClass(SkeletonChunk, [{
-        key: 'copyToGPU',
-        value: function copyToGPU(gl) {
-            _get(Object.getPrototypeOf(SkeletonChunk.prototype), 'copyToGPU', this).call(this, gl);
-            var data = this.data;
-
-            var dv = new DataView(data.buffer);
-            var numVertices = dv.getInt32(0, true);
-            var positions = new Float32Array(data.buffer, 4, numVertices * 3);
-            var indices = new Uint32Array(data.buffer, 4 * (numVertices * 3) + 4);
-            this.vertexBuffer = buffer_1.Buffer.fromData(gl, positions, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-            this.indexBuffer = buffer_1.Buffer.fromData(gl, indices, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
-            this.numIndices = indices.length;
-        }
-    }, {
-        key: 'freeGPUMemory',
-        value: function freeGPUMemory(gl) {
-            _get(Object.getPrototypeOf(SkeletonChunk.prototype), 'freeGPUMemory', this).call(this, gl);
-            this.vertexBuffer.dispose();
-            this.indexBuffer.dispose();
-        }
-    }]);
-
-    return SkeletonChunk;
-}(frontend_1.Chunk);
-
-exports.SkeletonChunk = SkeletonChunk;
-;
-
-var SkeletonSource = function (_frontend_1$ChunkSour) {
-    _inherits(SkeletonSource, _frontend_1$ChunkSour);
-
-    function SkeletonSource() {
-        _classCallCheck(this, SkeletonSource);
-
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(SkeletonSource).apply(this, arguments));
-    }
-
-    _createClass(SkeletonSource, [{
-        key: 'getChunk',
-        value: function getChunk(x) {
-            return new SkeletonChunk(this, x);
-        }
-    }]);
-
-    return SkeletonSource;
-}(frontend_1.ChunkSource);
-
-exports.SkeletonSource = SkeletonSource;
-;
-
-var ParameterizedSkeletonSource = function (_SkeletonSource) {
-    _inherits(ParameterizedSkeletonSource, _SkeletonSource);
-
-    function ParameterizedSkeletonSource(chunkManager, parameters) {
-        _classCallCheck(this, ParameterizedSkeletonSource);
-
-        var _this6 = _possibleConstructorReturn(this, Object.getPrototypeOf(ParameterizedSkeletonSource).call(this, chunkManager));
-
-        _this6.parameters = parameters;
-        return _this6;
-    }
-
-    _createClass(ParameterizedSkeletonSource, [{
-        key: 'initializeCounterpart',
-        value: function initializeCounterpart(rpc, options) {
-            options['parameters'] = this.parameters;
-            _get(Object.getPrototypeOf(ParameterizedSkeletonSource.prototype), 'initializeCounterpart', this).call(this, rpc, options);
-        }
-    }]);
-
-    return ParameterizedSkeletonSource;
-}(SkeletonSource);
-
-exports.ParameterizedSkeletonSource = ParameterizedSkeletonSource;
-;
-/**
- * Defines a SkeletonSource for which all state is encapsulated in an object of type Parameters.
- */
-function parameterizedSkeletonSource(parametersConstructor) {
-    var newConstructor = function (_ParameterizedSkeleto) {
-        _inherits(SpecializedParameterizedSkeletonSource, _ParameterizedSkeleto);
-
-        function SpecializedParameterizedSkeletonSource() {
-            _classCallCheck(this, SpecializedParameterizedSkeletonSource);
-
-            return _possibleConstructorReturn(this, Object.getPrototypeOf(SpecializedParameterizedSkeletonSource).apply(this, arguments));
-        }
-
-        _createClass(SpecializedParameterizedSkeletonSource, [{
-            key: 'toString',
-            value: function toString() {
-                return parametersConstructor.stringify(this.parameters);
-            }
-        }], [{
-            key: 'get',
-            value: function get(chunkManager, parameters) {
-                return chunkManager.getChunkSource(this, json_1.stableStringify(parameters), () => new this(chunkManager, parameters));
-            }
-        }]);
-
-        return SpecializedParameterizedSkeletonSource;
-    }(ParameterizedSkeletonSource);
-    newConstructor.prototype.RPC_TYPE_ID = parametersConstructor.RPC_ID;
-    return newConstructor;
-}
-exports.parameterizedSkeletonSource = parameterizedSkeletonSource;
-
-/***/ },
-/* 136 */
-/***/ function(module, exports) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-exports.SKELETON_LAYER_RPC_ID = 'skeleton/SkeletonLayer';
-
-/***/ },
-/* 137 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var axes_lines_1 = __webpack_require__(37);
-var layer_1 = __webpack_require__(42);
-var object_picking_1 = __webpack_require__(53);
-var rendered_data_panel_1 = __webpack_require__(54);
-var frontend_1 = __webpack_require__(59);
-var trackable_boolean_1 = __webpack_require__(69);
-var geom_1 = __webpack_require__(9);
-var mouse_drag_1 = __webpack_require__(70);
-var offscreen_1 = __webpack_require__(67);
-var scale_bar_1 = __webpack_require__(138);
-var signals_1 = __webpack_require__(34);
-(function (OffscreenTextures) {
-    OffscreenTextures[OffscreenTextures["COLOR"] = 0] = "COLOR";
-    OffscreenTextures[OffscreenTextures["PICK"] = 1] = "PICK";
-    OffscreenTextures[OffscreenTextures["NUM_TEXTURES"] = 2] = "NUM_TEXTURES";
-})(exports.OffscreenTextures || (exports.OffscreenTextures = {}));
-var OffscreenTextures = exports.OffscreenTextures;
-function sliceViewPanelEmit(builder) {
-    builder.addFragmentExtension('GL_EXT_draw_buffers');
-    builder.addFragmentCode(`
-void emit(vec4 color, vec4 pickId) {
-  gl_FragData[${ OffscreenTextures.COLOR }] = color;
-  gl_FragData[${ OffscreenTextures.PICK }] = pickId;
-}
-`);
-}
-exports.sliceViewPanelEmit = sliceViewPanelEmit;
-
-var SliceViewPanelRenderLayer = function (_layer_1$RenderLayer) {
-    _inherits(SliceViewPanelRenderLayer, _layer_1$RenderLayer);
-
-    function SliceViewPanelRenderLayer() {
-        _classCallCheck(this, SliceViewPanelRenderLayer);
-
-        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-        }
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewPanelRenderLayer).call(this, ...args));
-
-        _this.redrawNeeded = new signals_1.Signal();
-        return _this;
-    }
-
-    _createClass(SliceViewPanelRenderLayer, [{
-        key: 'draw',
-        value: function draw(renderContext) {
-            // Must be overriden by subclass.
-        }
-    }]);
-
-    return SliceViewPanelRenderLayer;
-}(layer_1.RenderLayer);
-
-exports.SliceViewPanelRenderLayer = SliceViewPanelRenderLayer;
-;
-
-var SliceViewPanel = function (_rendered_data_panel_) {
-    _inherits(SliceViewPanel, _rendered_data_panel_);
-
-    function SliceViewPanel(context, element, sliceView, viewer) {
-        _classCallCheck(this, SliceViewPanel);
-
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(SliceViewPanel).call(this, context, element, viewer));
-
-        _this2.sliceView = sliceView;
-        _this2.axesLineHelper = axes_lines_1.AxesLineHelper.get(_this2.gl);
-        _this2.sliceViewRenderHelper = frontend_1.SliceViewRenderHelper.get(_this2.gl, 'SliceViewRenderHelper', sliceViewPanelEmit);
-        _this2.colorFactor = geom_1.vec4.fromValues(1, 1, 1, 1);
-        _this2.backgroundColor = geom_1.vec4.fromValues(0.5, 0.5, 0.5, 1.0);
-        _this2.pickIDs = new object_picking_1.PickIDManager();
-        _this2.visibleLayerTracker = _this2.registerDisposer(new layer_1.VisibleRenderLayerTracker(_this2.viewer.layerManager, SliceViewPanelRenderLayer, layer => {
-            layer.redrawNeeded.add(_this2.scheduleRedraw, _this2);
-            _this2.scheduleRedraw();
-        }, layer => {
-            layer.redrawNeeded.remove(_this2.scheduleRedraw, _this2);
-            _this2.scheduleRedraw();
-        }));
-        _this2.offscreenFramebuffer = new offscreen_1.OffscreenFramebuffer(_this2.gl, { numDataBuffers: OffscreenTextures.NUM_TEXTURES });
-        _this2.offscreenCopyHelper = offscreen_1.OffscreenCopyHelper.get(_this2.gl);
-        _this2.scaleBarWidget = _this2.registerDisposer(new scale_bar_1.ScaleBarWidget());
-        _this2.registerDisposer(sliceView);
-        _this2.registerSignalBinding(sliceView.viewChanged.add(context.scheduleRedraw, context));
-        _this2.registerSignalBinding(viewer.showAxisLines.changed.add(() => {
-            _this2.scheduleRedraw();
-        }));
-        {
-            var scaleBar = _this2.scaleBarWidget.element;
-            _this2.registerDisposer(new trackable_boolean_1.ElementVisibilityFromTrackableBoolean(viewer.showScaleBar, scaleBar));
-            _this2.element.appendChild(scaleBar);
-        }
-        return _this2;
-    }
-
-    _createClass(SliceViewPanel, [{
-        key: 'draw',
-        value: function draw() {
-            var sliceView = this.sliceView;
-
-            if (!sliceView.hasValidViewport) {
-                return;
-            }
-            sliceView.updateRendering();
-            var gl = this.gl;
-            var width = sliceView.width;
-            var height = sliceView.height;
-            var dataToDevice = sliceView.dataToDevice;
-
-            this.offscreenFramebuffer.bind(width, height);
-            gl.disable(gl.SCISSOR_TEST);
-            this.gl.clearColor(0.0, 0.0, 0.0, 0.0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            // Draw axes lines.
-            // FIXME: avoid use of temporary matrix
-            var mat = geom_1.mat4.create();
-            this.sliceViewRenderHelper.draw(sliceView.offscreenFramebuffer.dataTextures[0], geom_1.identityMat4, this.colorFactor, this.backgroundColor, 0, 0, 1, 1);
-            var visibleLayers = this.visibleLayerTracker.getVisibleLayers();
-            var pickIDs = this.pickIDs;
-
-            pickIDs.clear();
-            var renderContext = { dataToDevice: sliceView.dataToDevice, pickIDs: pickIDs };
-            for (var renderLayer of visibleLayers) {
-                renderLayer.draw(renderContext);
-            }
-            if (this.viewer.showAxisLines.value) {
-                // Construct matrix that maps [-1, +1] x/y range to the full viewport data
-                // coordinates.
-                geom_1.mat4.copy(mat, dataToDevice);
-                for (var i = 0; i < 3; ++i) {
-                    mat[12 + i] = 0;
-                }
-                for (var _i = 0; _i < 4; ++_i) {
-                    mat[2 + 4 * _i] = 0;
-                }
-                var axisLength = Math.min(width, height) / 4 * 1.5;
-                var pixelSize = sliceView.pixelSize;
-                for (var _i2 = 0; _i2 < 12; ++_i2) {
-                    // pixelSize is nm / pixel
-                    //
-                    mat[_i2] *= axisLength * pixelSize;
-                }
-                gl.WEBGL_draw_buffers.drawBuffersWEBGL([gl.WEBGL_draw_buffers.COLOR_ATTACHMENT0_WEBGL]);
-                this.axesLineHelper.draw(mat);
-            }
-            this.offscreenFramebuffer.unbind();
-            // Draw the texture over the whole viewport.
-            this.setGLViewport();
-            this.offscreenCopyHelper.draw(this.offscreenFramebuffer.dataTextures[OffscreenTextures.COLOR]);
-            // Update the scale bar if needed.
-            {
-                var scaleBarWidget = this.scaleBarWidget;
-                var dimensions = scaleBarWidget.dimensions;
-
-                dimensions.targetLengthInPixels = Math.min(width / 4, 100);
-                dimensions.nanometersPerPixel = sliceView.pixelSize;
-                scaleBarWidget.update();
-            }
-        }
-    }, {
-        key: 'onResize',
-        value: function onResize() {
-            this.sliceView.setViewportSize(this.element.clientWidth, this.element.clientHeight);
-        }
-    }, {
-        key: 'updateMouseState',
-        value: function updateMouseState(mouseState) {
-            mouseState.pickedRenderLayer = null;
-            var sliceView = this.sliceView;
-            if (!sliceView.hasValidViewport) {
-                return false;
-            }
-            var width = sliceView.width;
-            var height = sliceView.height;
-            var offscreenFramebuffer = this.offscreenFramebuffer;
-
-            if (!offscreenFramebuffer.hasSize(width, height)) {
-                return false;
-            }
-            var out = mouseState.position;
-            var glWindowX = this.mouseX;
-            var y = this.mouseY;
-            geom_1.vec3.set(out, glWindowX - width / 2, y - height / 2, 0);
-            geom_1.vec3.transformMat4(out, out, sliceView.viewportToData);
-            var glWindowY = height - y;
-            this.pickIDs.setMouseState(mouseState, offscreenFramebuffer.readPixelAsUint32(OffscreenTextures.PICK, glWindowX, glWindowY));
-            return true;
-        }
-    }, {
-        key: 'onMousedown',
-        value: function onMousedown(e) {
-            var _this3 = this;
-
-            if (e.target !== this.element) {
-                return;
-            }
-            _get(Object.getPrototypeOf(SliceViewPanel.prototype), 'onMousedown', this).call(this, e);
-            if (!this.sliceView.hasValidViewport) {
-                return;
-            }
-            if (e.button === 0) {
-                var mouseState = this.viewer.mouseState;
-
-                if (mouseState.updateUnconditionally()) {
-                    (function () {
-                        var initialPosition = geom_1.vec3.clone(_this3.viewer.mouseState.position);
-                        mouse_drag_1.startRelativeMouseDrag(e, (event, deltaX, deltaY) => {
-                            var position = _this3.viewer.navigationState.position;
-
-                            if (event.shiftKey) {
-                                var viewportAxes = _this3.sliceView.viewportAxes;
-
-                                _this3.viewer.navigationState.pose.rotateAbsolute(viewportAxes[1], deltaX / 4.0 * Math.PI / 180.0, initialPosition);
-                                _this3.viewer.navigationState.pose.rotateAbsolute(viewportAxes[0], deltaY / 4.0 * Math.PI / 180.0, initialPosition);
-                            } else {
-                                var pos = position.spatialCoordinates;
-                                geom_1.vec3.set(pos, deltaX, deltaY, 0);
-                                geom_1.vec3.transformMat4(pos, pos, _this3.sliceView.viewportToData);
-                                position.changed.dispatch();
-                            }
-                        });
-                    })();
-                }
-            }
-        }
-        /**
-         * Zooms by the specified factor, maintaining the data position that projects to the current mouse
-         * position.
-         */
-
-    }, {
-        key: 'zoomByMouse',
-        value: function zoomByMouse(factor) {
-            var navigationState = this.navigationState;
-
-            if (!navigationState.valid) {
-                return;
-            }
-            var sliceView = this.sliceView;
-            var width = sliceView.width;
-            var height = sliceView.height;
-            var mouseX = this.mouseX;
-            var mouseY = this.mouseY;
-
-            mouseX -= width / 2;
-            mouseY -= height / 2;
-            var oldZoom = this.navigationState.zoomFactor.value;
-            // oldPosition + (mouseX * viewportAxes[0] + mouseY * viewportAxes[1]) * oldZoom
-            //     === newPosition + (mouseX * viewportAxes[0] + mouseY * viewportAxes[1]) * newZoom
-            // Therefore, we compute newPosition by:
-            // newPosition = oldPosition + (viewportAxes[0] * mouseX +
-            //                              viewportAxes[1] * mouseY) * (oldZoom - newZoom).
-            navigationState.zoomBy(factor);
-            var newZoom = navigationState.zoomFactor.value;
-            var spatialCoordinates = navigationState.position.spatialCoordinates;
-
-            geom_1.vec3.scaleAndAdd(spatialCoordinates, spatialCoordinates, sliceView.viewportAxes[0], mouseX * (oldZoom - newZoom));
-            geom_1.vec3.scaleAndAdd(spatialCoordinates, spatialCoordinates, sliceView.viewportAxes[1], mouseY * (oldZoom - newZoom));
-            navigationState.position.changed.dispatch();
-        }
-    }, {
-        key: 'navigationState',
-        get: function () {
-            return this.sliceView.navigationState;
-        }
-    }]);
-
-    return SliceViewPanel;
-}(rendered_data_panel_1.RenderedDataPanel);
-
-exports.SliceViewPanel = SliceViewPanel;
-;
-
-/***/ },
-/* 138 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-/**
- * Facility for drawing a scale bar to indicate pixel size in physical length
- * units.
- *
- * The physical length with which the scale bar is labeled will be of the form:
- *
- *   significand * 10^exponent
- *
- * Any exponent may be used, but the significand in the range [1, 10] will be
- * equal to one of a
- * discrete set of allowed significand values, in order to ensure that the scale
- * bar is easy to
- * understand.
- */
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var disposable_1 = __webpack_require__(23);
-var dom_1 = __webpack_require__(7);
-__webpack_require__(139);
-/**
- * Default set of allowed significand values.  1 is implicitly part of the set.
- */
-var DEFAULT_ALLOWED_SIGNIFICANDS = [1.5, 2, 3, 5, 7.5, 10];
-var ALLOWED_UNITS = [{ unit: 'km', lengthInNanometers: 1e12 }, { unit: 'm', lengthInNanometers: 1e9 }, { unit: 'mm', lengthInNanometers: 1e6 }, { unit: 'µm', lengthInNanometers: 1e3 }, { unit: 'nm', lengthInNanometers: 1 }, { unit: 'pm', lengthInNanometers: 1e-3 }];
-
-var ScaleBarDimensions = function () {
-    function ScaleBarDimensions() {
-        _classCallCheck(this, ScaleBarDimensions);
-
-        /**
-         * Allowed significand values.  1 is not included, but is always considered
-         * part of the set.
-         */
-        this.allowedSignificands = DEFAULT_ALLOWED_SIGNIFICANDS;
-        this.prevNanometersPerPixel = 0;
-        this.prevTargetLengthInPixels = 0;
-    }
-    /**
-     * Updates physicalLength, physicalUnit, and lengthInPixels to be the optimal
-     * values corresponding
-     * to targetLengthInPixels and nanometersPerPixel.
-     *
-     * @returns true if the scale bar has changed, false if it is unchanged.
-     */
-
-
-    _createClass(ScaleBarDimensions, [{
-        key: 'update',
-        value: function update() {
-            var nanometersPerPixel = this.nanometersPerPixel;
-            var targetLengthInPixels = this.targetLengthInPixels;
-
-            if (this.prevNanometersPerPixel === nanometersPerPixel && this.prevTargetLengthInPixels === targetLengthInPixels) {
-                return false;
-            }
-            this.prevNanometersPerPixel = nanometersPerPixel;
-            this.prevTargetLengthInPixels = targetLengthInPixels;
-            var targetNanometers = targetLengthInPixels * nanometersPerPixel;
-            var exponent = Math.floor(Math.log(targetNanometers) / Math.LN10);
-            var tenToThePowerExponent = Math.pow(10, exponent);
-            var targetSignificand = targetNanometers / tenToThePowerExponent;
-            // Determine significand value in this.allowedSignificands that is closest
-            // to targetSignificand.
-            var bestSignificand = 1;
-            var allowedSignificands = this.allowedSignificands;
-
-            for (var allowedSignificand of this.allowedSignificands) {
-                if (Math.abs(allowedSignificand - targetSignificand) < Math.abs(bestSignificand - targetSignificand)) {
-                    bestSignificand = allowedSignificand;
-                } else {
-                    // If distance did not decrease, then it can only increase from here.
-                    break;
-                }
-            }
-            var physicalNanometers = bestSignificand * tenToThePowerExponent;
-            var numAllowedUnits = ALLOWED_UNITS.length;
-            var unit = ALLOWED_UNITS[numAllowedUnits - 1];
-            for (var i = 0; i < numAllowedUnits; ++i) {
-                var allowedUnit = ALLOWED_UNITS[i];
-                if (physicalNanometers >= allowedUnit.lengthInNanometers) {
-                    unit = allowedUnit;
-                    break;
-                }
-            }
-            this.lengthInPixels = Math.round(physicalNanometers / nanometersPerPixel);
-            this.physicalUnit = unit.unit;
-            this.physicalLength = physicalNanometers / unit.lengthInNanometers;
-            return true;
-        }
-    }]);
-
-    return ScaleBarDimensions;
-}();
-
-exports.ScaleBarDimensions = ScaleBarDimensions;
-;
-
-var ScaleBarWidget = function (_disposable_1$RefCoun) {
-    _inherits(ScaleBarWidget, _disposable_1$RefCoun);
-
-    function ScaleBarWidget() {
-        var dimensions = arguments.length <= 0 || arguments[0] === undefined ? new ScaleBarDimensions() : arguments[0];
-
-        _classCallCheck(this, ScaleBarWidget);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ScaleBarWidget).call(this));
-
-        _this.dimensions = dimensions;
-        _this.element = document.createElement('div');
-        _this.textNode = document.createTextNode('');
-        _this.barElement = document.createElement('div');
-        var element = _this.element;
-        var textNode = _this.textNode;
-        var barElement = _this.barElement;
-
-        element.className = 'scale-bar-container';
-        element.appendChild(textNode);
-        element.appendChild(barElement);
-        barElement.className = 'scale-bar';
-        return _this;
-    }
-
-    _createClass(ScaleBarWidget, [{
-        key: 'update',
-        value: function update() {
-            var dimensions = this.dimensions;
-
-            if (dimensions.update()) {
-                this.textNode.textContent = `${ dimensions.physicalLength } ${ dimensions.physicalUnit }`;
-                this.barElement.style.width = `${ dimensions.lengthInPixels }px`;
-            }
-        }
-    }, {
-        key: 'disposed',
-        value: function disposed() {
-            dom_1.removeFromParent(this.element);
-        }
-    }]);
-
-    return ScaleBarWidget;
-}(disposable_1.RefCounted);
-
-exports.ScaleBarWidget = ScaleBarWidget;
-;
-
-/***/ },
-/* 139 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 140 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var hash_table_1 = __webpack_require__(131);
-var shader_1 = __webpack_require__(130);
-var segment_color_1 = __webpack_require__(128);
-var frontend_1 = __webpack_require__(74);
-var renderlayer_1 = __webpack_require__(65);
-var selectedSegmentForShader = new Float32Array(8);
-
-var EquivalencesHashMap = function () {
-    function EquivalencesHashMap(disjointSets) {
-        _classCallCheck(this, EquivalencesHashMap);
-
-        this.disjointSets = disjointSets;
-        this.generation = Number.NaN;
-        this.hashMap = new hash_table_1.HashMapUint64();
-    }
-
-    _createClass(EquivalencesHashMap, [{
-        key: 'update',
-        value: function update() {
-            var disjointSets = this.disjointSets;
-            var generation = disjointSets.generation;
-
-            if (this.generation !== generation) {
-                this.generation = generation;
-                var hashMap = this.hashMap;
-
-                hashMap.clear();
-                for (var _ref3 of disjointSets.mappings()) {
-                    var _ref2 = _slicedToArray(_ref3, 2);
-
-                    var objectId = _ref2[0];
-                    var minObjectId = _ref2[1];
-
-                    hashMap.set(objectId, minObjectId);
-                }
-            }
-        }
-    }]);
-
-    return EquivalencesHashMap;
-}();
-
-exports.EquivalencesHashMap = EquivalencesHashMap;
-;
-
-var SegmentationRenderLayer = function (_renderlayer_1$Render) {
-    _inherits(SegmentationRenderLayer, _renderlayer_1$Render);
-
-    function SegmentationRenderLayer(chunkManager, multiscaleSourcePromise, displayState) {
-        var selectedAlpha = arguments.length <= 3 || arguments[3] === undefined ? renderlayer_1.trackableAlphaValue(0.5) : arguments[3];
-        var notSelectedAlpha = arguments.length <= 4 || arguments[4] === undefined ? renderlayer_1.trackableAlphaValue(0) : arguments[4];
-
-        _classCallCheck(this, SegmentationRenderLayer);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationRenderLayer).call(this, chunkManager, multiscaleSourcePromise));
-
-        _this.displayState = displayState;
-        _this.selectedAlpha = selectedAlpha;
-        _this.notSelectedAlpha = notSelectedAlpha;
-        _this.segmentColorShaderManager = new segment_color_1.SegmentColorShaderManager('segmentColorHash');
-        _this.hashTableManager = new shader_1.HashSetShaderManager('visibleSegments');
-        _this.gpuHashTable = shader_1.GPUHashTable.get(_this.gl, _this.displayState.visibleSegments.hashTable);
-        _this.equivalencesShaderManager = new shader_1.HashMapShaderManager('equivalences');
-        _this.equivalencesHashMap = new EquivalencesHashMap(_this.displayState.segmentEquivalences.disjointSets);
-        _this.gpuEquivalencesHashTable = shader_1.GPUHashTable.get(_this.gl, _this.equivalencesHashMap.hashMap);
-        frontend_1.registerRedrawWhenSegmentationDisplayStateChanged(displayState, _this);
-        _this.registerSignalBinding(selectedAlpha.changed.add(() => {
-            _this.redrawNeeded.dispatch();
-        }));
-        _this.hasEquivalences = _this.displayState.segmentEquivalences.size !== 0;
-        displayState.segmentEquivalences.changed.add(() => {
-            var segmentEquivalences = _this.displayState.segmentEquivalences;
-
-            var hasEquivalences = segmentEquivalences.size !== 0;
-            if (hasEquivalences !== _this.hasEquivalences) {
-                _this.hasEquivalences = hasEquivalences;
-                _this.shaderUpdated = true;
-            }
-        });
-        _this.registerSignalBinding(notSelectedAlpha.changed.add(() => {
-            _this.redrawNeeded.dispatch();
-        }));
-        _this.registerSignalBinding(displayState.showSegmentsOnHover.changed.add(() => {
-            _this.redrawNeeded.dispatch();
-        }));
-        return _this;
-    }
-
-    _createClass(SegmentationRenderLayer, [{
-        key: 'getShaderKey',
-        value: function getShaderKey() {
-            // The shader to use depends on whether there are any equivalences.
-            return `sliceview.SegmentationRenderLayer/${ this.hasEquivalences }`;
-        }
-    }, {
-        key: 'defineShader',
-        value: function defineShader(builder) {
-            _get(Object.getPrototypeOf(SegmentationRenderLayer.prototype), 'defineShader', this).call(this, builder);
-            this.hashTableManager.defineShader(builder);
-            builder.addFragmentCode(`
-uint64_t getUint64DataValue() {
-  return toUint64(getDataValue());
-}
-`);
-            if (this.hasEquivalences) {
-                this.equivalencesShaderManager.defineShader(builder);
-                builder.addFragmentCode(`
-uint64_t getMappedObjectId() {
-  uint64_t value = getUint64DataValue();
-  uint64_t mappedValue;
-  if (${ this.equivalencesShaderManager.getFunctionName }(value, mappedValue)) {
-    return mappedValue;
-  }
-  return value;
-}
-`);
-            } else {
-                builder.addFragmentCode(`
-uint64_t getMappedObjectId() {
-  return getUint64DataValue();
-}
-`);
-            }
-            this.segmentColorShaderManager.defineShader(builder);
-            builder.addUniform('highp vec4', 'uSelectedSegment', 2);
-            builder.addUniform('highp float', 'uShowAllSegments');
-            builder.addUniform('highp float', 'uShowSegmentsOnHover');
-            builder.addUniform('highp float', 'uSelectedAlpha');
-            builder.addUniform('highp float', 'uNotSelectedAlpha');
-            builder.setFragmentMain(`
-  uint64_t value = getMappedObjectId();
-  
-  float alpha = uSelectedAlpha;
-  float saturation = 1.0;
-  if (value.low == vec4(0,0,0,0) && value.high == vec4(0,0,0,0)) {
-    emit(vec4(vec4(0, 0, 0, 0)));
-    return;
-  }
-  bool has = uShowAllSegments > 0.0 ? true : ${ this.hashTableManager.hasFunctionName }(value);
-  if (uSelectedSegment[0] == value.low && uSelectedSegment[1] == value.high) {
-    saturation = has ? 0.5 : uShowSegmentsOnHover;
-    alpha = has || (uShowSegmentsOnHover > 0.0 ) ? alpha : 0.0; 
-  } else if (!has) {
-    alpha = uNotSelectedAlpha;
-  }
-  vec3 rgb = segmentColorHash(value);
-  emit(vec4(mix(vec3(1.0,1.0,1.0), rgb, saturation), alpha));
-`);
-        }
-    }, {
-        key: 'beginSlice',
-        value: function beginSlice(sliceView) {
-            var shader = _get(Object.getPrototypeOf(SegmentationRenderLayer.prototype), 'beginSlice', this).call(this, sliceView);
-            var gl = this.gl;
-            var displayState = this.displayState;
-            var _displayState = this.displayState;
-            var visibleSegments = _displayState.visibleSegments;
-            var showSegmentsOnHover = _displayState.showSegmentsOnHover;
-
-            var selectedSegmentForShader = this.getSelectedSegment();
-            gl.uniform1f(shader.uniform('uSelectedAlpha'), this.selectedAlpha.value);
-            gl.uniform1f(shader.uniform('uNotSelectedAlpha'), this.notSelectedAlpha.value);
-            gl.uniform4fv(shader.uniform('uSelectedSegment'), selectedSegmentForShader);
-            gl.uniform1f(shader.uniform('uShowAllSegments'), visibleSegments.hashTable.size ? 0.0 : 1.0);
-            gl.uniform1f(shader.uniform('uShowSegmentsOnHover'), showSegmentsOnHover.value ? 1.0 : 0.0);
-            this.hashTableManager.enable(gl, shader, this.gpuHashTable);
-            if (this.hasEquivalences) {
-                this.equivalencesHashMap.update();
-                this.equivalencesShaderManager.enable(gl, shader, this.gpuEquivalencesHashTable);
-            }
-            this.segmentColorShaderManager.enable(gl, shader, displayState.segmentColorHash);
-            return shader;
-        }
-    }, {
-        key: 'getSelectedSegment',
-        value: function getSelectedSegment() {
-            var segmentSelectionState = this.displayState.segmentSelectionState;
-
-            if (!segmentSelectionState.hasSelectedSegment) {
-                selectedSegmentForShader.fill(0);
-            } else {
-                var seg = segmentSelectionState.selectedSegment;
-                var low = seg.low,
-                    high = seg.high;
-                for (var i = 0; i < 4; ++i) {
-                    selectedSegmentForShader[i] = (low >> 8 * i & 0xFF) / 255.0;
-                    selectedSegmentForShader[4 + i] = (high >> 8 * i & 0xFF) / 255.0;
-                }
-            }
-            return selectedSegmentForShader;
-        }
-    }, {
-        key: 'endSlice',
-        value: function endSlice(shader) {
-            var gl = this.gl;
-
-            this.hashTableManager.disable(gl, shader);
-            _get(Object.getPrototypeOf(SegmentationRenderLayer.prototype), 'endSlice', this).call(this, shader);
-        }
-    }]);
-
-    return SegmentationRenderLayer;
-}(renderlayer_1.RenderLayer);
-
-exports.SegmentationRenderLayer = SegmentationRenderLayer;
-;
-
-/***/ },
-/* 141 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
-    var c = arguments.length,
-        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
-        d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
-        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    }return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var hash_table_1 = __webpack_require__(131);
-var worker_rpc_1 = __webpack_require__(22);
-var signals_1 = __webpack_require__(34);
-var Uint64Set_1 = function (_worker_rpc_1$SharedO) {
-    _inherits(Uint64Set, _worker_rpc_1$SharedO);
-
-    function Uint64Set() {
-        _classCallCheck(this, Uint64Set);
-
-        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-        }
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Uint64Set).call(this, ...args));
-
-        _this.hashTable = new hash_table_1.HashSetUint64();
-        _this.changed = new signals_1.Signal();
-        return _this;
-    }
-
-    _createClass(Uint64Set, [{
-        key: "disposed",
-        value: function disposed() {
-            _get(Object.getPrototypeOf(Uint64Set.prototype), "disposed", this).call(this);
-            this.hashTable = undefined;
-            this.changed = undefined;
-        }
-    }, {
-        key: "add_",
-        value: function add_(x) {
-            return this.hashTable.add(x);
-        }
-    }, {
-        key: "add",
-        value: function add(x) {
-            if (this.add_(x)) {
-                var rpc = this.rpc;
-
-                if (rpc) {
-                    rpc.invoke('Uint64Set.add', { 'id': this.rpcId, 'value': x });
-                }
-                this.changed.dispatch(x, true);
-            }
-        }
-    }, {
-        key: "has",
-        value: function has(x) {
-            return this.hashTable.has(x);
-        }
-    }, {
-        key: Symbol.iterator,
-        value: function () {
-            return this.hashTable.keys();
-        }
-    }, {
-        key: "delete_",
-        value: function delete_(x) {
-            return this.hashTable.delete(x);
-        }
-    }, {
-        key: "delete",
-        value: function _delete(x) {
-            if (this.delete_(x)) {
-                var rpc = this.rpc;
-
-                if (rpc) {
-                    rpc.invoke('Uint64Set.delete', { 'id': this.rpcId, 'value': x });
-                }
-                this.changed.dispatch(x, false);
-            }
-        }
-    }, {
-        key: "clear",
-        value: function clear() {
-            if (this.hashTable.clear()) {
-                var rpc = this.rpc;
-
-                if (rpc) {
-                    rpc.invoke('Uint64Set.clear', { 'id': this.rpcId });
-                }
-                this.changed.dispatch(null, false);
-            }
-        }
-    }, {
-        key: "toJSON",
-        value: function toJSON() {
-            var result = new Array();
-            for (var id of this) {
-                result.push(id.toString());
-            }
-            return result;
-        }
-    }, {
-        key: "size",
-        get: function () {
-            return this.hashTable.size;
-        }
-    }], [{
-        key: "makeWithCounterpart",
-        value: function makeWithCounterpart(rpc) {
-            var obj = new Uint64Set_1();
-            obj.initializeCounterpart(rpc);
-            return obj;
-        }
-    }]);
-
-    return Uint64Set;
-}(worker_rpc_1.SharedObjectCounterpart);
-var Uint64Set = Uint64Set_1;
-Uint64Set = Uint64Set_1 = __decorate([worker_rpc_1.registerSharedObject('Uint64Set')], Uint64Set);
-exports.Uint64Set = Uint64Set;
-;
-worker_rpc_1.registerRPC('Uint64Set.add', function (x) {
-    var obj = this.get(x['id']);
-    if (obj.add_(x['value'])) {
-        obj.changed.dispatch();
-    }
-});
-worker_rpc_1.registerRPC('Uint64Set.delete', function (x) {
-    var obj = this.get(x['id']);
-    if (obj.delete_(x['value'])) {
-        obj.changed.dispatch();
-    }
-});
-worker_rpc_1.registerRPC('Uint64Set.clear', function (x) {
-    var obj = this.get(x['id']);
-    if (obj.hashTable.clear()) {
-        obj.changed.dispatch();
-    }
-});
-
-/***/ },
-/* 142 */
-/***/ function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 143 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * @license
- * Copyright 2016 Google Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var segmentation_user_layer_1 = __webpack_require__(118);
-var layer_specification_1 = __webpack_require__(104);
-var custom_color_segmentation_renderlayer_1 = __webpack_require__(144);
-var metric_color_util_1 = __webpack_require__(149);
-var layer_dropdown_1 = __webpack_require__(119);
-var trackable_value_1 = __webpack_require__(66);
-var lodash_1 = __webpack_require__(146);
-__webpack_require__(142);
+var metric_color_util_1 = __webpack_require__(150);
+__webpack_require__(146);
 
 var SegmentationMetricUserLayer = function (_segmentation_user_la) {
     _inherits(SegmentationMetricUserLayer, _segmentation_user_la);
@@ -35051,13 +32421,13 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
 
         _this.manager = manager;
         _this.segLayers = new Map();
-        //bookkeeping and setup for toggling the color state
+        // bookkeeping and setup for toggling the color state
         _this.visibleLayer = _this.segmentationLayer;
-        _this.currentLayerName = new trackable_value_1.TrackableValue('Random Colors');
+        _this.currentLayerName = new trackable_value_1.TrackableValue('Random Colors', json_1.verifyString);
         _this.prevLayerName = _this.currentLayerName.value;
         _this.segLayers.set('Random Colors', _this.segmentationLayer);
         _this.segmentationLayer.layerPosition = 0;
-        if (_this.volumePath != undefined) {
+        if (_this.volumePath !== undefined) {
             (function () {
                 var metrics = new Map();
                 lodash_1.each(metricData, function (metricMap, metricName) {
@@ -35066,9 +32436,9 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
                     metric_color_util_1.mapMetricsToColors(metricMap, metricKeyData);
                     metrics.set(metricName, metricKeyData);
                 }.bind(_this));
-                //use the first metric map
+                // use the first metric map
                 _this.metricLayer = _this.addMetricLayer(metrics);
-                //start by showing the segmentation layer
+                // start by showing the segmentation layer
                 _this.hideLayer(_this.metricLayer);
             })();
         }
@@ -35079,14 +32449,15 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
         key: 'addMetricLayer',
         value: function addMetricLayer(metrics) {
             var manager = this.manager;
-            //promise for color renderlayer--gets its own copy of the data
+            // promise for color renderlayer--gets its own copy of the data
 
-            var colorPath = this.colorPath = this.volumePath + '#';
-            var colorPromise = layer_specification_1.getVolumeWithStatusMessage(this.colorPath);
+            var colorPromise = layer_specification_1.getVolumeWithStatusMessage(this.volumePath);
             var metricLayer = new custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer(manager.chunkManager, colorPromise, metrics, this);
-            colorPromise.then(function (volume) {
+            metricLayer.currentMetricName = 'Random Colors';
+            // don't bother rendering the layer since it's not visible
+            colorPromise.then(volume => {
                 metricLayer.setReady(false);
-            }.bind(this));
+            });
             for (var name of metrics.keys()) {
                 this.segLayers.set(name, metricLayer);
             }
@@ -35133,16 +32504,13 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
     }, {
         key: 'getValueAt',
         value: function getValueAt(position, pickedRenderLayer, pickedObject) {
-            var result = void 0;
-            var renderLayers = this.renderLayers;
-
             return this.segmentationLayer.getValueAt(position);
         }
     }, {
-        key: 'shouldUpdateMetrics',
-        value: function shouldUpdateMetrics() {
+        key: 'shouldUpdateMetricSegments',
+        value: function shouldUpdateMetricSegments() {
             var newLayer = this.segLayers.get(this.currentLayerName.value);
-            return newLayer instanceof custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer && this.currentLayerName.value !== this.metricLayer.currentMetricName;
+            return newLayer instanceof custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer;
         }
     }, {
         key: 'shouldUpdateLayers',
@@ -35156,29 +32524,29 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
             if (this.currentLayerName.value === this.prevLayerName) {
                 return;
             }
-            if (this.shouldUpdateMetrics()) {
-                //just update metrics on the metricLayer
-                this.metricLayer.updateDataTransformation(this.currentLayerName.value);
-                this.updateVisibleSegmentsOnMetricChange();
-            }
             if (this.shouldUpdateLayers()) {
                 var oldLayer = this.visibleLayer;
                 this.visibleLayer = this.segLayers.get(this.currentLayerName.value);
-                ;
+                // only update data for the metric layer if it's the visible layer
                 this.metricLayer.setReady(this.visibleLayer instanceof custom_color_segmentation_renderlayer_1.CustomColorSegmentationRenderLayer);
-                //swap alphas
+                // swap alphas
                 this.visibleLayer.selectedAlpha.value = oldLayer.selectedAlpha.value;
                 this.visibleLayer.notSelectedAlpha.value = oldLayer.notSelectedAlpha.value;
                 this.hideLayer(oldLayer);
-                //reorder layers to avoid blending hidden layers
+                // reorder layers to avoid blending hidden layers
                 oldLayer.layerPosition = this.visibleLayer.layerPosition;
                 this.visibleLayer.layerPosition = 0;
                 this.renderLayers[oldLayer.layerPosition] = oldLayer;
                 this.renderLayers[0] = this.visibleLayer;
             }
-            //update the view
+            // update the view
             this.layersChanged.dispatch();
-            //update history
+            this.metricLayer.updateDataTransformation(this.currentLayerName.value);
+            if (this.shouldUpdateMetricSegments()) {
+                // just update metrics on the metricLayer
+                this.updateVisibleSegmentsOnMetricChange();
+            }
+            // update history
             this.prevLayerName = this.currentLayerName.value;
         }
     }, {
@@ -35201,234 +32569,7 @@ exports.SegmentationMetricUserLayer = SegmentationMetricUserLayer;
 ;
 
 /***/ },
-/* 144 */
-/***/ function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var segmentation_renderlayer_1 = __webpack_require__(140);
-var shader_1 = __webpack_require__(130);
-var renderlayer_1 = __webpack_require__(65);
-var change_tabledata_1 = __webpack_require__(145);
-var uint64_set_1 = __webpack_require__(141);
-var uint64_1 = __webpack_require__(52);
-var lodash_1 = __webpack_require__(146);
-//TODO: pare this down to only necessary imports
-
-var CustomColorSegmentationRenderLayer = function (_segmentation_renderl) {
-    _inherits(CustomColorSegmentationRenderLayer, _segmentation_renderl);
-
-    function CustomColorSegmentationRenderLayer(chunkManager, multiscaleSourcePromise, metrics, displayState) {
-        var selectedAlpha = arguments.length <= 4 || arguments[4] === undefined ? renderlayer_1.trackableAlphaValue(0.5) : arguments[4];
-        var notSelectedAlpha = arguments.length <= 5 || arguments[5] === undefined ? renderlayer_1.trackableAlphaValue(0) : arguments[5];
-
-        _classCallCheck(this, CustomColorSegmentationRenderLayer);
-
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CustomColorSegmentationRenderLayer).call(this, chunkManager, multiscaleSourcePromise, displayState, selectedAlpha, notSelectedAlpha));
-
-        _this.metrics = metrics;
-        _this.displayState = displayState;
-        _this.selectedAlpha = selectedAlpha;
-        _this.notSelectedAlpha = notSelectedAlpha;
-        //data transformation function applied to chunk data
-        _this.fn = function (IDColorMap, chunk) {
-            change_tabledata_1.updateLookupTableData(chunk.data, IDColorMap, 1, chunk.source.chunkFormat.subchunkSize, chunk.chunkDataSize);
-        };
-        //copy display state
-        _this.displayState = Object.assign({}, displayState);
-        _this.displayState.visibleSegments = uint64_set_1.Uint64Set.makeWithCounterpart(displayState.manager.worker);
-        _this.gpuHashTable = shader_1.GPUHashTable.get(_this.gl, _this.displayState.visibleSegments.hashTable);
-        _this.currentMetricName = metrics.keys().next().value;
-        var metricKeyData = _this.metrics.get(_this.currentMetricName);
-        multiscaleSourcePromise.then(function (chunkSource) {
-            this.chunkSource = chunkSource;
-            var transforms = chunkManager.dataTransformFns;
-            var fn = this.fn.bind({}, metricKeyData.IDColorMap); //apply IDColorMap
-            transforms.set(chunkSource.dataInstanceKey, fn);
-        }.bind(_this));
-        return _this;
-    }
-
-    _createClass(CustomColorSegmentationRenderLayer, [{
-        key: 'updateDataTransformation',
-        value: function updateDataTransformation(metricName) {
-            var chunkSource = this.chunkSource;
-            var chunkManager = this.chunkManager;
-
-            if (this.currentMetricName === metricName) {
-                return;
-            }
-            this.currentMetricName = metricName;
-            var metricKeyData = this.metrics.get(metricName);
-            var fn = this.fn.bind({}, metricKeyData.IDColorMap); //apply IDColorMap
-            lodash_1.chain(chunkSource.getSources(chunkManager)).flatten().each(function (chunkSource) {
-                for (var chunk of chunkSource.chunks.values()) {
-                    var dataStash = new Uint32Array(chunk.data.buffer.slice(0));
-                    fn(chunk);
-                    chunk.copyToGPU(chunkSource.gl);
-                    chunk.data = dataStash;
-                }
-            }).value();
-            var transforms = chunkManager.dataTransformFns;
-            transforms.set(chunkSource.dataInstanceKey, fn);
-            this.setReady(true); //updates layer
-        }
-    }, {
-        key: 'getShaderKey',
-        value: function getShaderKey() {
-            return 'customColorShader';
-        }
-    }, {
-        key: 'defineShader',
-        value: function defineShader(builder) {
-            _get(Object.getPrototypeOf(CustomColorSegmentationRenderLayer.prototype), 'defineShader', this).call(this, builder);
-            builder.setFragmentMain(`
-  uint64_t value = toUint64(getDataValue());
-  float alpha = uSelectedAlpha;
-  float saturation = 1.0;
-  if (value.low == vec4(0,0,0,0) && value.high == vec4(0,0,0,0)) {
-    emit(vec4(vec4(0, 0, 0, 0)));
-    return;
-  }
-  bool has = uShowAllSegments > 0.0 ? true : ${ this.hashTableManager.hasFunctionName }(value);
-  if (uSelectedSegment[0] == value.low && uSelectedSegment[1] == value.high) {
-    saturation = has ? 0.5 : 0.75;
-    alpha = has || (uShowSegmentsOnHover > 0.0 )? alpha : 0.0; 
-  } else if (!has) {
-    alpha = uNotSelectedAlpha;
-  }
-  vec3 rgb = vec3(value.low);
-  emit(vec4(mix(vec3(1.0,1.0,1.0), rgb, saturation), alpha));
-`);
-        }
-    }, {
-        key: 'getSelectedSegment',
-        value: function getSelectedSegment() {
-            var segmentSelectionState = this.displayState.segmentSelectionState;
-
-            var selectedSegmentStash = segmentSelectionState.selectedSegment;
-            var colorVal = this.getColorVal(selectedSegmentStash);
-            segmentSelectionState.selectedSegment = colorVal;
-            var segmentVal = _get(Object.getPrototypeOf(CustomColorSegmentationRenderLayer.prototype), 'getSelectedSegment', this).call(this);
-            segmentSelectionState.selectedSegment = selectedSegmentStash;
-            return segmentVal;
-        }
-    }, {
-        key: 'getColorVal',
-        value: function getColorVal(id) {
-            var colorVal = this.metrics.get(this.currentMetricName).IDColorMap.get(String(id.low) + ',' + String(id.high));
-            return colorVal ? colorVal : new uint64_1.Uint64();
-        }
-    }]);
-
-    return CustomColorSegmentationRenderLayer;
-}(segmentation_renderlayer_1.SegmentationRenderLayer);
-
-exports.CustomColorSegmentationRenderLayer = CustomColorSegmentationRenderLayer;
-
-/***/ },
-/* 145 */
-/***/ function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var lodash_1 = __webpack_require__(146);
-var encode_common_ts_1 = __webpack_require__(148);
-/**
- * Update the lookup table data, which usually contains segment IDs, with new data provided
- * in newDataMap, which acts like a dictionary mapping segment IDs to new values.
- * Values not found in this mapping are set to 0
- */
-function updateLookupTableData(data, newDataMap, offset, blockSize, volumeSize) {
-    //get index ranges for the lookup table data
-    var headerSize = getHeaderSize(volumeSize, blockSize);
-    var ranges = getLookupRanges(data, offset, headerSize / 2);
-    lodash_1.each(ranges, function (range) {
-        for (var i = range.start; i < range.stop; i = i + 2) {
-            var key = data[i] + ',' + data[i + 1]; //'low,high'
-            if (newDataMap.get(key)) {
-                var newData = newDataMap.get(key);
-                data[i] = newData.low;
-                data[i + 1] = newData.high;
-            } else {
-                data[i] = data[i + 1] = 0;
-            }
-        }
-    }.bind(newDataMap));
-}
-exports.updateLookupTableData = updateLookupTableData;
-function getLookupRanges(data, offset, numBlocks) {
-    var byteOffset = offset * 4;
-    var dat8 = new Uint8Array(data.buffer, byteOffset); //skip the padding bytes
-    var offsets = [];
-    var headerByteLength = numBlocks * 4 * 2; //size is numBlocks * bytesizeofheader
-    for (var i = 0; i < headerByteLength; i = i + 8) {
-        //decode offsets
-        var lookupOffset = dat8[i] + (dat8[i + 1] << 8) + (dat8[i + 2] << 16);
-        var dataOffset = lookupOffset + 1;
-        if (dat8[i + 3] !== 0) {
-            dataOffset = dat8[i + 4] + (dat8[i + 5] << 8) + (dat8[i + 6] << 16) + (dat8[i + 7] << 24);
-        }
-        offsets.push({ offset: lookupOffset + offset, type: 'lookup' });
-        offsets.push({ offset: dataOffset + offset, type: 'data' });
-    }
-    offsets.sort(compareOffsets);
-    var ranges = [];
-    for (var _i = 0; _i < offsets.length; _i++) {
-        if (offsets[_i].type === 'lookup') {
-            //start by assuming end condition--range ends at the end of the data array
-            var range = { start: offsets[_i].offset, stop: data.length };
-            //look for the next offset of type data, as the next data offset is the end of your range of lookup tables
-            while (_i < offsets.length && offsets[_i].type !== 'data') {
-                _i++;
-            }
-            //make sure the index isn't outside our offsets array
-            if (_i < offsets.length) {
-                //current index now points to next type 'data' offset
-                range.stop = offsets[_i].offset;
-            }
-            ranges.push(range);
-        }
-    }
-    return ranges;
-}
-function getHeaderSize(volumeSize, blockSize) {
-    var blockIndexSize = encode_common_ts_1.BLOCK_HEADER_SIZE;
-    for (var i = 0; i < 3; ++i) {
-        var curGridSize = Math.ceil(volumeSize[i] / blockSize[i]);
-        blockIndexSize *= curGridSize;
-    }
-    return blockIndexSize;
-}
-function compareOffsets(a, b) {
-    if (a.offset < b.offset) {
-        return -1;
-    }
-    if (a.offset > b.offset) {
-        return 1;
-    }
-    if (a.offset === b.offset && a.type === b.type) {
-        return 0;
-    }
-    if (a.type === 'data') {
-        return 1;
-    }
-    //a's type is 'lookup'
-    return -1;
-}
-
-/***/ },
-/* 146 */
+/* 125 */
 /***/ function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -51836,10 +48977,10 @@ var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, g
   }
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(147)(module), (function() { return this; }())))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(126)(module), (function() { return this; }())))
 
 /***/ },
-/* 147 */
+/* 126 */
 /***/ function(module, exports) {
 
 module.exports = function(module) {
@@ -51855,7 +48996,3156 @@ module.exports = function(module) {
 
 
 /***/ },
+/* 127 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var layer_1 = __webpack_require__(42);
+var color_select_1 = __webpack_require__(128);
+var metric_scale_widget_1 = __webpack_require__(130);
+var range_1 = __webpack_require__(116);
+var segment_set_widget_1 = __webpack_require__(132);
+var uint64_entry_widget_1 = __webpack_require__(134);
+
+var SegmentationDropdown = function (_layer_1$UserLayerDro) {
+    _inherits(SegmentationDropdown, _layer_1$UserLayerDro);
+
+    function SegmentationDropdown(element, layer) {
+        _classCallCheck(this, SegmentationDropdown);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationDropdown).call(this));
+
+        _this.element = element;
+        _this.layer = layer;
+        _this.visibleSegmentWidget = _this.registerDisposer(new segment_set_widget_1.SegmentSetWidget(_this.layer));
+        _this.addSegmentWidget = _this.registerDisposer(new uint64_entry_widget_1.Uint64EntryWidget());
+        _this.selectedAlphaWidget = _this.registerDisposer(new range_1.RangeWidget(_this.layer.selectedAlpha));
+        _this.notSelectedAlphaWidget = _this.registerDisposer(new range_1.RangeWidget(_this.layer.notSelectedAlpha));
+        element.classList.add('segmentation-dropdown');
+        var selectedAlphaWidget = _this.selectedAlphaWidget;
+        var notSelectedAlphaWidget = _this.notSelectedAlphaWidget;
+
+        selectedAlphaWidget.promptElement.textContent = 'Opacity (on)';
+        notSelectedAlphaWidget.promptElement.textContent = 'Opacity (off)';
+        element.appendChild(_this.selectedAlphaWidget.element);
+        element.appendChild(_this.notSelectedAlphaWidget.element);
+        _this.addSegmentWidget.element.classList.add('add-segment');
+        _this.addSegmentWidget.element.title = 'Add segment ID';
+        element.appendChild(_this.registerDisposer(_this.addSegmentWidget).element);
+        _this.registerSignalBinding(_this.addSegmentWidget.valueEntered.add(value => {
+            _this.layer.visibleSegments.add(value);
+        }));
+        element.appendChild(_this.registerDisposer(_this.visibleSegmentWidget).element);
+        return _this;
+    }
+
+    return SegmentationDropdown;
+}(layer_1.UserLayerDropdown);
+
+exports.SegmentationDropdown = SegmentationDropdown;
+;
+
+var MetricDropdown = function (_SegmentationDropdown) {
+    _inherits(MetricDropdown, _SegmentationDropdown);
+
+    function MetricDropdown(element, layer) {
+        _classCallCheck(this, MetricDropdown);
+
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(MetricDropdown).call(this, element, layer));
+
+        _this2.element = element;
+        _this2.layer = layer;
+        _this2.metricSelectedAlphaWidget = _this2.registerDisposer(new range_1.RangeWidget(_this2.layer.metricLayer.selectedAlpha));
+        _this2.metricNotSelectedAlphaWidget = _this2.registerDisposer(new range_1.RangeWidget(_this2.layer.metricLayer.notSelectedAlpha));
+        _this2.colorSelectWidget = _this2.registerDisposer(new color_select_1.ColorSelect(Array.from(_this2.layer.segLayers.keys()), _this2.layer.currentLayerName));
+        element.insertBefore(_this2.metricNotSelectedAlphaWidget.element, element.firstChild);
+        element.insertBefore(_this2.metricSelectedAlphaWidget.element, element.firstChild);
+        element.appendChild(_this2.colorSelectWidget.element);
+        _this2.metricSelectedAlphaWidget.element.style.display = 'none';
+        _this2.metricNotSelectedAlphaWidget.element.style.display = 'none';
+        _this2.metricSelectedAlphaWidget.promptElement.textContent = 'Opacity (on)';
+        _this2.metricNotSelectedAlphaWidget.promptElement.textContent = 'Opacity (off)';
+        _this2.registerSignalBinding(layer.currentLayerName.changed.add(() => {
+            _this2.updateDropdown();
+            _this2.layer.updateCurrentSegLayer();
+        }));
+        return _this2;
+    }
+
+    _createClass(MetricDropdown, [{
+        key: 'updateDropdown',
+        value: function updateDropdown() {
+            if (this.layer.shouldUpdateLayers()) {
+                this.toggleSliders();
+            }
+            if (this.metricScaleWidget) {
+                this.metricScaleWidget.dispose();
+            }
+            var metric = this.layer.metricLayer.metrics.get(this.layer.currentLayerName.value);
+            if (metric) {
+                this.metricScaleWidget = this.registerDisposer(new metric_scale_widget_1.MetricScaleWidget(metric));
+                this.element.appendChild(this.metricScaleWidget.element);
+            }
+        }
+    }, {
+        key: 'toggleSliders',
+        value: function toggleSliders() {
+            if (this.layer.visibleLayer !== this.layer.metricLayer) {
+                // new layer is the metric layer
+                this.metricSelectedAlphaWidget.element.style.display = 'flex';
+                this.metricNotSelectedAlphaWidget.element.style.display = 'flex';
+                this.selectedAlphaWidget.element.style.display = 'none';
+                this.notSelectedAlphaWidget.element.style.display = 'none';
+            } else {
+                this.metricSelectedAlphaWidget.element.style.display = 'none';
+                this.metricNotSelectedAlphaWidget.element.style.display = 'none';
+                this.selectedAlphaWidget.element.style.display = 'flex';
+                this.notSelectedAlphaWidget.element.style.display = 'flex';
+            }
+        }
+    }]);
+
+    return MetricDropdown;
+}(SegmentationDropdown);
+
+exports.MetricDropdown = MetricDropdown;
+;
+
+/***/ },
+/* 128 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var disposable_1 = __webpack_require__(23);
+var dom_1 = __webpack_require__(7);
+__webpack_require__(129);
+
+var ColorSelect = function (_disposable_1$RefCoun) {
+    _inherits(ColorSelect, _disposable_1$RefCoun);
+
+    function ColorSelect(options, model) {
+        _classCallCheck(this, ColorSelect);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ColorSelect).call(this));
+
+        _this.model = model;
+        _this.element = document.createElement('label');
+        _this.select = document.createElement('select');
+        var element = _this.element;
+        var select = _this.select;
+
+        element.className = 'color-select-widget';
+        select.name = 'colorselect';
+        for (var optionStr of options) {
+            var optionEl = document.createElement('option');
+            optionEl.innerHTML = optionStr;
+            optionEl.value = optionStr;
+            select.appendChild(optionEl);
+        }
+        select.value = model.value; // initial state
+        element.appendChild(document.createTextNode('Color Options: '));
+        element.appendChild(select);
+        _this.registerSignalBinding(model.changed.add(_this.update, _this));
+        _this.registerEventListener(select, 'change', function (e) {
+            model.value = this.value;
+        });
+        return _this;
+    }
+
+    _createClass(ColorSelect, [{
+        key: 'update',
+        value: function update() {
+            this.select.value = this.model.value;
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            dom_1.removeFromParent(this.element);
+        }
+    }]);
+
+    return ColorSelect;
+}(disposable_1.RefCounted);
+
+exports.ColorSelect = ColorSelect;
+
+/***/ },
+/* 129 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 130 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var disposable_1 = __webpack_require__(23);
+var dom_1 = __webpack_require__(7);
+__webpack_require__(131);
+
+var MetricScaleWidget = function (_disposable_1$RefCoun) {
+    _inherits(MetricScaleWidget, _disposable_1$RefCoun);
+
+    function MetricScaleWidget(metricKeyData) {
+        _classCallCheck(this, MetricScaleWidget);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(MetricScaleWidget).call(this));
+
+        _this.element = document.createElement('div');
+        _this.metricKeyData = metricKeyData;
+        var element = _this.element;
+
+        element.className = 'metric-scale-widget';
+        var barElement = document.createElement('div');
+        barElement.className = 'metric-scale-bar';
+        var step = (metricKeyData.max - metricKeyData.min) / 50;
+        var metricVal = void 0;
+        var color = void 0;
+        for (var i = 0; i < 51; i++) {
+            var span = document.createElement('span');
+            span.className = 'metric-grad-step';
+            metricVal = metricKeyData.min + i * step;
+            color = metricKeyData.chromaScale(metricVal).hex();
+            span.style.backgroundColor = color;
+            barElement.appendChild(span);
+        }
+        // add min/max text spans
+        var min = document.createElement('span');
+        min.appendChild(document.createTextNode(metricKeyData.min.toString()));
+        min.className = 'metric-val-min';
+        var max = document.createElement('span');
+        max.className = 'metric-val-max';
+        max.appendChild(document.createTextNode(metricKeyData.max.toString()));
+        element.appendChild(barElement);
+        element.appendChild(min);
+        element.appendChild(max);
+        return _this;
+    }
+
+    _createClass(MetricScaleWidget, [{
+        key: 'disposed',
+        value: function disposed() {
+            dom_1.removeFromParent(this.element);
+        }
+    }]);
+
+    return MetricScaleWidget;
+}(disposable_1.RefCounted);
+
+exports.MetricScaleWidget = MetricScaleWidget;
+;
+
+/***/ },
+/* 131 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 132 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var disposable_1 = __webpack_require__(23);
+var uint64_1 = __webpack_require__(52);
+__webpack_require__(73);
+__webpack_require__(133);
+var temp = new uint64_1.Uint64();
+
+var SegmentSetWidget = function (_disposable_1$RefCoun) {
+    _inherits(SegmentSetWidget, _disposable_1$RefCoun);
+
+    function SegmentSetWidget(displayState) {
+        _classCallCheck(this, SegmentSetWidget);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentSetWidget).call(this));
+
+        _this.displayState = displayState;
+        _this.element = document.createElement('div');
+        _this.clearButton = document.createElement('button');
+        _this.itemContainer = document.createElement('span');
+        _this.items = new Map();
+        var element = _this.element;
+        var clearButton = _this.clearButton;
+        var itemContainer = _this.itemContainer;
+
+        element.className = 'segment-set-widget noselect';
+        clearButton.className = 'clear-button';
+        clearButton.title = 'Remove all segment IDs';
+        _this.registerEventListener(clearButton, 'click', () => {
+            _this.visibleSegments.clear();
+        });
+        itemContainer.className = 'item-container';
+        element.appendChild(itemContainer);
+        itemContainer.appendChild(clearButton);
+        _this.registerSignalBinding(displayState.visibleSegments.changed.add(_this.handleSetChanged, _this));
+        _this.registerSignalBinding(displayState.segmentColorHash.changed.add(_this.handleColorChanged, _this));
+        for (var x of displayState.visibleSegments) {
+            _this.addElement(x.toString());
+        }
+        _this.updateClearButtonVisibility();
+        return _this;
+    }
+
+    _createClass(SegmentSetWidget, [{
+        key: 'updateClearButtonVisibility',
+        value: function updateClearButtonVisibility() {
+            var clearButton = this.clearButton;
+
+            clearButton.style.display = this.displayState.visibleSegments.size > 0 ? '' : 'none';
+        }
+    }, {
+        key: 'handleSetChanged',
+        value: function handleSetChanged(x, added) {
+            this.updateClearButtonVisibility();
+            var items = this.items;
+
+            if (x === null) {
+                // Cleared.
+                var itemContainer = this.itemContainer;
+                var clearButton = this.clearButton;
+
+                while (true) {
+                    var lastElement = itemContainer.lastElementChild;
+                    if (lastElement === clearButton) {
+                        break;
+                    }
+                    itemContainer.removeChild(lastElement);
+                }
+                items.clear();
+            } else if (added) {
+                this.addElement(x.toString());
+            } else {
+                var s = x.toString();
+                var itemElement = items.get(s);
+                itemElement.parentElement.removeChild(itemElement);
+                items.delete(s);
+            }
+        }
+    }, {
+        key: 'addElement',
+        value: function addElement(s) {
+            var itemElement = document.createElement('button');
+            itemElement.className = 'segment-button';
+            itemElement.textContent = s;
+            itemElement.title = `Remove segment ID ${ s }`;
+            var widget = this;
+            itemElement.addEventListener('click', function () {
+                temp.tryParseString(this.textContent);
+                widget.visibleSegments.delete(temp);
+            });
+            itemElement.addEventListener('mouseenter', function () {
+                temp.tryParseString(this.textContent);
+                widget.segmentSelectionState.set(temp);
+            });
+            itemElement.addEventListener('mouseleave', function () {
+                temp.tryParseString(this.textContent);
+                widget.segmentSelectionState.set(null);
+            });
+            this.setItemColor(itemElement);
+            this.itemContainer.appendChild(itemElement);
+            this.items.set(s, itemElement);
+        }
+    }, {
+        key: 'setItemColor',
+        value: function setItemColor(itemElement) {
+            temp.tryParseString(itemElement.textContent);
+            itemElement.style.backgroundColor = this.segmentColorHash.computeCssColor(temp);
+        }
+    }, {
+        key: 'handleColorChanged',
+        value: function handleColorChanged() {
+            this.items.forEach(itemElement => {
+                this.setItemColor(itemElement);
+            });
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            var element = this.element;
+            var parentElement = element.parentElement;
+
+            if (parentElement) {
+                parentElement.removeChild(element);
+            }
+            _get(Object.getPrototypeOf(SegmentSetWidget.prototype), 'disposed', this).call(this);
+        }
+    }, {
+        key: 'visibleSegments',
+        get: function () {
+            return this.displayState.visibleSegments;
+        }
+    }, {
+        key: 'segmentColorHash',
+        get: function () {
+            return this.displayState.segmentColorHash;
+        }
+    }, {
+        key: 'segmentSelectionState',
+        get: function () {
+            return this.displayState.segmentSelectionState;
+        }
+    }]);
+
+    return SegmentSetWidget;
+}(disposable_1.RefCounted);
+
+exports.SegmentSetWidget = SegmentSetWidget;
+;
+
+/***/ },
+/* 133 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 134 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var disposable_1 = __webpack_require__(23);
+var dom_1 = __webpack_require__(7);
+var uint64_1 = __webpack_require__(52);
+var signals_1 = __webpack_require__(34);
+__webpack_require__(73);
+__webpack_require__(135);
+
+var Uint64EntryWidget = function (_disposable_1$RefCoun) {
+    _inherits(Uint64EntryWidget, _disposable_1$RefCoun);
+
+    function Uint64EntryWidget() {
+        _classCallCheck(this, Uint64EntryWidget);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Uint64EntryWidget).call(this));
+
+        _this.element = document.createElement('form');
+        _this.label = document.createElement('label');
+        _this.input = document.createElement('input');
+        _this.value = new uint64_1.Uint64();
+        _this.valueEntered = new signals_1.Signal();
+        var element = _this.element;
+        var label = _this.label;
+        var input = _this.input;
+
+        element.className = 'uint64-entry noselect';
+        element.appendChild(label);
+        label.appendChild(input);
+        _this.registerEventListener(element, 'submit', event => {
+            event.preventDefault();
+            if (_this.validateInput()) {
+                _this.input.value = '';
+                _this.input.classList.remove('valid-input', 'invalid-input');
+                _this.valueEntered.dispatch(_this.value);
+            }
+        });
+        _this.registerEventListener(element, 'input', () => {
+            if (_this.input.value === '') {
+                _this.input.classList.remove('valid-input', 'invalid-input');
+                return;
+            }
+            if (_this.validateInput()) {
+                _this.input.classList.remove('invalid-input');
+            } else {
+                _this.input.classList.add('invalid-input');
+            }
+        });
+        return _this;
+    }
+
+    _createClass(Uint64EntryWidget, [{
+        key: 'validateInput',
+        value: function validateInput() {
+            return this.value.tryParseString(this.input.value);
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            dom_1.removeFromParent(this.element);
+            _get(Object.getPrototypeOf(Uint64EntryWidget.prototype), 'disposed', this).call(this);
+        }
+    }]);
+
+    return Uint64EntryWidget;
+}(disposable_1.RefCounted);
+
+exports.Uint64EntryWidget = Uint64EntryWidget;
+;
+
+/***/ },
+/* 135 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 136 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var factory_1 = __webpack_require__(28);
+var layer_1 = __webpack_require__(42);
+var layer_dropdown_1 = __webpack_require__(127);
+var layer_specification_1 = __webpack_require__(110);
+var frontend_1 = __webpack_require__(30);
+var segment_color_1 = __webpack_require__(137);
+var frontend_2 = __webpack_require__(75);
+var shared_disjoint_sets_1 = __webpack_require__(142);
+var frontend_3 = __webpack_require__(77);
+var renderlayer_1 = __webpack_require__(66);
+var segmentation_renderlayer_1 = __webpack_require__(144);
+var trackable_boolean_1 = __webpack_require__(70);
+var uint64_set_1 = __webpack_require__(145);
+var json_1 = __webpack_require__(8);
+var uint64_1 = __webpack_require__(52);
+__webpack_require__(146);
+
+var SegmentationUserLayer = function (_layer_1$UserLayer) {
+    _inherits(SegmentationUserLayer, _layer_1$UserLayer);
+
+    function SegmentationUserLayer(manager, x) {
+        _classCallCheck(this, SegmentationUserLayer);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationUserLayer).call(this, []));
+
+        _this.manager = manager;
+        _this.segmentColorHash = segment_color_1.SegmentColorHash.getDefault();
+        _this.segmentSelectionState = new frontend_2.SegmentSelectionState();
+        _this.selectedAlpha = renderlayer_1.trackableAlphaValue(0.5);
+        _this.notSelectedAlpha = renderlayer_1.trackableAlphaValue(0);
+        _this.visibleSegments = uint64_set_1.Uint64Set.makeWithCounterpart(_this.manager.worker);
+        _this.segmentEquivalences = shared_disjoint_sets_1.SharedDisjointUint64Sets.makeWithCounterpart(_this.manager.worker);
+        _this.wasDisposed = false;
+        _this.showSegmentsOnHover = new trackable_boolean_1.TrackableBoolean(false, false);
+        _this.visibleSegments.changed.add(() => {
+            _this.specificationChanged.dispatch();
+        });
+        _this.segmentEquivalences.changed.add(() => {
+            _this.specificationChanged.dispatch();
+        });
+        _this.segmentSelectionState.bindTo(manager.layerSelectedValues, _this);
+        _this.selectedAlpha.changed.add(() => {
+            _this.specificationChanged.dispatch();
+        });
+        _this.notSelectedAlpha.changed.add(() => {
+            _this.specificationChanged.dispatch();
+        });
+        _this.selectedAlpha.restoreState(x['selectedAlpha']);
+        _this.notSelectedAlpha.restoreState(x['notSelectedAlpha']);
+        var volumePath = _this.volumePath = json_1.verifyOptionalString(x['source']);
+        var meshPath = _this.meshPath = json_1.verifyOptionalString(x['mesh']);
+        var skeletonsPath = _this.skeletonsPath = json_1.verifyOptionalString(x['skeletons']);
+        if (volumePath !== undefined) {
+            var volumePromise = layer_specification_1.getVolumeWithStatusMessage(volumePath);
+            volumePromise.then(volume => {
+                if (!_this.wasDisposed) {
+                    if (!_this.meshLayer) {
+                        var meshSource = volume.getMeshSource(_this.manager.chunkManager);
+                        if (meshSource != null) {
+                            _this.addMesh(meshSource);
+                        }
+                    }
+                }
+            });
+            _this.segmentationLayer = new segmentation_renderlayer_1.SegmentationRenderLayer(manager.chunkManager, volumePromise, _this, _this.selectedAlpha, _this.notSelectedAlpha);
+            _this.addRenderLayer(_this.segmentationLayer);
+        }
+        if (meshPath !== undefined) {
+            var meshLod = x['meshLod'];
+            if (typeof meshLod !== 'number') {
+                meshLod = undefined;
+            }
+            _this.meshLod = meshLod;
+            _this.addMesh(factory_1.getMeshSource(manager.chunkManager, meshPath, meshLod));
+        }
+        if (skeletonsPath !== undefined) {
+            var base = new frontend_3.SkeletonLayer(manager.chunkManager, factory_1.getSkeletonSource(manager.chunkManager, skeletonsPath), manager.voxelSize, _this);
+            _this.addRenderLayer(new frontend_3.PerspectiveViewSkeletonLayer(base));
+            _this.addRenderLayer(new frontend_3.SliceViewPanelSkeletonLayer(base));
+        }
+        json_1.verifyObjectProperty(x, 'equivalences', y => {
+            _this.segmentEquivalences.restoreState(y);
+        });
+        json_1.verifyObjectProperty(x, 'segments', y => {
+            if (y !== undefined) {
+                (function () {
+                    var visibleSegments = _this.visibleSegments;
+                    var segmentEquivalences = _this.segmentEquivalences;
+
+                    json_1.parseArray(y, value => {
+                        var id = uint64_1.Uint64.parseString(String(value), 10);
+                        visibleSegments.add(segmentEquivalences.get(id));
+                    });
+                })();
+            }
+        });
+        return _this;
+    }
+
+    _createClass(SegmentationUserLayer, [{
+        key: 'disposed',
+        value: function disposed() {
+            _get(Object.getPrototypeOf(SegmentationUserLayer.prototype), 'disposed', this).call(this);
+            this.wasDisposed = true;
+        }
+    }, {
+        key: 'addMesh',
+        value: function addMesh(meshSource) {
+            this.meshLayer = new frontend_1.MeshLayer(this.manager.chunkManager, meshSource, this);
+            this.addRenderLayer(this.meshLayer);
+        }
+    }, {
+        key: 'toJSON',
+        value: function toJSON() {
+            var x = { 'type': 'segmentation' };
+            x['source'] = this.volumePath;
+            x['mesh'] = this.meshPath;
+            x['meshLod'] = this.meshLod;
+            x['skeletons'] = this.skeletonsPath;
+            x['selectedAlpha'] = this.selectedAlpha.toJSON();
+            x['notSelectedAlpha'] = this.notSelectedAlpha.toJSON();
+            var visibleSegments = this.visibleSegments;
+
+            if (visibleSegments.size > 0) {
+                x['segments'] = visibleSegments.toJSON();
+            }
+            var segmentEquivalences = this.segmentEquivalences;
+
+            if (segmentEquivalences.size > 0) {
+                x['equivalences'] = segmentEquivalences.toJSON();
+            }
+            return x;
+        }
+    }, {
+        key: 'transformPickedValue',
+        value: function transformPickedValue(value) {
+            if (value == null) {
+                return value;
+            }
+            var segmentEquivalences = this.segmentEquivalences;
+
+            if (segmentEquivalences.size === 0) {
+                return value;
+            }
+            if (typeof value === 'number') {
+                value = new uint64_1.Uint64(value, 0);
+            }
+            var mappedValue = segmentEquivalences.get(value);
+            if (uint64_1.Uint64.equal(mappedValue, value)) {
+                return value;
+            }
+            return new frontend_2.Uint64MapEntry(value, mappedValue);
+        }
+    }, {
+        key: 'makeDropdown',
+        value: function makeDropdown(element) {
+            return new layer_dropdown_1.SegmentationDropdown(element, this);
+        }
+    }, {
+        key: 'handleAction',
+        value: function handleAction(action) {
+            switch (action) {
+                case 'recolor':
+                    {
+                        this.segmentColorHash.randomize();
+                        break;
+                    }
+                case 'clear-segments':
+                    {
+                        this.visibleSegments.clear();
+                        break;
+                    }
+                case 'toggle-show-segments-on-hover':
+                    {
+                        this.showSegmentsOnHover.toggle();
+                        break;
+                    }
+                case 'select':
+                    {
+                        var segmentSelectionState = this.segmentSelectionState;
+
+                        if (segmentSelectionState.hasSelectedSegment) {
+                            var segment = segmentSelectionState.selectedSegment;
+                            var visibleSegments = this.visibleSegments;
+
+                            if (visibleSegments.has(segment)) {
+                                visibleSegments.delete(segment);
+                            } else {
+                                visibleSegments.add(segment);
+                            }
+                        }
+                        break;
+                    }
+            }
+        }
+    }]);
+
+    return SegmentationUserLayer;
+}(layer_1.UserLayer);
+
+exports.SegmentationUserLayer = SegmentationUserLayer;
+;
+
+/***/ },
+/* 137 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var hash_function_1 = __webpack_require__(138);
+var shader_1 = __webpack_require__(139);
+var colorspace_1 = __webpack_require__(141);
+var shader_lib_1 = __webpack_require__(72);
+var signals_1 = __webpack_require__(34);
+var NUM_COMPONENTS = 2;
+
+var SegmentColorShaderManager = function () {
+    function SegmentColorShaderManager(prefix) {
+        _classCallCheck(this, SegmentColorShaderManager);
+
+        this.prefix = prefix;
+        this.aName = this.prefix + '_a';
+        this.bName = this.prefix + '_b';
+    }
+
+    _createClass(SegmentColorShaderManager, [{
+        key: 'defineShader',
+        value: function defineShader(builder) {
+            var aName = this.aName;
+            var bName = this.bName;
+
+            builder.addUniform('highp vec4', aName, 2 * NUM_COMPONENTS);
+            builder.addUniform('highp float', bName, 2 * NUM_COMPONENTS);
+            builder.addFragmentCode(shader_lib_1.glsl_uint64);
+            builder.addFragmentCode(shader_1.glsl_hashFunction);
+            builder.addFragmentCode(shader_lib_1.glsl_hsvToRgb);
+            var s = `
+vec3 ${ this.prefix }(uint64_t x) {
+  vec${ NUM_COMPONENTS } v;
+  float primeModulus = float(${ hash_function_1.PRIME_MODULUS });
+`;
+            for (var i = 0; i < NUM_COMPONENTS; ++i) {
+                var bIndex = 2 * i;
+                var aIndex = 2 * i;
+                s += `
+  v[${ i }] = computeHash(x, ${ aName }[${ aIndex }], ${ aName }[${ aIndex + 1 }], ${ bName }[${ bIndex }], ${ bName }[${ bIndex + 1 }], primeModulus, 1.0 / 256.0);
+`;
+            }
+            s += `
+  vec3 hsv = vec3(v.x, 0.5 + v.y * 0.5, 1.0);
+  return hsvToRgb(hsv);
+}
+`;
+            builder.addFragmentCode(s);
+        }
+    }, {
+        key: 'enable',
+        value: function enable(gl, shader, segmentColorHash) {
+            gl.uniform4fv(shader.uniform(this.aName), segmentColorHash.a_);
+            gl.uniform1fv(shader.uniform(this.bName), segmentColorHash.b_);
+        }
+    }]);
+
+    return SegmentColorShaderManager;
+}();
+
+exports.SegmentColorShaderManager = SegmentColorShaderManager;
+;
+function fract(x) {
+    return x - Math.floor(x);
+}
+var tempOutput = new Float32Array(NUM_COMPONENTS);
+var tempColor = new Float32Array(3);
+
+var SegmentColorHash = function () {
+    function SegmentColorHash(hashFunctions) {
+        _classCallCheck(this, SegmentColorHash);
+
+        this.a_ = new Float32Array(4 * 2 * NUM_COMPONENTS);
+        this.b_ = new Float32Array(2 * NUM_COMPONENTS);
+        this.changed = new signals_1.Signal();
+        if (hashFunctions == null) {
+            this.hashFunctions = new Array(NUM_COMPONENTS);
+            this.randomize_();
+        } else {
+            this.hashFunctions = hashFunctions;
+        }
+        this.computeGPUCoefficients_();
+    }
+
+    _createClass(SegmentColorHash, [{
+        key: 'compute',
+        value: function compute(out, x) {
+            var low = x.low;
+            var high = x.high;
+            var hashFunctions = this.hashFunctions;
+
+            for (var i = 0; i < 2; ++i) {
+                tempOutput[i] = fract(hashFunctions[i].compute(low, high) / 256.0);
+            }
+            colorspace_1.hsvToRgb(out, tempOutput[0], 0.5 + 0.5 * tempOutput[1], 1.0);
+            return out;
+        }
+    }, {
+        key: 'computeCssColor',
+        value: function computeCssColor(x) {
+            this.compute(tempColor, x);
+            return `rgb(${ tempColor[0] * 100 }%,${ tempColor[1] * 100 }%,${ tempColor[2] * 100 }%)`;
+        }
+    }, {
+        key: 'debugCompute',
+        value: function debugCompute(out, x) {
+            function mod(a, b) {
+                return a % b;
+            }
+            var low = x.low;
+            var high = x.high;
+
+            var b = this.b_;
+            var modulus = hash_function_1.PRIME_MODULUS;
+            for (var i = 0; i < 2; ++i) {
+                var bIndex = 2 * i;
+                var aIndex = 2 * i;
+                var sums = new Float32Array(2);
+                for (var j = 0; j < 4; ++j) {
+                    sums[0] += this.a_[aIndex * 4 + j] * (low >> j * 8 & 0xFF);
+                    sums[1] += this.a_[(aIndex + 1) * 4 + j] * (high >> j * 8 & 0xFF);
+                }
+                var dotResult = mod(sums[0] + sums[1], modulus);
+                var dotResult2 = mod(dotResult * dotResult, modulus);
+                var y = mod(dotResult2 * b[bIndex + 1], modulus);
+                var modResult = mod(b[bIndex] + dotResult + y, modulus);
+                console.log(`b = ${ b[bIndex] }, sums=${ sums[0] } ${ sums[1] }, dotResult=${ dotResult }, prod = ${ dotResult * dotResult } dotResult2=${ dotResult2 }, y=${ y }, modResult=${ modResult }`);
+                out[i] = fract(modResult * (1.0 / 256.0));
+            }
+            return out;
+        }
+    }, {
+        key: 'randomize_',
+        value: function randomize_() {
+            for (var i = 0; i < 2; ++i) {
+                this.hashFunctions[i] = hash_function_1.HashFunction.generate();
+            }
+        }
+    }, {
+        key: 'randomize',
+        value: function randomize() {
+            this.randomize_();
+            this.computeGPUCoefficients_();
+            this.changed.dispatch();
+        }
+    }, {
+        key: 'toString',
+        value: function toString() {
+            return `new SegmentColorHash([${ this.hashFunctions }])`;
+        }
+    }, {
+        key: 'computeGPUCoefficients_',
+        value: function computeGPUCoefficients_() {
+            var hashFunctions = this.hashFunctions;
+            var a = this.a_;
+            var b = this.b_;
+            var aScalar = 1.0;
+            var bScalar = 1.0;
+            for (var i = 0; i < NUM_COMPONENTS; ++i) {
+                var h = hashFunctions[i];
+                var bIndex = 2 * i;
+                var aIndex = 4 * (2 * i);
+                b[bIndex] = h.b * bScalar;
+                b[bIndex + 1] = h.c * bScalar;
+                for (var j = 0; j < 4; ++j) {
+                    a[aIndex + j] = h.a0[j] * aScalar;
+                    a[aIndex + 4 + j] = h.a1[j] * aScalar;
+                }
+            }
+        }
+    }], [{
+        key: 'getDefault',
+        value: function getDefault() {
+            return new SegmentColorHash([new hash_function_1.HashFunction(Float32Array.of(609, 2364, 3749, 2289), Float32Array.of(2840, 1186, 3660, 1833), 1718, 1109), new hash_function_1.HashFunction(Float32Array.of(3466, 3835, 3345, 2040), Float32Array.of(3382, 901, 18, 3444), 1534, 1432)]);
+        }
+    }]);
+
+    return SegmentColorHash;
+}();
+
+exports.SegmentColorHash = SegmentColorHash;
+;
+
+/***/ },
+/* 138 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+exports.PRIME_MODULUS = 4093;
+
+var HashFunction = function () {
+    function HashFunction(a0, a1, b, c) {
+        _classCallCheck(this, HashFunction);
+
+        this.a0 = a0;
+        this.a1 = a1;
+        this.b = b;
+        this.c = c;
+    }
+
+    _createClass(HashFunction, [{
+        key: "computeDotProduct",
+        value: function computeDotProduct(low, high) {
+            var a0 = this.a0;
+            var a1 = this.a1;
+
+            var a0DotLow = a0[0] * (low & 0xFF) + a0[1] * (low >> 8 & 0xFF) + a0[2] * (low >> 16 & 0xFF) + a0[3] * (low >> 24 & 0xFF);
+            var a1DotHigh = a1[0] * (high & 0xFF) + a1[1] * (high >> 8 & 0xFF) + a1[2] * (high >> 16 & 0xFF) + a1[3] * (high >> 24 & 0xFF);
+            return a0DotLow + a1DotHigh;
+        }
+    }, {
+        key: "compute",
+        value: function compute(low, high) {
+            var b = this.b;
+            var c = this.c;
+
+            var x = this.computeDotProduct(low, high);
+            var x2 = x * x % exports.PRIME_MODULUS;
+            var result = (x + x2 * c + b) % exports.PRIME_MODULUS;
+            return result;
+        }
+    }, {
+        key: "toString",
+        value: function toString() {
+            return `new HashFunction(Float32Array.of(${ this.a0 }), Float32Array.of(${ this.a1 }), ${ this.b }, ${ this.c })`;
+        }
+    }], [{
+        key: "generate",
+        value: function generate() {
+            function genCoeff() {
+                return Math.floor(Math.random() * exports.PRIME_MODULUS);
+            }
+            function genVector() {
+                return Float32Array.of(genCoeff(), genCoeff(), genCoeff(), genCoeff());
+            }
+            return new HashFunction(genVector(), genVector(), genCoeff(), genCoeff());
+        }
+    }]);
+
+    return HashFunction;
+}();
+
+exports.HashFunction = HashFunction;
+;
+
+/***/ },
+/* 139 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var hash_function_1 = __webpack_require__(138);
+var hash_table_1 = __webpack_require__(140);
+var disposable_1 = __webpack_require__(23);
+var shader_lib_1 = __webpack_require__(72);
+var texture_1 = __webpack_require__(69);
+exports.glsl_hashFunction = [shader_lib_1.glsl_uint64, shader_lib_1.glsl_exactDot, shader_lib_1.glsl_imod, `
+float computeHash(uint64_t x, vec4 a0, vec4 a1, float b, float c, float modulus, float scalar) {
+  x.low *= 255.0;
+  x.high *= 255.0;
+  float dotResult = imod(exactDot(a0, x.low) + exactDot(a1, x.high), modulus);
+  float dotResult2 = imod(dotResult * dotResult, modulus);
+  float y = imod(dotResult2 * c, modulus);
+  float modResult = imod(dotResult + y + b, modulus);
+  return fract(modResult * scalar);
+}
+`];
+
+var GPUHashTable = function (_disposable_1$RefCoun) {
+    _inherits(GPUHashTable, _disposable_1$RefCoun);
+
+    function GPUHashTable(gl, hashTable) {
+        _classCallCheck(this, GPUHashTable);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(GPUHashTable).call(this));
+
+        _this.gl = gl;
+        _this.hashTable = hashTable;
+        _this.hashFunctions = null;
+        _this.generation = -1;
+        _this.texture = null;
+        var numAlternatives = hashTable.hashFunctions.length;
+        _this.a = new Float32Array(4 * (numAlternatives * 4));
+        _this.b = new Float32Array(numAlternatives * 4 + 5);
+        // createTexture should never actually return null.
+        _this.texture = gl.createTexture();
+        return _this;
+    }
+
+    _createClass(GPUHashTable, [{
+        key: 'computeCoefficients',
+        value: function computeCoefficients() {
+            var hashTable = this.hashTable;
+
+            var hashFunctions = hashTable.hashFunctions;
+            if (this.hashFunctions === hashFunctions) {
+                return;
+            }
+            this.hashFunctions = hashFunctions;
+            var a = this.a;
+            var b = this.b;
+
+            var numAlternatives = hashFunctions.length;
+            var width = hashTable.width;
+            var height = hashTable.height;
+
+            var scalar = [1.0 / width, 1.0 / height];
+            for (var i = 0; i < 2; ++i) {
+                b[numAlternatives * 4 + i] = hash_function_1.PRIME_MODULUS;
+                b[numAlternatives * 4 + 3 + i] = scalar[i];
+            }
+            b[numAlternatives * 4 + 2] = 1 / (hashTable.entryStride * width);
+            for (var alt = 0; alt < numAlternatives; ++alt) {
+                var curFunctions = hashFunctions[alt];
+                for (var _i = 0; _i < 2; ++_i) {
+                    var h = curFunctions[_i];
+                    var bIndex = alt * 4 + 2 * _i;
+                    var aIndex = 4 * (alt * 4 + 2 * _i);
+                    // Add 0.5 to b to give maximum margin of error.
+                    //
+                    // For the x coordinate (i == 0), since each position is used to address entryStride texels
+                    // (for the low and high uint32 key values, and possibly associated entry values), we only
+                    // add 0.5 / entryStride.
+                    b[bIndex] = h.b + (_i === 0 ? 0.5 / hashTable.entryStride : 0.5);
+                    b[bIndex + 1] = h.c;
+                    for (var j = 0; j < 4; ++j) {
+                        a[aIndex + j] = h.a0[j];
+                        a[aIndex + 4 + j] = h.a1[j];
+                    }
+                }
+            }
+        }
+    }, {
+        key: 'copyToGPU',
+        value: function copyToGPU() {
+            this.computeCoefficients();
+            var hashTable = this.hashTable;
+            var generation = hashTable.generation;
+
+            if (this.generation === generation) {
+                return;
+            }
+            this.generation = generation;
+            var width = hashTable.width;
+            var height = hashTable.height;
+            var gl = this.gl;
+            var texture = this.texture;
+
+            gl.activeTexture(gl.TEXTURE0 + gl.tempTextureUnit);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+            texture_1.setRawTextureParameters(gl);
+            var format = gl.RGBA;
+            hashTable.tableWithMungedEmptyKey(table => {
+                gl.texImage2D(gl.TEXTURE_2D,
+                /*level=*/0, format,
+                /*width=*/width * hashTable.entryStride,
+                /*height=*/height,
+                /*border=*/0, format, gl.UNSIGNED_BYTE, new Uint8Array(table.buffer));
+            });
+            gl.bindTexture(gl.TEXTURE_2D, null);
+        }
+    }, {
+        key: 'disposed',
+        value: function disposed() {
+            var gl = this.gl;
+
+            gl.deleteTexture(this.texture);
+            this.texture = null;
+            this.gl = undefined;
+            this.hashTable = undefined;
+            this.hashFunctions = null;
+            _get(Object.getPrototypeOf(GPUHashTable.prototype), 'disposed', this).call(this);
+        }
+    }], [{
+        key: 'get',
+        value: function get(gl, hashTable) {
+            return gl.memoize.get(hashTable, () => new this(gl, hashTable));
+        }
+    }]);
+
+    return GPUHashTable;
+}(disposable_1.RefCounted);
+
+exports.GPUHashTable = GPUHashTable;
+;
+
+var HashSetShaderManager = function () {
+    function HashSetShaderManager(prefix) {
+        var numAlternatives = arguments.length <= 1 || arguments[1] === undefined ? hash_table_1.NUM_ALTERNATIVES : arguments[1];
+
+        _classCallCheck(this, HashSetShaderManager);
+
+        this.prefix = prefix;
+        this.numAlternatives = numAlternatives;
+        this.textureUnitSymbol = Symbol.for(`gpuhashtable:${ this.prefix }`);
+        this.aName = this.prefix + '_a';
+        this.bName = this.prefix + '_b';
+        this.samplerName = this.prefix + '_sampler';
+    }
+
+    _createClass(HashSetShaderManager, [{
+        key: 'defineShader',
+        value: function defineShader(builder) {
+            var aName = this.aName;
+            var bName = this.bName;
+            var samplerName = this.samplerName;
+            var numAlternatives = this.numAlternatives;
+
+            builder.addUniform('highp vec4', aName, numAlternatives * 4);
+            builder.addUniform('highp float', bName, numAlternatives * 4 + 5);
+            builder.addTextureSampler2D(samplerName, this.textureUnitSymbol);
+            builder.addFragmentCode(exports.glsl_hashFunction);
+            var s = '';
+            for (var alt = 0; alt < numAlternatives; ++alt) {
+                for (var i = 0; i < 2; ++i) {
+                    var bIndex = alt * 4 + 2 * i;
+                    var aIndex = alt * 4 + 2 * i;
+                    s += `
+float ${ this.prefix }_computeHash_${ alt }_${ i }(uint64_t x) {
+  float primeModulus = ${ bName }[${ numAlternatives * 4 + i }];
+  float scalar = ${ bName }[${ numAlternatives * 4 + 3 + i }];
+  return computeHash(x, ${ aName }[${ aIndex }], ${ aName }[${ aIndex + 1 }], ${ bName }[${ bIndex }], ${ bName }[${ bIndex + 1 }], primeModulus, scalar);
+}
+`;
+                }
+                s += `
+vec2 ${ this.prefix }_computeHash_${ alt }(uint64_t x) {
+  vec2 v;
+  v[0] = ${ this.prefix }_computeHash_${ alt }_0(x);
+  v[1] = ${ this.prefix }_computeHash_${ alt }_1(x);
+  return v;
+}
+`;
+            }
+            s += `
+bool ${ this.hasFunctionName }(uint64_t x) {
+  float highOffset = ${ bName }[${ numAlternatives * 4 + 2 }];
+`;
+            for (var _alt = 0; _alt < numAlternatives; ++_alt) {
+                s += `
+  {
+    vec2 v = ${ this.prefix }_computeHash_${ _alt }(x);
+    vec4 lowResult = texture2D(${ samplerName }, v);
+    vec4 highResult = texture2D(${ samplerName }, vec2(v.x + highOffset, v.y));
+    if (lowResult == x.low && highResult == x.high) {
+      return true;
+    }
+  }
+`;
+            }
+            s += `
+  return false;
+}
+`;
+            builder.addFragmentCode(s);
+        }
+    }, {
+        key: 'enable',
+        value: function enable(gl, shader, hashTable) {
+            hashTable.copyToGPU();
+            var textureUnit = shader.textureUnit(this.textureUnitSymbol);
+            gl.activeTexture(gl.TEXTURE0 + textureUnit);
+            gl.bindTexture(gl.TEXTURE_2D, hashTable.texture);
+            gl.uniform4fv(shader.uniform(this.aName), hashTable.a);
+            gl.uniform1fv(shader.uniform(this.bName), hashTable.b);
+        }
+    }, {
+        key: 'disable',
+        value: function disable(gl, shader) {
+            var textureUnit = shader.textureUnit(this.textureUnitSymbol);
+            gl.activeTexture(gl.TEXTURE0 + textureUnit);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+        }
+    }, {
+        key: 'hasFunctionName',
+        get: function () {
+            return `${ this.prefix }_has`;
+        }
+    }]);
+
+    return HashSetShaderManager;
+}();
+
+exports.HashSetShaderManager = HashSetShaderManager;
+;
+
+var HashMapShaderManager = function (_HashSetShaderManager) {
+    _inherits(HashMapShaderManager, _HashSetShaderManager);
+
+    function HashMapShaderManager() {
+        _classCallCheck(this, HashMapShaderManager);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashMapShaderManager).apply(this, arguments));
+    }
+
+    _createClass(HashMapShaderManager, [{
+        key: 'defineShader',
+        value: function defineShader(builder) {
+            _get(Object.getPrototypeOf(HashMapShaderManager.prototype), 'defineShader', this).call(this, builder);
+            var bName = this.bName;
+            var samplerName = this.samplerName;
+            var numAlternatives = this.numAlternatives;
+
+            var s = `
+bool ${ this.getFunctionName }(uint64_t x, out uint64_t value) {
+  float highOffset = ${ bName }[${ numAlternatives * 4 + 2 }];
+`;
+            for (var alt = 0; alt < numAlternatives; ++alt) {
+                s += `
+  {
+    vec2 v = ${ this.prefix }_computeHash_${ alt }(x);
+    vec4 lowResult = texture2D(${ samplerName }, v);
+    vec4 highResult = texture2D(${ samplerName }, vec2(v.x + highOffset, v.y));
+    if (lowResult == x.low && highResult == x.high) {
+      value.low = texture2D(${ samplerName }, vec2(v.x + 2.0 * highOffset, v.y));
+      value.high = texture2D(${ samplerName }, vec2(v.x + 3.0 * highOffset, v.y));
+      return true;
+    }
+  }
+`;
+            }
+            s += `
+  return false;
+}
+`;
+            builder.addFragmentCode(s);
+        }
+    }, {
+        key: 'getFunctionName',
+        get: function () {
+            return `${ this.prefix }_get`;
+        }
+    }]);
+
+    return HashMapShaderManager;
+}(HashSetShaderManager);
+
+exports.HashMapShaderManager = HashMapShaderManager;
+;
+
+/***/ },
+/* 140 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var hash_function_1 = __webpack_require__(138);
+var uint64_1 = __webpack_require__(52);
+exports.NUM_ALTERNATIVES = 3;
+var DEFAULT_LOAD_FACTOR = 0.9;
+var DEBUG = false;
+// Key that needs to be inserted.  Temporary variables used during insert.  These can safely be
+// global because control never leaves functions defined in this module while these are in use.
+var pendingLow = 0,
+    pendingHigh = 0,
+    backupPendingLow = 0,
+    backupPendingHigh = 0;
+
+var HashTableBase = function () {
+    function HashTableBase() {
+        var hashFunctions = arguments.length <= 0 || arguments[0] === undefined ? HashTableBase.generateHashFunctions(exports.NUM_ALTERNATIVES) : arguments[0];
+
+        _classCallCheck(this, HashTableBase);
+
+        this.loadFactor = DEFAULT_LOAD_FACTOR;
+        this.size = 0;
+        this.growFactor = 1.2;
+        this.maxHeight = 8192;
+        this.emptyLow = 4294967295;
+        this.emptyHigh = 4294967295;
+        this.maxRehashAttempts = 5;
+        this.maxAttempts = 5;
+        this.maxWidth = 4096 / this.entryStride;
+        this.generation = 0;
+        this.mungedEmptyKey = -1;
+        this.hashFunctions = hashFunctions;
+        this.allocate(4, 1);
+    }
+
+    _createClass(HashTableBase, [{
+        key: 'updateHashFunctions',
+        value: function updateHashFunctions(numHashes) {
+            this.hashFunctions = HashTableBase.generateHashFunctions(numHashes);
+            this.mungedEmptyKey = -1;
+        }
+        /**
+         * Invokes callback with a modified version of the hash table data array.
+         *
+         * Replaces all slots that appear to be valid entries for (emptyLow, emptyHigh), i.e. slots that
+         * contain (emptyLow, emptyHigh) and to which (emptyLow, emptyHigh) hashes, with (mungedEmptyKey,
+         * mungedEmptyKey).
+         *
+         * mungedEmptyKey is chosen to be a 32-bit value with the property that the 64-bit value
+         * (mungedEmptyKey, mungedEmptyKey) does not hash to any of the same slots as (emptyLow,
+         * emptyHigh).
+         *
+         * This allows the modified data array to be used for lookups without special casing the empty
+         * key.
+         */
+
+    }, {
+        key: 'tableWithMungedEmptyKey',
+        value: function tableWithMungedEmptyKey(callback) {
+            var numHashes = this.hashFunctions.length;
+            var emptySlots = new Array(numHashes);
+            for (var i = 0; i < numHashes; ++i) {
+                emptySlots[i] = this.getHash(i, this.emptyLow, this.emptyHigh);
+            }
+            var mungedEmptyKey = this.mungedEmptyKey;
+
+            if (mungedEmptyKey === -1) {
+                chooseMungedEmptyKey: while (true) {
+                    mungedEmptyKey = Math.random() * 0x1000000 >>> 0;
+                    for (var _i = 0; _i < numHashes; ++_i) {
+                        var h = this.getHash(_i, mungedEmptyKey, mungedEmptyKey);
+                        for (var j = 0; j < numHashes; ++j) {
+                            if (emptySlots[j] === h) {
+                                continue chooseMungedEmptyKey;
+                            }
+                        }
+                    }
+                    this.mungedEmptyKey = mungedEmptyKey;
+                    break;
+                }
+            }
+            var table = this.table;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+
+            for (var _i2 = 0; _i2 < numHashes; ++_i2) {
+                var _h = emptySlots[_i2];
+                if (table[_h] === emptyLow && table[_h + 1] === emptyHigh) {
+                    table[_h] = mungedEmptyKey;
+                    table[_h + 1] = mungedEmptyKey;
+                }
+            }
+            try {
+                callback(table);
+            } finally {
+                for (var _i3 = 0; _i3 < numHashes; ++_i3) {
+                    var _h2 = emptySlots[_i3];
+                    if (table[_h2] === mungedEmptyKey && table[_h2 + 1] === mungedEmptyKey) {
+                        table[_h2] = emptyLow;
+                        table[_h2 + 1] = emptyHigh;
+                    }
+                }
+            }
+        }
+    }, {
+        key: 'getHash',
+        value: function getHash(hashIndex, low, high) {
+            var hashes = this.hashFunctions[hashIndex];
+            var width = this.width,
+                height = this.height;
+            var x = hashes[0].compute(low, high) % width;
+            var y = hashes[1].compute(low, high) % height;
+            return this.entryStride * (y * this.width + x);
+        }
+        /**
+         * Iterates over the Uint64 keys contained in the hash set.
+         *
+         * The same temp value will be modified and yielded at every iteration.
+         */
+
+    }, {
+        key: 'keys',
+        value: function* keys() {
+            var temp = arguments.length <= 0 || arguments[0] === undefined ? new uint64_1.Uint64() : arguments[0];
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var entryStride = this.entryStride;
+            var table = this.table;
+
+            for (var i = 0, length = table.length; i < length; i += entryStride) {
+                var low = table[i],
+                    high = table[i + 1];
+                if (low !== emptyLow || high !== emptyHigh) {
+                    temp.low = low;
+                    temp.high = high;
+                    yield temp;
+                }
+            }
+        }
+    }, {
+        key: 'indexOfPair',
+        value: function indexOfPair(low, high) {
+            var table = this.table;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+
+            if (low === emptyLow && high === emptyHigh) {
+                return -1;
+            }
+            for (var i = 0, numHashes = this.hashFunctions.length; i < numHashes; ++i) {
+                var h = this.getHash(i, low, high);
+                if (table[h] === low && table[h + 1] === high) {
+                    return h;
+                }
+            }
+            return -1;
+        }
+        /**
+         * Returns the offset into the hash table of the specified element, or -1 if the element is not
+         * present.
+         */
+
+    }, {
+        key: 'indexOf',
+        value: function indexOf(x) {
+            return this.indexOfPair(x.low, x.high);
+        }
+        /**
+         * Changes the empty key to a value that is not equal to the current empty key and is not present
+         * in the table.
+         *
+         * This is called when an attempt is made to insert the empty key.
+         */
+
+    }, {
+        key: 'chooseAnotherEmptyKey',
+        value: function chooseAnotherEmptyKey() {
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var table = this.table;
+            var entryStride = this.entryStride;
+
+            var newLow = void 0,
+                newHigh = void 0;
+            while (true) {
+                newLow = Math.random() * 0x100000000 >>> 0;
+                newHigh = Math.random() * 0x100000000 >>> 0;
+                if (newLow === emptyLow && newHigh === emptyHigh) {
+                    continue;
+                }
+                if (this.hasPair(newLow, newHigh)) {
+                    continue;
+                }
+                break;
+            }
+            this.emptyLow = newLow;
+            this.emptyHigh = newHigh;
+            // Replace empty keys in the table.
+            for (var h = 0, length = table.length; h < length; h += entryStride) {
+                if (table[h] === emptyLow && table[h + 1] === emptyHigh) {
+                    table[h] = newLow;
+                    table[h + 1] = newHigh;
+                }
+            }
+        }
+        /**
+         * Returns true iff the specified element is present.
+         */
+
+    }, {
+        key: 'has',
+        value: function has(x) {
+            return this.indexOf(x) !== -1;
+        }
+        /**
+         * Returns true iff the specified element is present.
+         */
+
+    }, {
+        key: 'hasPair',
+        value: function hasPair(low, high) {
+            return this.indexOfPair(low, high) !== -1;
+        }
+    }, {
+        key: 'delete',
+        value: function _delete(x) {
+            var index = this.indexOf(x);
+            if (index !== -1) {
+                var table = this.table;
+
+                table[index] = this.emptyLow;
+                table[index + 1] = this.emptyHigh;
+                ++this.generation;
+                this.size--;
+                return true;
+            }
+            return false;
+        }
+    }, {
+        key: 'clearTable',
+        value: function clearTable() {
+            var table = this.table;
+            var entryStride = this.entryStride;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+
+            var length = table.length;
+            for (var h = 0; h < length; h += entryStride) {
+                table[h] = emptyLow;
+                table[h + 1] = emptyHigh;
+            }
+        }
+    }, {
+        key: 'clear',
+        value: function clear() {
+            if (this.size === 0) {
+                return false;
+            }
+            this.size = 0;
+            ++this.generation;
+            this.clearTable();
+            return true;
+        }
+    }, {
+        key: 'swapPending',
+        value: function swapPending(table, offset) {
+            var tempLow = pendingLow,
+                tempHigh = pendingHigh;
+            this.storePending(table, offset);
+            table[offset] = tempLow;
+            table[offset + 1] = tempHigh;
+        }
+    }, {
+        key: 'storePending',
+        value: function storePending(table, offset) {
+            pendingLow = table[offset];
+            pendingHigh = table[offset + 1];
+        }
+    }, {
+        key: 'backupPending',
+        value: function backupPending() {
+            backupPendingLow = pendingLow;
+            backupPendingHigh = pendingHigh;
+        }
+    }, {
+        key: 'restorePending',
+        value: function restorePending() {
+            pendingLow = backupPendingLow;
+            pendingHigh = backupPendingHigh;
+        }
+    }, {
+        key: 'tryToInsert',
+        value: function tryToInsert() {
+            if (DEBUG) {
+                console.log(`tryToInsert: ${ pendingLow }, ${ pendingHigh }`);
+            }
+            var attempt = 0;
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var maxAttempts = this.maxAttempts;
+            var table = this.table;
+
+            var numHashes = this.hashFunctions.length;
+            var tableIndex = Math.floor(Math.random() * numHashes);
+            while (true) {
+                var h = this.getHash(tableIndex, pendingLow, pendingHigh);
+                this.swapPending(table, h);
+                if (pendingLow === emptyLow && pendingHigh === emptyHigh) {
+                    return true;
+                }
+                if (++attempt === maxAttempts) {
+                    break;
+                }
+                tableIndex = (tableIndex + Math.floor(Math.random() * (numHashes - 1)) + 1) % numHashes;
+            }
+            return false;
+        }
+    }, {
+        key: 'allocate',
+        value: function allocate(width, height) {
+            var tableSize = width * height;
+            this.width = width;
+            this.height = height;
+            var entryStride = this.entryStride;
+
+            this.table = new Uint32Array(tableSize * entryStride);
+            this.maxAttempts = tableSize;
+            this.clearTable();
+            this.capacity = tableSize * this.loadFactor;
+            this.mungedEmptyKey = -1;
+        }
+    }, {
+        key: 'rehash',
+        value: function rehash(oldTable, width, height) {
+            if (DEBUG) {
+                console.log('rehash begin');
+            }
+            this.allocate(width, height);
+            this.updateHashFunctions(this.hashFunctions.length);
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var entryStride = this.entryStride;
+
+            for (var h = 0, length = oldTable.length; h < length; h += entryStride) {
+                var low = oldTable[h],
+                    high = oldTable[h + 1];
+                if (low !== emptyLow || high !== emptyHigh) {
+                    this.storePending(oldTable, h);
+                    if (!this.tryToInsert()) {
+                        if (DEBUG) {
+                            console.log('rehash failed');
+                        }
+                        return false;
+                    }
+                }
+            }
+            if (DEBUG) {
+                console.log('rehash end');
+            }
+            return true;
+        }
+    }, {
+        key: 'grow',
+        value: function grow(desiredTableSize) {
+            if (DEBUG) {
+                console.log(`grow: ${ desiredTableSize }`);
+            }
+            var oldTable = this.table;
+            var width = this.width;
+            var height = this.height;
+            var maxWidth = this.maxWidth;
+            var maxHeight = this.maxHeight;
+
+            while (true) {
+                var origTableSize = width * height;
+                width = Math.min(maxWidth, Math.ceil(desiredTableSize / this.height));
+                if (width * height < desiredTableSize) {
+                    height = Math.min(maxHeight, Math.ceil(desiredTableSize / width));
+                }
+                var tableSize = width * height;
+                if (tableSize < desiredTableSize && tableSize === origTableSize) {
+                    throw new Error('Maximum table size exceeded');
+                }
+                for (var rehashAttempt = 0; rehashAttempt < this.maxRehashAttempts; ++rehashAttempt) {
+                    if (this.rehash(oldTable, width, height)) {
+                        if (DEBUG) {
+                            console.log(`grow end`);
+                        }
+                        return;
+                    }
+                }
+                desiredTableSize = Math.ceil(this.growFactor * desiredTableSize);
+            }
+        }
+    }, {
+        key: 'insertInternal',
+        value: function insertInternal() {
+            ++this.generation;
+            if (pendingLow === this.emptyLow && pendingHigh === this.emptyHigh) {
+                this.chooseAnotherEmptyKey();
+            }
+            if (++this.size > this.capacity) {
+                this.backupPending();
+                this.grow(Math.ceil(this.growFactor * this.width * this.height));
+                this.restorePending();
+            }
+            while (!this.tryToInsert()) {
+                this.backupPending();
+                this.grow(this.width * this.height);
+                this.restorePending();
+            }
+        }
+    }], [{
+        key: 'generateHashFunctions',
+        value: function generateHashFunctions() {
+            var numAlternatives = arguments.length <= 0 || arguments[0] === undefined ? exports.NUM_ALTERNATIVES : arguments[0];
+
+            var hashFunctions = [];
+            for (var alt = 0; alt < numAlternatives; ++alt) {
+                var curFunctions = [hash_function_1.HashFunction.generate(), hash_function_1.HashFunction.generate()];
+                hashFunctions.push(curFunctions);
+            }
+            return hashFunctions;
+        }
+    }]);
+
+    return HashTableBase;
+}();
+
+exports.HashTableBase = HashTableBase;
+;
+
+var HashSetUint64 = function (_HashTableBase) {
+    _inherits(HashSetUint64, _HashTableBase);
+
+    function HashSetUint64() {
+        _classCallCheck(this, HashSetUint64);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashSetUint64).apply(this, arguments));
+    }
+
+    _createClass(HashSetUint64, [{
+        key: 'add',
+        value: function add(x) {
+            var low = x.low;
+            var high = x.high;
+
+            if (this.hasPair(low, high)) {
+                return false;
+            }
+            if (DEBUG) {
+                console.log(`add: ${ low },${ high }`);
+            }
+            pendingLow = low;
+            pendingHigh = high;
+            this.insertInternal();
+            return true;
+        }
+        /**
+         * Iterates over the keys.  The same temporary value will be modified and yielded at every
+         * iteration.
+         */
+
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.keys();
+        }
+    }]);
+
+    return HashSetUint64;
+}(HashTableBase);
+
+exports.HashSetUint64 = HashSetUint64;
+;
+HashSetUint64.prototype.entryStride = 2;
+// Value that needs to be inserted.  Temporary variables used during insert.  These can safely be
+// global because control never leaves functions defined in this module while these are in use.
+var pendingValueLow = 0,
+    pendingValueHigh = 0,
+    backupPendingValueLow = 0,
+    backupPendingValueHigh = 0;
+
+var HashMapUint64 = function (_HashTableBase2) {
+    _inherits(HashMapUint64, _HashTableBase2);
+
+    function HashMapUint64() {
+        _classCallCheck(this, HashMapUint64);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(HashMapUint64).apply(this, arguments));
+    }
+
+    _createClass(HashMapUint64, [{
+        key: 'set',
+        value: function set(key, value) {
+            var low = key.low;
+            var high = key.high;
+
+            if (this.hasPair(low, high)) {
+                return false;
+            }
+            if (DEBUG) {
+                console.log(`add: ${ low },${ high } -> ${ value.low },${ value.high }`);
+            }
+            pendingLow = low;
+            pendingHigh = high;
+            pendingValueLow = value.low;
+            pendingValueHigh = value.high;
+            this.insertInternal();
+            return true;
+        }
+    }, {
+        key: 'get',
+        value: function get(key, value) {
+            var h = this.indexOf(key);
+            if (h === -1) {
+                return false;
+            }
+            var table = this.table;
+
+            value.low = table[h + 2];
+            value.high = table[h + 3];
+            return true;
+        }
+    }, {
+        key: 'swapPending',
+        value: function swapPending(table, offset) {
+            var tempLow = pendingValueLow,
+                tempHigh = pendingValueHigh;
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'swapPending', this).call(this, table, offset);
+            table[offset + 2] = tempLow;
+            table[offset + 3] = tempHigh;
+        }
+    }, {
+        key: 'storePending',
+        value: function storePending(table, offset) {
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'storePending', this).call(this, table, offset);
+            pendingValueLow = table[offset + 2];
+            pendingValueHigh = table[offset + 3];
+        }
+    }, {
+        key: 'backupPending',
+        value: function backupPending() {
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'backupPending', this).call(this);
+            backupPendingValueLow = pendingValueLow;
+            backupPendingValueHigh = pendingValueHigh;
+        }
+    }, {
+        key: 'restorePending',
+        value: function restorePending() {
+            _get(Object.getPrototypeOf(HashMapUint64.prototype), 'restorePending', this).call(this);
+            pendingValueLow = backupPendingValueLow;
+            pendingValueHigh = backupPendingValueHigh;
+        }
+        /**
+         * Iterates over entries.  The same temporary value will be modified and yielded at every
+         * iteration.
+         */
+
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.entries();
+        }
+        /**
+         * Iterates over entries.  The same temporary value will be modified and yielded at every
+         * iteration.
+         */
+
+    }, {
+        key: 'entries',
+        value: function* entries() {
+            var temp = arguments.length <= 0 || arguments[0] === undefined ? [new uint64_1.Uint64(), new uint64_1.Uint64()] : arguments[0];
+            var emptyLow = this.emptyLow;
+            var emptyHigh = this.emptyHigh;
+            var entryStride = this.entryStride;
+            var table = this.table;
+
+            var _temp = _slicedToArray(temp, 2);
+
+            var key = _temp[0];
+            var value = _temp[1];
+
+            for (var i = 0, length = table.length; i < length; i += entryStride) {
+                var low = table[i],
+                    high = table[i + 1];
+                if (low !== emptyLow || high !== emptyHigh) {
+                    key.low = low;
+                    key.high = high;
+                    value.low = table[i + 2];
+                    value.high = table[i + 3];
+                    yield temp;
+                }
+            }
+        }
+    }]);
+
+    return HashMapUint64;
+}(HashTableBase);
+
+exports.HashMapUint64 = HashMapUint64;
+;
+HashMapUint64.prototype.entryStride = 4;
+
+/***/ },
+/* 141 */
+/***/ function(module, exports) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+/**
+ * Converts an HSV color (with h, s, v in [0,1]) to RGB (in range [0,1]).
+ *
+ * Based on goog/color/color.js in the Google Closure library.
+ */
+
+function hsvToRgb(out, h, s, v) {
+    h *= 6;
+    var hueIndex = Math.floor(h);
+    var remainder = h - hueIndex;
+    var val1 = v * (1 - s);
+    var val2 = v * (1 - s * remainder);
+    var val3 = v * (1 - s * (1 - remainder));
+    switch (hueIndex % 6) {
+        case 0:
+            out[0] = v;
+            out[1] = val3;
+            out[2] = val1;
+            break;
+        case 1:
+            out[0] = val2;
+            out[1] = v;
+            out[2] = val1;
+            break;
+        case 2:
+            out[0] = val1;
+            out[1] = v;
+            out[2] = val3;
+            break;
+        case 3:
+            out[0] = val1;
+            out[1] = val2;
+            out[2] = v;
+            break;
+        case 4:
+            out[0] = val3;
+            out[1] = val1;
+            out[2] = v;
+            break;
+        case 5:
+            out[0] = v;
+            out[1] = val1;
+            out[2] = val2;
+            break;
+    }
+    return out;
+}
+exports.hsvToRgb = hsvToRgb;
+
+/***/ },
+/* 142 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var disjoint_sets_1 = __webpack_require__(143);
+var json_1 = __webpack_require__(8);
+var uint64_1 = __webpack_require__(52);
+var worker_rpc_1 = __webpack_require__(22);
+var signals_1 = __webpack_require__(34);
+var RPC_TYPE_ID = 'DisjointUint64Sets';
+var ADD_METHOD_ID = 'DisjointUint64Sets.add';
+var CLEAR_METHOD_ID = 'DisjointUint64Sets.clear';
+var SharedDisjointUint64Sets = function (_worker_rpc_1$SharedO) {
+    _inherits(SharedDisjointUint64Sets, _worker_rpc_1$SharedO);
+
+    function SharedDisjointUint64Sets() {
+        _classCallCheck(this, SharedDisjointUint64Sets);
+
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SharedDisjointUint64Sets).call(this, ...args));
+
+        _this.disjointSets = new disjoint_sets_1.DisjointUint64Sets();
+        _this.changed = new signals_1.Signal();
+        return _this;
+    }
+
+    _createClass(SharedDisjointUint64Sets, [{
+        key: "disposed",
+        value: function disposed() {
+            this.disjointSets = undefined;
+            this.changed = undefined;
+            _get(Object.getPrototypeOf(SharedDisjointUint64Sets.prototype), "disposed", this).call(this);
+        }
+    }, {
+        key: "link",
+        value: function link(a, b) {
+            if (this.disjointSets.link(a, b)) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke(ADD_METHOD_ID, { 'id': this.rpcId, 'al': a.low, 'ah': a.high, 'bl': b.low, 'bh': b.high });
+                }
+                this.changed.dispatch();
+            }
+        }
+    }, {
+        key: "get",
+        value: function get(x) {
+            return this.disjointSets.get(x);
+        }
+    }, {
+        key: "clear",
+        value: function clear() {
+            if (this.disjointSets.clear()) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke(CLEAR_METHOD_ID, { 'id': this.rpcId });
+                }
+                this.changed.dispatch();
+            }
+        }
+    }, {
+        key: "setElements",
+        value: function setElements(a) {
+            return this.disjointSets.setElements(a);
+        }
+    }, {
+        key: "toJSON",
+        value: function toJSON() {
+            return this.disjointSets.toJSON();
+        }
+        /**
+         * Restores the state from a JSON representation.
+         */
+
+    }, {
+        key: "restoreState",
+        value: function restoreState(obj) {
+            var _this2 = this;
+
+            this.clear();
+            if (obj !== undefined) {
+                (function () {
+                    var ids = [new uint64_1.Uint64(), new uint64_1.Uint64()];
+                    json_1.parseArray(obj, z => {
+                        json_1.parseArray(z, (s, index) => {
+                            ids[index % 2].parseString(String(s), 10);
+                            if (index !== 0) {
+                                _this2.link(ids[0], ids[1]);
+                            }
+                        });
+                    });
+                })();
+            }
+        }
+    }, {
+        key: "size",
+        get: function () {
+            return this.disjointSets.size;
+        }
+    }], [{
+        key: "makeWithCounterpart",
+        value: function makeWithCounterpart(rpc) {
+            var obj = new this();
+            obj.initializeCounterpart(rpc);
+            return obj;
+        }
+    }]);
+
+    return SharedDisjointUint64Sets;
+}(worker_rpc_1.SharedObjectCounterpart);
+SharedDisjointUint64Sets = __decorate([worker_rpc_1.registerSharedObject(RPC_TYPE_ID)], SharedDisjointUint64Sets);
+exports.SharedDisjointUint64Sets = SharedDisjointUint64Sets;
+;
+var tempA = new uint64_1.Uint64();
+var tempB = new uint64_1.Uint64();
+worker_rpc_1.registerRPC(ADD_METHOD_ID, function (x) {
+    var obj = this.get(x['id']);
+    tempA.low = x['al'];
+    tempA.high = x['ah'];
+    tempB.low = x['bl'];
+    tempB.high = x['bh'];
+    if (obj.disjointSets.link(tempA, tempB)) {
+        obj.changed.dispatch();
+    }
+});
+worker_rpc_1.registerRPC(CLEAR_METHOD_ID, function (x) {
+    var obj = this.get(x['id']);
+    if (obj.disjointSets.clear()) {
+        obj.changed.dispatch();
+    }
+});
+
+/***/ },
+/* 143 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var uint64_1 = __webpack_require__(52);
+var rankSymbol = Symbol('disjoint_sets:rank');
+var parentSymbol = Symbol('disjoint_sets:parent');
+var nextSymbol = Symbol('disjoint_sets:next');
+var prevSymbol = Symbol('disjoint_sets:prev');
+function findRepresentative(v) {
+    // First pass: find the root, which will be stored in ancestor.
+    var old = v;
+    var ancestor = v[parentSymbol];
+    while (ancestor !== v) {
+        v = ancestor;
+        ancestor = v[parentSymbol];
+    }
+    // Second pass: set all of the parent pointers along the path from the
+    // original element `old' to refer directly to the root `ancestor'.
+    v = old[parentSymbol];
+    while (ancestor !== v) {
+        old[parentSymbol] = ancestor;
+        old = v;
+        v = old[parentSymbol];
+    }
+    return ancestor;
+}
+function linkUnequalSetRepresentatives(i, j) {
+    var iRank = i[rankSymbol];
+    var jRank = j[rankSymbol];
+    if (iRank > jRank) {
+        j[parentSymbol] = i;
+        return i;
+    }
+    i[parentSymbol] = j;
+    if (iRank === jRank) {
+        j[rankSymbol] = jRank + 1;
+    }
+    return j;
+}
+function spliceCircularLists(i, j) {
+    var iPrev = i[prevSymbol];
+    var jPrev = j[prevSymbol];
+    // Connect end of i to beginning of j.
+    j[prevSymbol] = iPrev;
+    iPrev[nextSymbol] = j;
+    // Connect end of j to beginning of i.
+    i[prevSymbol] = jPrev;
+    jPrev[nextSymbol] = i;
+}
+function* setElementIterator(i) {
+    var j = i;
+    do {
+        yield j;
+        j = j[nextSymbol];
+    } while (j !== i);
+}
+function initializeElement(v) {
+    v[parentSymbol] = v;
+    v[rankSymbol] = 0;
+    v[nextSymbol] = v[prevSymbol] = v;
+}
+var minSymbol = Symbol('disjoint_sets:min');
+function isRootElement(v) {
+    return v[parentSymbol] === v;
+}
+/**
+ * Represents a collection of disjoint sets of Uint64 values.
+ *
+ * Supports merging sets, retrieving the minimum Uint64 value contained in a set (the representative
+ * value), and iterating over the elements contained in a set.
+ */
+
+var DisjointUint64Sets = function () {
+    function DisjointUint64Sets() {
+        _classCallCheck(this, DisjointUint64Sets);
+
+        this.map = new Map();
+        this.generation = 0;
+    }
+
+    _createClass(DisjointUint64Sets, [{
+        key: 'get',
+        value: function get(x) {
+            var key = x.toString();
+            var element = this.map.get(key);
+            if (element === undefined) {
+                return x;
+            }
+            return findRepresentative(element)[minSymbol];
+        }
+    }, {
+        key: 'isMinElement',
+        value: function isMinElement(x) {
+            var y = this.get(x);
+            return y === x || uint64_1.Uint64.equal(y, x);
+        }
+    }, {
+        key: 'makeSet',
+        value: function makeSet(x) {
+            var key = x.toString();
+            var map = this.map;
+
+            var element = map.get(key);
+            if (element === undefined) {
+                element = x.clone();
+                initializeElement(element);
+                element[minSymbol] = element;
+                map.set(key, element);
+                return element;
+            }
+            return findRepresentative(element);
+        }
+    }, {
+        key: 'link',
+        value: function link(a, b) {
+            a = this.makeSet(a);
+            b = this.makeSet(b);
+            if (a === b) {
+                return false;
+            }
+            this.generation++;
+            var newNode = linkUnequalSetRepresentatives(a, b);
+            spliceCircularLists(a, b);
+            var aMin = a[minSymbol];
+            var bMin = b[minSymbol];
+            newNode[minSymbol] = uint64_1.Uint64.less(aMin, bMin) ? aMin : bMin;
+            return true;
+        }
+    }, {
+        key: 'setElements',
+        value: function* setElements(a) {
+            var key = a.toString();
+            var element = this.map.get(key);
+            if (element === undefined) {
+                yield a;
+            } else {
+                yield* setElementIterator(element);
+            }
+        }
+    }, {
+        key: 'clear',
+        value: function clear() {
+            var map = this.map;
+
+            if (map.size === 0) {
+                return false;
+            }
+            ++this.generation;
+            map.clear();
+            return true;
+        }
+    }, {
+        key: 'mappings',
+        value: function* mappings() {
+            var temp = arguments.length <= 0 || arguments[0] === undefined ? new Array(2) : arguments[0];
+
+            for (var element of this.map.values()) {
+                temp[0] = element;
+                temp[1] = findRepresentative(element)[minSymbol];
+                yield temp;
+            }
+        }
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.mappings();
+        }
+        /**
+         * Returns an array of arrays of strings, where the arrays contained in the outer array correspond
+         * to the disjoint sets, and the strings are the base-10 string representations of the members of
+         * each set.  The members are sorted in numerical order, and the sets are sorted in numerical
+         * order of their smallest elements.
+         */
+
+    }, {
+        key: 'toJSON',
+        value: function toJSON() {
+            var sets = new Array();
+            for (var element of this.map.values()) {
+                if (isRootElement(element)) {
+                    var members = new Array();
+                    for (var member of setElementIterator(element)) {
+                        members.push(member);
+                    }
+                    members.sort(uint64_1.Uint64.compare);
+                    sets.push(members);
+                }
+            }
+            sets.sort((a, b) => uint64_1.Uint64.compare(a[0], b[0]));
+            return sets.map(set => set.map(element => element.toString()));
+        }
+    }, {
+        key: 'size',
+        get: function () {
+            return this.map.size;
+        }
+    }]);
+
+    return DisjointUint64Sets;
+}();
+
+exports.DisjointUint64Sets = DisjointUint64Sets;
+;
+
+/***/ },
+/* 144 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var hash_table_1 = __webpack_require__(140);
+var shader_1 = __webpack_require__(139);
+var segment_color_1 = __webpack_require__(137);
+var frontend_1 = __webpack_require__(75);
+var renderlayer_1 = __webpack_require__(66);
+var selectedSegmentForShader = new Float32Array(8);
+
+var EquivalencesHashMap = function () {
+    function EquivalencesHashMap(disjointSets) {
+        _classCallCheck(this, EquivalencesHashMap);
+
+        this.disjointSets = disjointSets;
+        this.generation = Number.NaN;
+        this.hashMap = new hash_table_1.HashMapUint64();
+    }
+
+    _createClass(EquivalencesHashMap, [{
+        key: 'update',
+        value: function update() {
+            var disjointSets = this.disjointSets;
+            var generation = disjointSets.generation;
+
+            if (this.generation !== generation) {
+                this.generation = generation;
+                var hashMap = this.hashMap;
+
+                hashMap.clear();
+                for (var _ref3 of disjointSets.mappings()) {
+                    var _ref2 = _slicedToArray(_ref3, 2);
+
+                    var objectId = _ref2[0];
+                    var minObjectId = _ref2[1];
+
+                    hashMap.set(objectId, minObjectId);
+                }
+            }
+        }
+    }]);
+
+    return EquivalencesHashMap;
+}();
+
+exports.EquivalencesHashMap = EquivalencesHashMap;
+;
+
+var SegmentationRenderLayer = function (_renderlayer_1$Render) {
+    _inherits(SegmentationRenderLayer, _renderlayer_1$Render);
+
+    function SegmentationRenderLayer(chunkManager, multiscaleSourcePromise, displayState) {
+        var selectedAlpha = arguments.length <= 3 || arguments[3] === undefined ? renderlayer_1.trackableAlphaValue(0.5) : arguments[3];
+        var notSelectedAlpha = arguments.length <= 4 || arguments[4] === undefined ? renderlayer_1.trackableAlphaValue(0) : arguments[4];
+
+        _classCallCheck(this, SegmentationRenderLayer);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SegmentationRenderLayer).call(this, chunkManager, multiscaleSourcePromise));
+
+        _this.displayState = displayState;
+        _this.selectedAlpha = selectedAlpha;
+        _this.notSelectedAlpha = notSelectedAlpha;
+        _this.segmentColorShaderManager = new segment_color_1.SegmentColorShaderManager('segmentColorHash');
+        _this.hashTableManager = new shader_1.HashSetShaderManager('visibleSegments');
+        _this.gpuHashTable = shader_1.GPUHashTable.get(_this.gl, _this.displayState.visibleSegments.hashTable);
+        _this.equivalencesShaderManager = new shader_1.HashMapShaderManager('equivalences');
+        _this.equivalencesHashMap = new EquivalencesHashMap(_this.displayState.segmentEquivalences.disjointSets);
+        _this.gpuEquivalencesHashTable = shader_1.GPUHashTable.get(_this.gl, _this.equivalencesHashMap.hashMap);
+        frontend_1.registerRedrawWhenSegmentationDisplayStateChanged(displayState, _this);
+        _this.registerSignalBinding(selectedAlpha.changed.add(() => {
+            _this.redrawNeeded.dispatch();
+        }));
+        _this.hasEquivalences = _this.displayState.segmentEquivalences.size !== 0;
+        displayState.segmentEquivalences.changed.add(() => {
+            var segmentEquivalences = _this.displayState.segmentEquivalences;
+
+            var hasEquivalences = segmentEquivalences.size !== 0;
+            if (hasEquivalences !== _this.hasEquivalences) {
+                _this.hasEquivalences = hasEquivalences;
+                _this.shaderUpdated = true;
+            }
+        });
+        _this.registerSignalBinding(notSelectedAlpha.changed.add(() => {
+            _this.redrawNeeded.dispatch();
+        }));
+        _this.registerSignalBinding(displayState.showSegmentsOnHover.changed.add(() => {
+            _this.redrawNeeded.dispatch();
+        }));
+        return _this;
+    }
+
+    _createClass(SegmentationRenderLayer, [{
+        key: 'getShaderKey',
+        value: function getShaderKey() {
+            // The shader to use depends on whether there are any equivalences.
+            return `sliceview.SegmentationRenderLayer/${ this.hasEquivalences }`;
+        }
+    }, {
+        key: 'defineShader',
+        value: function defineShader(builder) {
+            _get(Object.getPrototypeOf(SegmentationRenderLayer.prototype), 'defineShader', this).call(this, builder);
+            this.hashTableManager.defineShader(builder);
+            builder.addFragmentCode(`
+uint64_t getUint64DataValue() {
+  return toUint64(getDataValue());
+}
+`);
+            if (this.hasEquivalences) {
+                this.equivalencesShaderManager.defineShader(builder);
+                builder.addFragmentCode(`
+uint64_t getMappedObjectId() {
+  uint64_t value = getUint64DataValue();
+  uint64_t mappedValue;
+  if (${ this.equivalencesShaderManager.getFunctionName }(value, mappedValue)) {
+    return mappedValue;
+  }
+  return value;
+}
+`);
+            } else {
+                builder.addFragmentCode(`
+uint64_t getMappedObjectId() {
+  return getUint64DataValue();
+}
+`);
+            }
+            this.segmentColorShaderManager.defineShader(builder);
+            builder.addUniform('highp vec4', 'uSelectedSegment', 2);
+            builder.addUniform('highp float', 'uShowAllSegments');
+            builder.addUniform('highp float', 'uShowSegmentsOnHover');
+            builder.addUniform('highp float', 'uSelectedAlpha');
+            builder.addUniform('highp float', 'uNotSelectedAlpha');
+            builder.setFragmentMain(`
+  uint64_t value = getMappedObjectId();
+  
+  float alpha = uSelectedAlpha;
+  float saturation = 1.0;
+  if (value.low == vec4(0,0,0,0) && value.high == vec4(0,0,0,0)) {
+    emit(vec4(vec4(0, 0, 0, 0)));
+    return;
+  }
+  bool has = uShowAllSegments > 0.0 ? true : ${ this.hashTableManager.hasFunctionName }(value);
+  if (uSelectedSegment[0] == value.low && uSelectedSegment[1] == value.high) {
+    saturation = has ? 0.5 : uShowSegmentsOnHover;
+    alpha = has || (uShowSegmentsOnHover > 0.0 ) ? alpha : 0.0; 
+  } else if (!has) {
+    alpha = uNotSelectedAlpha;
+  }
+  vec3 rgb = segmentColorHash(value);
+  emit(vec4(mix(vec3(1.0,1.0,1.0), rgb, saturation), alpha));
+`);
+        }
+    }, {
+        key: 'beginSlice',
+        value: function beginSlice(sliceView) {
+            var shader = _get(Object.getPrototypeOf(SegmentationRenderLayer.prototype), 'beginSlice', this).call(this, sliceView);
+            var gl = this.gl;
+            var displayState = this.displayState;
+            var _displayState = this.displayState;
+            var visibleSegments = _displayState.visibleSegments;
+            var showSegmentsOnHover = _displayState.showSegmentsOnHover;
+
+            gl.uniform1f(shader.uniform('uSelectedAlpha'), this.selectedAlpha.value);
+            gl.uniform1f(shader.uniform('uNotSelectedAlpha'), this.notSelectedAlpha.value);
+            gl.uniform4fv(shader.uniform('uSelectedSegment'), this.getSelectedSegment());
+            gl.uniform1f(shader.uniform('uShowAllSegments'), visibleSegments.hashTable.size ? 0.0 : 1.0);
+            gl.uniform1f(shader.uniform('uShowSegmentsOnHover'), showSegmentsOnHover.value ? 1.0 : 0.0);
+            this.hashTableManager.enable(gl, shader, this.gpuHashTable);
+            if (this.hasEquivalences) {
+                this.equivalencesHashMap.update();
+                this.equivalencesShaderManager.enable(gl, shader, this.gpuEquivalencesHashTable);
+            }
+            this.segmentColorShaderManager.enable(gl, shader, displayState.segmentColorHash);
+            return shader;
+        }
+    }, {
+        key: 'getSelectedSegment',
+        value: function getSelectedSegment() {
+            var segmentSelectionState = this.displayState.segmentSelectionState;
+
+            if (!segmentSelectionState.hasSelectedSegment) {
+                selectedSegmentForShader.fill(0);
+            } else {
+                var seg = segmentSelectionState.selectedSegment;
+                var low = seg.low,
+                    high = seg.high;
+                for (var i = 0; i < 4; ++i) {
+                    selectedSegmentForShader[i] = (low >> 8 * i & 0xFF) / 255.0;
+                    selectedSegmentForShader[4 + i] = (high >> 8 * i & 0xFF) / 255.0;
+                }
+            }
+            return selectedSegmentForShader;
+        }
+    }, {
+        key: 'endSlice',
+        value: function endSlice(shader) {
+            var gl = this.gl;
+
+            this.hashTableManager.disable(gl, shader);
+            _get(Object.getPrototypeOf(SegmentationRenderLayer.prototype), 'endSlice', this).call(this, shader);
+        }
+    }]);
+
+    return SegmentationRenderLayer;
+}(renderlayer_1.RenderLayer);
+
+exports.SegmentationRenderLayer = SegmentationRenderLayer;
+;
+
+/***/ },
+/* 145 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+        d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var hash_table_1 = __webpack_require__(140);
+var worker_rpc_1 = __webpack_require__(22);
+var signals_1 = __webpack_require__(34);
+var Uint64Set_1 = function (_worker_rpc_1$SharedO) {
+    _inherits(Uint64Set, _worker_rpc_1$SharedO);
+
+    function Uint64Set() {
+        _classCallCheck(this, Uint64Set);
+
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Uint64Set).call(this, ...args));
+
+        _this.hashTable = new hash_table_1.HashSetUint64();
+        _this.changed = new signals_1.Signal();
+        return _this;
+    }
+
+    _createClass(Uint64Set, [{
+        key: "disposed",
+        value: function disposed() {
+            _get(Object.getPrototypeOf(Uint64Set.prototype), "disposed", this).call(this);
+            this.hashTable = undefined;
+            this.changed = undefined;
+        }
+    }, {
+        key: "add_",
+        value: function add_(x) {
+            return this.hashTable.add(x);
+        }
+    }, {
+        key: "add",
+        value: function add(x) {
+            if (this.add_(x)) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke('Uint64Set.add', { 'id': this.rpcId, 'value': x });
+                }
+                this.changed.dispatch(x, true);
+            }
+        }
+    }, {
+        key: "has",
+        value: function has(x) {
+            return this.hashTable.has(x);
+        }
+    }, {
+        key: Symbol.iterator,
+        value: function () {
+            return this.hashTable.keys();
+        }
+    }, {
+        key: "delete_",
+        value: function delete_(x) {
+            return this.hashTable.delete(x);
+        }
+    }, {
+        key: "delete",
+        value: function _delete(x) {
+            if (this.delete_(x)) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke('Uint64Set.delete', { 'id': this.rpcId, 'value': x });
+                }
+                this.changed.dispatch(x, false);
+            }
+        }
+    }, {
+        key: "clear",
+        value: function clear() {
+            if (this.hashTable.clear()) {
+                var rpc = this.rpc;
+
+                if (rpc) {
+                    rpc.invoke('Uint64Set.clear', { 'id': this.rpcId });
+                }
+                this.changed.dispatch(null, false);
+            }
+        }
+    }, {
+        key: "toJSON",
+        value: function toJSON() {
+            var result = new Array();
+            for (var id of this) {
+                result.push(id.toString());
+            }
+            return result;
+        }
+    }, {
+        key: "size",
+        get: function () {
+            return this.hashTable.size;
+        }
+    }], [{
+        key: "makeWithCounterpart",
+        value: function makeWithCounterpart(rpc) {
+            var obj = new Uint64Set_1();
+            obj.initializeCounterpart(rpc);
+            return obj;
+        }
+    }]);
+
+    return Uint64Set;
+}(worker_rpc_1.SharedObjectCounterpart);
+var Uint64Set = Uint64Set_1;
+Uint64Set = Uint64Set_1 = __decorate([worker_rpc_1.registerSharedObject('Uint64Set')], Uint64Set);
+exports.Uint64Set = Uint64Set;
+;
+worker_rpc_1.registerRPC('Uint64Set.add', function (x) {
+    var obj = this.get(x['id']);
+    if (obj.add_(x['value'])) {
+        obj.changed.dispatch();
+    }
+});
+worker_rpc_1.registerRPC('Uint64Set.delete', function (x) {
+    var obj = this.get(x['id']);
+    if (obj.delete_(x['value'])) {
+        obj.changed.dispatch();
+    }
+});
+worker_rpc_1.registerRPC('Uint64Set.clear', function (x) {
+    var obj = this.get(x['id']);
+    if (obj.hashTable.clear()) {
+        obj.changed.dispatch();
+    }
+});
+
+/***/ },
+/* 146 */
+/***/ function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 147 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var lodash_1 = __webpack_require__(125);
+var base_1 = __webpack_require__(31);
+var shader_1 = __webpack_require__(139);
+var change_tabledata_1 = __webpack_require__(148);
+var renderlayer_1 = __webpack_require__(66);
+var segmentation_renderlayer_1 = __webpack_require__(144);
+var uint64_set_1 = __webpack_require__(145);
+var uint64_1 = __webpack_require__(52);
+
+var CustomColorSegmentationRenderLayer = function (_segmentation_renderl) {
+    _inherits(CustomColorSegmentationRenderLayer, _segmentation_renderl);
+
+    function CustomColorSegmentationRenderLayer(chunkManager, multiscaleSourcePromise, metrics, displayState) {
+        var selectedAlpha = arguments.length <= 4 || arguments[4] === undefined ? renderlayer_1.trackableAlphaValue(0.5) : arguments[4];
+        var notSelectedAlpha = arguments.length <= 5 || arguments[5] === undefined ? renderlayer_1.trackableAlphaValue(0) : arguments[5];
+
+        _classCallCheck(this, CustomColorSegmentationRenderLayer);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CustomColorSegmentationRenderLayer).call(this, chunkManager, multiscaleSourcePromise, displayState, selectedAlpha, notSelectedAlpha));
+
+        _this.metrics = metrics;
+        _this.displayState = displayState;
+        _this.selectedAlpha = selectedAlpha;
+        _this.notSelectedAlpha = notSelectedAlpha;
+        // data transformation function applied to chunk data
+        _this.fn = function (IDColorMap, chunk) {
+            change_tabledata_1.updateLookupTableData(chunk.data, IDColorMap, 1, chunk.chunkFormat.subchunkSize, chunk.chunkDataSize);
+        };
+        // copy display state
+        _this.displayState = Object.assign({}, displayState);
+        _this.displayState.visibleSegments = uint64_set_1.Uint64Set.makeWithCounterpart(displayState.manager.worker);
+        _this.gpuHashTable = shader_1.GPUHashTable.get(_this.gl, _this.displayState.visibleSegments.hashTable);
+        return _this;
+    }
+
+    _createClass(CustomColorSegmentationRenderLayer, [{
+        key: 'updateDataTransformation',
+        value: function updateDataTransformation(metricName) {
+            this.currentMetricName = metricName;
+            var metricKeyData = this.metrics.get(metricName);
+            var fn = undefined;
+            if (metricKeyData) {
+                fn = this.fn.bind({}, metricKeyData.IDColorMap);
+            }
+            var sourceList = lodash_1.flatten(this.sources);
+            lodash_1.each(sourceList, function (chunkSource) {
+                chunkSource.transform = fn;
+                for (var _ref3 of chunkSource.chunks) {
+                    var _ref2 = _slicedToArray(_ref3, 2);
+
+                    var key = _ref2[0];
+                    var chunk = _ref2[1];
+
+                    if (chunk.state === base_1.ChunkState.GPU_MEMORY) {
+                        chunk.state = base_1.ChunkState.SYSTEM_MEMORY;
+                        chunkSource.chunkManager.chunkQueueManager.scheduleFrontentChunkUpdate(key, chunk, chunkSource);
+                    }
+                }
+            });
+        }
+    }, {
+        key: 'getShaderKey',
+        value: function getShaderKey() {
+            return 'customColorShader';
+        }
+    }, {
+        key: 'defineShader',
+        value: function defineShader(builder) {
+            _get(Object.getPrototypeOf(CustomColorSegmentationRenderLayer.prototype), 'defineShader', this).call(this, builder);
+            builder.setFragmentMain(`
+  uint64_t value = toUint64(getDataValue());
+  float alpha = uSelectedAlpha;
+  float saturation = 1.0;
+  if (value.low == vec4(0,0,0,0) && value.high == vec4(0,0,0,0)) {
+    emit(vec4(vec4(0, 0, 0, 0)));
+    return;
+  }
+  bool has = uShowAllSegments > 0.0 ? true : ${ this.hashTableManager.hasFunctionName }(value);
+  if (uSelectedSegment[0] == value.low && uSelectedSegment[1] == value.high) {
+    saturation = has ? 0.5 : 0.75;
+    alpha = has || (uShowSegmentsOnHover > 0.0 )? alpha : 0.0; 
+  } else if (!has) {
+    alpha = uNotSelectedAlpha;
+  }
+  vec3 rgb = vec3(value.low);
+  emit(vec4(mix(vec3(1.0,1.0,1.0), rgb, saturation), alpha));
+`);
+        }
+    }, {
+        key: 'getSelectedSegment',
+        value: function getSelectedSegment() {
+            var segmentSelectionState = this.displayState.segmentSelectionState;
+
+            var selectedSegmentStash = segmentSelectionState.selectedSegment;
+            var colorVal = this.getColorVal(selectedSegmentStash);
+            segmentSelectionState.selectedSegment = colorVal;
+            var segmentVal = _get(Object.getPrototypeOf(CustomColorSegmentationRenderLayer.prototype), 'getSelectedSegment', this).call(this);
+            segmentSelectionState.selectedSegment = selectedSegmentStash;
+            return segmentVal;
+        }
+    }, {
+        key: 'getColorVal',
+        value: function getColorVal(id) {
+            var metric = this.metrics.get(this.currentMetricName);
+            if (!metric) {
+                return new uint64_1.Uint64();
+            }
+            var colorVal = metric.IDColorMap.get(String(id.low) + ',' + String(id.high));
+            return colorVal ? colorVal : new uint64_1.Uint64();
+        }
+    }]);
+
+    return CustomColorSegmentationRenderLayer;
+}(segmentation_renderlayer_1.SegmentationRenderLayer);
+
+exports.CustomColorSegmentationRenderLayer = CustomColorSegmentationRenderLayer;
+
+/***/ },
 /* 148 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var lodash_1 = __webpack_require__(125);
+var encode_common_ts_1 = __webpack_require__(149);
+/**
+ * Update the lookup table data, which usually contains segment IDs, with new data provided
+ * in newDataMap, which acts like a dictionary mapping segment IDs to new values.
+ * Values not found in this mapping are set to 0
+ */
+function updateLookupTableData(data, newDataMap, offset, blockSize, volumeSize) {
+    // get index ranges for the lookup table data
+    var headerSize = getHeaderSize(volumeSize, blockSize);
+    var ranges = getLookupRanges(data, offset, headerSize / 2);
+    lodash_1.each(ranges, function (range) {
+        for (var i = range.start; i < range.stop; i = i + 2) {
+            var key = data[i] + ',' + data[i + 1]; // 'low,high'
+            if (newDataMap.get(key)) {
+                var newData = newDataMap.get(key);
+                data[i] = newData.low;
+                data[i + 1] = newData.high;
+            } else {
+                data[i] = data[i + 1] = 0;
+            }
+        }
+    }.bind(newDataMap));
+}
+exports.updateLookupTableData = updateLookupTableData;
+function getLookupRanges(data, offset, numBlocks) {
+    var byteOffset = offset * 4;
+    var dat8 = new Uint8Array(data.buffer, byteOffset); // skip the padding bytes
+    var offsets = [];
+    var headerByteLength = numBlocks * 4 * 2; // size is numBlocks * bytesizeofheader
+    for (var i = 0; i < headerByteLength; i = i + 8) {
+        // decode offsets
+        var lookupOffset = dat8[i] + (dat8[i + 1] << 8) + (dat8[i + 2] << 16);
+        var dataOffset = lookupOffset + 1;
+        if (dat8[i + 3] !== 0) {
+            dataOffset = dat8[i + 4] + (dat8[i + 5] << 8) + (dat8[i + 6] << 16) + (dat8[i + 7] << 24);
+        }
+        offsets.push({ offset: lookupOffset + offset, type: 'lookup' });
+        offsets.push({ offset: dataOffset + offset, type: 'data' });
+    }
+    offsets.sort(compareOffsets);
+    var ranges = [];
+    for (var _i = 0; _i < offsets.length; _i++) {
+        if (offsets[_i].type === 'lookup') {
+            // start by assuming end condition--range ends at the end of the data array
+            var range = { start: offsets[_i].offset, stop: data.length };
+            // look for the next offset of type data, as the next data offset is the end of your range of
+            // lookup tables
+            while (_i < offsets.length && offsets[_i].type !== 'data') {
+                _i++;
+            }
+            // make sure the index isn't outside our offsets array
+            if (_i < offsets.length) {
+                // current index now points to next type 'data' offset
+                range.stop = offsets[_i].offset;
+            }
+            ranges.push(range);
+        }
+    }
+    return ranges;
+}
+function getHeaderSize(volumeSize, blockSize) {
+    var blockIndexSize = encode_common_ts_1.BLOCK_HEADER_SIZE;
+    for (var i = 0; i < 3; ++i) {
+        var curGridSize = Math.ceil(volumeSize[i] / blockSize[i]);
+        blockIndexSize *= curGridSize;
+    }
+    return blockIndexSize;
+}
+function compareOffsets(a, b) {
+    if (a.offset < b.offset) {
+        return -1;
+    }
+    if (a.offset > b.offset) {
+        return 1;
+    }
+    if (a.offset === b.offset && a.type === b.type) {
+        return 0;
+    }
+    if (a.type === 'data') {
+        return 1;
+    }
+    // a's type is 'lookup'
+    return -1;
+}
+
+/***/ },
+/* 149 */
 /***/ function(module, exports) {
 
 // DO NOT EDIT.  Generated from
@@ -52105,20 +52395,20 @@ function encodeChannels(output, blockSize, rawData, volumeSize, baseInputOffset,
 exports.encodeChannels = encodeChannels;
 
 /***/ },
-/* 149 */
+/* 150 */
 /***/ function(module, exports, __webpack_require__) {
 
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var lodash_1 = __webpack_require__(125);
 var uint64_1 = __webpack_require__(52);
-var lodash_1 = __webpack_require__(146);
-var chroma = __webpack_require__(150); //needs to be imported this way due to export style differences
+var chroma = __webpack_require__(151); // needs to be imported this way due to export style differences
 function mapMetricsToColors(IdMetricMap, metricKeyData) {
     var colors = ['Yellow', 'aquamarine', 'deepskyblue', 'mediumorchid'];
     var metricIteratee = function (el) {
-        return el[1]; //metric value
+        return el[1]; // metric value
     };
     var min = metricKeyData.min = lodash_1.minBy(IdMetricMap, metricIteratee)[1];
     var max = metricKeyData.max = lodash_1.maxBy(IdMetricMap, metricIteratee)[1];
@@ -52127,12 +52417,13 @@ function mapMetricsToColors(IdMetricMap, metricKeyData) {
         var metricArr = IdMetricMap[i];
         var metricVal = metricArr[1];
         var rgb = scale(metricVal).rgba();
-        metricArr[1] = (rgb[3] << 24) + (rgb[2] << 16) + (rgb[1] << 8) + rgb[0]; //convert color to 32bit little-endian value
-        //make data key
+        // convert color to 32bit little-endian value
+        metricArr[1] = (rgb[3] << 24) + (rgb[2] << 16) + (rgb[1] << 8) + rgb[0];
+        // make data key
         var idUint64 = new uint64_1.Uint64();
         idUint64.parseString(metricArr[0].toString());
         metricArr[0] = idUint64.low + ',' + idUint64.high;
-        //convert val to Uint64 with rand high values
+        // convert val to Uint64 with rand high values
         var randHigh = Math.floor(Math.random() * Math.pow(2, 32));
         metricArr[1] = new uint64_1.Uint64(metricArr[1], randHigh);
     }
@@ -52148,7 +52439,7 @@ var MetricKeyData = function MetricKeyData() {
 exports.MetricKeyData = MetricKeyData;
 
 /***/ },
-/* 150 */
+/* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module) {
@@ -54632,10 +54923,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR I
 
 }).call(this);
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(147)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(126)(module)))
 
 /***/ },
-/* 151 */
+/* 152 */
 /***/ function(module, exports) {
 
 /**
@@ -54665,7 +54956,7 @@ function associateLabelWithElement(label, element) {
 exports.associateLabelWithElement = associateLabelWithElement;
 
 /***/ },
-/* 152 */
+/* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -54698,14 +54989,14 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var debounce = __webpack_require__(43);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-var dropdown_1 = __webpack_require__(153);
-var keyboard_shortcut_handler_1 = __webpack_require__(100);
-var longest_common_prefix_1 = __webpack_require__(154);
+var dropdown_1 = __webpack_require__(154);
+var keyboard_shortcut_handler_1 = __webpack_require__(106);
+var longest_common_prefix_1 = __webpack_require__(155);
 var promise_1 = __webpack_require__(20);
-var scroll_into_view_1 = __webpack_require__(155);
-var associate_label_1 = __webpack_require__(151);
+var scroll_into_view_1 = __webpack_require__(156);
+var associate_label_1 = __webpack_require__(152);
 var signals_1 = __webpack_require__(34);
-__webpack_require__(156);
+__webpack_require__(157);
 var ACTIVE_COMPLETION_CLASS_NAME = 'autocomplete-completion-active';
 var AUTOCOMPLETE_INDEX_SYMBOL = Symbol('autocompleteIndex');
 function makeDefaultCompletionElement(completion) {
@@ -54729,7 +55020,8 @@ var KEY_MAP = new keyboard_shortcut_handler_1.KeySequenceMap({
     'arrowdown': 'cycle-next-active-completion',
     'arrowup': 'cycle-prev-active-completion',
     'tab': 'choose-active-completion-or-prefix',
-    'enter': 'choose-active-completion'
+    'enter': 'choose-active-completion',
+    'escape': 'cancel'
 });
 var KEY_COMMANDS = new Map([['cycle-next-active-completion', function () {
     this.cycleActiveCompletion(+1);
@@ -54741,6 +55033,8 @@ var KEY_COMMANDS = new Map([['cycle-next-active-completion', function () {
     return this.selectActiveCompletion( /*allowPrefix=*/true);
 }], ['choose-active-completion', function () {
     return this.selectActiveCompletion( /*allowPrefix=*/false);
+}], ['cancel', function () {
+    return this.cancel();
 }]]);
 var DEFAULT_COMPLETION_DELAY = 200; // milliseconds
 
@@ -55004,7 +55298,11 @@ var AutocompleteTextInput = function (_disposable_1$RefCoun) {
                         this.hasResultForDropdown = false;
                     }
                 }
-                this.setActiveIndex(0);
+                if (completionResult.selectSingleResult) {
+                    this.setActiveIndex(0);
+                } else {
+                    this.setHintValue(this.getCompletedValueByIndex(0));
+                }
             } else {
                 this.hasResultForDropdown = true;
                 // Check for a common prefix.
@@ -55089,13 +55387,19 @@ var AutocompleteTextInput = function (_disposable_1$RefCoun) {
                 if (!allowPrefix) {
                     return false;
                 }
-                var commonPrefix = this.commonPrefix;
+                var completionResult = this.completionResult;
 
-                if (commonPrefix.length > this.value.length) {
-                    this.value = commonPrefix;
-                    return true;
+                if (completionResult !== null && completionResult.completions.length === 1) {
+                    activeIndex = 0;
+                } else {
+                    var commonPrefix = this.commonPrefix;
+
+                    if (commonPrefix.length > this.value.length) {
+                        this.value = commonPrefix;
+                        return true;
+                    }
+                    return false;
                 }
-                return false;
             }
             var newValue = this.getCompletedValueByIndex(activeIndex);
             if (this.value === newValue) {
@@ -55108,6 +55412,15 @@ var AutocompleteTextInput = function (_disposable_1$RefCoun) {
         key: 'selectCompletion',
         value: function selectCompletion(index) {
             this.value = this.getCompletedValueByIndex(index);
+        }
+        /**
+         * Called when user presses escape.  Does nothing here, but may be overridden in a subclass.
+         */
+
+    }, {
+        key: 'cancel',
+        value: function cancel() {
+            return false;
         }
         /**
          * Updates the hintElement scroll position to match the scroll position of inputElement.
@@ -55191,7 +55504,7 @@ exports.AutocompleteTextInput = AutocompleteTextInput;
 ;
 
 /***/ },
-/* 153 */
+/* 154 */
 /***/ function(module, exports) {
 
 /**
@@ -55275,7 +55588,7 @@ function positionDropdown(dropdownElement, associatedElement) {
 exports.positionDropdown = positionDropdown;
 
 /***/ },
-/* 154 */
+/* 155 */
 /***/ function(module, exports) {
 
 /**
@@ -55335,7 +55648,7 @@ function longestCommonPrefix(strings) {
 exports.longestCommonPrefix = longestCommonPrefix;
 
 /***/ },
-/* 155 */
+/* 156 */
 /***/ function(module, exports) {
 
 /**
@@ -55375,13 +55688,13 @@ function scrollIntoViewIfNeeded(element) {
 exports.scrollIntoViewIfNeeded = scrollIntoViewIfNeeded;
 
 /***/ },
-/* 156 */
+/* 157 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 157 */
+/* 158 */
 /***/ function(module, exports) {
 
 /**
@@ -55423,13 +55736,13 @@ function makeHiddenSubmitButton() {
 exports.makeHiddenSubmitButton = makeHiddenSubmitButton;
 
 /***/ },
-/* 158 */
+/* 159 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 159 */
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -55461,15 +55774,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var layer_dialog_1 = __webpack_require__(103);
-var layer_specification_1 = __webpack_require__(104);
+var layer_dialog_1 = __webpack_require__(109);
+var layer_specification_1 = __webpack_require__(110);
 var disposable_1 = __webpack_require__(23);
 var dom_1 = __webpack_require__(7);
-var dropdown_1 = __webpack_require__(153);
+var dropdown_1 = __webpack_require__(154);
 // Sortable must be imported using non-ES6 module syntax because of how it is exported.
-var Sortable = __webpack_require__(160);
-__webpack_require__(72);
-__webpack_require__(161);
+var Sortable = __webpack_require__(161);
+__webpack_require__(73);
+__webpack_require__(162);
 
 var LayerWidget = function (_disposable_1$RefCoun) {
     _inherits(LayerWidget, _disposable_1$RefCoun);
@@ -55766,7 +56079,7 @@ exports.LayerPanel = LayerPanel;
 ;
 
 /***/ },
-/* 160 */
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/**!
@@ -57021,13 +57334,13 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/**!
 
 
 /***/ },
-/* 161 */
+/* 162 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 162 */
+/* 163 */
 /***/ function(module, exports) {
 
 /**
@@ -57083,7 +57396,7 @@ function box(flexDirection, spec) {
 exports.box = box;
 
 /***/ },
-/* 163 */
+/* 164 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -57849,7 +58162,7 @@ exports.NavigationState = NavigationState;
 ;
 
 /***/ },
-/* 164 */
+/* 165 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -57881,7 +58194,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var disposable_1 = __webpack_require__(23);
 var geom_1 = __webpack_require__(9);
-__webpack_require__(165);
+__webpack_require__(166);
 var ROUND_POSITIONS = true;
 
 var PositionStatusPanel = function (_disposable_1$RefCoun) {
@@ -58036,13 +58349,13 @@ exports.PositionStatusPanel = PositionStatusPanel;
 ;
 
 /***/ },
-/* 165 */
+/* 166 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin
 
 /***/ },
-/* 166 */
+/* 167 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -58231,7 +58544,7 @@ exports.unregisterTrackable = unregisterTrackable;
 updateTrackedObjectsFromHash();
 
 /***/ },
-/* 167 */
+/* 168 */
 /***/ function(module, exports) {
 
 // removed by extract-text-webpack-plugin

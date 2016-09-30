@@ -40,9 +40,15 @@ var NeuroglancerTab = React.createClass({
         var new_specs = _.map(_.zip(layer_names, ['image', 'metric', 'metric']), function(val){
             return this.buildSourceSpec(server, uuid, val[0], val[1])
         }.bind(this));
-        new_specs[1]['compType'] = props.compType.toKey();
-        new_specs[2]['compType'] = new_specs[1]['compType'];
+        new_specs[1]['compType'] = new_specs[2]['compType'] = props.compType.toKey();
         new_specs[2]['__comp'] = true;
+        //add skeleton references
+        if(props.metric_results.config['dvid-info']['skeletons']){
+            new_specs[1]['skeletons'] = props.metric_results.config['dvid-info']['skeletons'];
+        }
+        if(props.metric_results.config['dvid-info']['skeletons']){
+            new_specs[2]['skeletons'] = props.metric_results.config['dvid-info-comp']['skeletons'];
+        }
 
         //3. compare specs. Add/remove layers as needed
         for(var i=0; i<new_specs.length; i++){
