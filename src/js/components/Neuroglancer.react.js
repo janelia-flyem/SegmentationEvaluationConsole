@@ -35,19 +35,22 @@ var NeuroglancerTab = React.createClass({
 
         //2. build the prospective specs (minus the metric data, as this incurs unnecessary computation at this stage)
         var server = props.metric_results.config['dvid-info']['dvid-server'];
-        var uuid = props.metric_results.config['dvid-info']['full-uuid'];
+        var uuid = props.metric_results.config['dvid-info']['uuid'];
         var layer_names = this.getLayerNames(props.metric_results);
         var new_specs = _.map(_.zip(layer_names, ['image', 'metric', 'metric']), function(val){
             return this.buildSourceSpec(server, uuid, val[0], val[1])
         }.bind(this));
         new_specs[1]['compType'] = new_specs[2]['compType'] = props.compType.toKey();
         new_specs[2]['__comp'] = true;
+
         //add skeleton references
-        if(props.metric_results.config['dvid-info']['skeletons']){
-            new_specs[1]['skeletons'] = props.metric_results.config['dvid-info']['skeletons'];
-        }
-        if(props.metric_results.config['dvid-info']['skeletons']){
-            new_specs[2]['skeletons'] = props.metric_results.config['dvid-info-comp']['skeletons'];
+        if(this.props.skeletonMap){
+            _.each(new_specs, function(spec){
+                var skeletonRef = this.props.skeletonMap.get(spec['__name'])
+                if(skeletonRef){
+                    spec['skeletons'] = skeletonRef;
+                }
+            }.bind(this))
         }
 
         //3. compare specs. Add/remove layers as needed
@@ -185,7 +188,8 @@ var NeuroglancerState = function(state){
         metric_results: state.metric_results,
         active: (state.ActiveTab==2 ? true : false),
         position: state.position,
-        compType: state.compType
+        compType: state.compType,
+        skeletonMap: state.skeletonMap
     }
 };
 

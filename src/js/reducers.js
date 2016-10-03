@@ -6,7 +6,8 @@ var initialState = {
     compType: new CompType(),
     metric_results: null,
     ActiveTab: 1,
-    position: null
+    position: null,
+    skeletonMap: null
 }
 
 var ConsoleReducers = function(state, action){
@@ -34,6 +35,11 @@ var ConsoleReducers = function(state, action){
             return Object.assign({}, state, {
                 ActiveTab: 2,
                 position: action.position
+            });
+        }
+        case 'UPDATE_SKELETONS': {
+            return Object.assign({}, state, {
+                skeletonMap: action.skeletonMap
             });
         }
 

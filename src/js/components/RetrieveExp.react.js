@@ -34,14 +34,8 @@ var RetrieveExp = React.createClass({
         $.getJSON(this.state.dvid_server + APIPrefix + this.state.uuid + ExpsLocation + "key/" + value,
             function (data) {
                 var metric_data = new SegMetrics(data);
-                this.getFullUUID_Promise(metric_data.config['dvid-info']['dvid-server'],
-                                         metric_data.config['dvid-info']['uuid'])
-                    .then(function(fulluuid){
-                        metric_data.config['dvid-info']['full-uuid'] = fulluuid;
-                        this.props.callback(metric_data);
-                        this.setState({waiting: false})
-                    }.bind(this));
-
+                this.props.callback(metric_data);
+                this.setState({waiting: false});
             }.bind(this) );
     },
     retrieveExpListActual: function(server, uuid) {
@@ -76,44 +70,11 @@ var RetrieveExp = React.createClass({
         reader.onload = function (e) {
             var data = JSON.parse(reader.result);
             var metric_data = new SegMetrics(data);
-            this.getFullUUID_Promise(
-                metric_data.config['dvid-info']['dvid-server'],
-                metric_data.config['dvid-info']['uuid'])
-                .then(function(fulluuid){
-                    metric_data.config['dvid-info']['full-uuid'] = fulluuid;
-                    this.props.callback(metric_data);
-                    this.setState({waiting: false})
+            this.props.callback(metric_data);
+            this.setState({waiting: false});
 
-                }.bind(this));
         }.bind(this);
         reader.readAsText(ev.target.files[0]);
-    },
-    getFullUUID_Promise: function(server,uuid){
-        /**
-           Creates a promise that resolves to the full uuid using the dvid API
-        **/
-        var headers = new Headers({
-           'Content-Type': 'text/plain'
-        });
-        var request = new Request('http://' + server + '/api/repo/' + uuid + '/info', {
-            'headers': headers,
-            'method': 'get'
-        });
-
-        return fetch(request)
-            .then(function(response) {
-                return response.json();
-            })
-            .then(function(json){
-                //find the full uuid given the list of nodes names in the dag
-                return _.find(_.keys(json['DAG']['Nodes']), function(fulluuid){
-                    return fulluuid.slice(0, uuid.length) === uuid
-            })}.bind(this))
-            .catch(function(err) {
-                //todo: better error handling
-                console.log(err)
-            });
-
     },
     retrieveExpList: function(ev) {
         ev.preventDefault();
@@ -140,7 +101,6 @@ var RetrieveExp = React.createClass({
             portnum = parseInt(serverport[1]);
         }
         var dvid_connection = dvid.connect({host: server, port: portnum});
-           
         dvid_connection.serverInfo({
             callback: function (data) {
                 this.setState({dvid_server: dvidserver, uuid: uuid});
@@ -178,7 +138,8 @@ var RetrieveExp = React.createClass({
                 <div className="modal-body">
                     <form className="form">
                         <div className="form-group">
-                            <label className="sr-only" htmlFor={this.addID("dvidserver")}>DVID Server</label>
+                            <label className="sr-only" htmlFor={this.addID("dvidserver")}>DVID Server
+                            </label>
                             <input type="text" className="form-control" id={this.addID("dvidserver")} ref="dvidserver" placeholder="DVID Server" aria-describedby="servererr" />
                             {server_err}
                         </div>
