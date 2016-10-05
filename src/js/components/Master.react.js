@@ -3,7 +3,8 @@
 var React = require('react');
 var MetricSearch = require('./MetricSearch.React');
 var Help = require('./Help.React');
-var DisplayTabs = require('./DisplayTabs.react.js')
+var DisplayTabs = require('./DisplayTabs.react.js');
+var BodyModal = require('./BodyModal.react.js');
 
 window.$ = window.jQuery = require('jquery');
 
@@ -36,6 +37,7 @@ var Master = React.createClass({
                     </div>
                 </nav>
                 <DisplayTabs />
+                <BodyModal />
             </div>
         );
         // add tabs

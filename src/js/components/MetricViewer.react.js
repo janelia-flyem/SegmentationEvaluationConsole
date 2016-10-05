@@ -33,8 +33,8 @@ var MetricViewer = React.createClass({
 
 var MetricViewerState = function(state){
     return {
-        compType: state.compType,
-        metric_results: state.metric_results
+        compType: state.main.compType,
+        metric_results: state.main.metric_results
     }
 };
 

@@ -47,8 +47,8 @@ var DisplayTabs = React.createClass({
 
 var TabsState = function(state){
     return {
-        ActiveTab: state.ActiveTab,
-        metric_results: state.metric_results
+        ActiveTab: state.main.ActiveTab,
+        metric_results: state.main.metric_results
     }
 };
 

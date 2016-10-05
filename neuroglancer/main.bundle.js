@@ -32409,6 +32409,7 @@ var custom_color_segmentation_renderlayer_1 = __webpack_require__(147);
 var trackable_value_1 = __webpack_require__(67);
 var json_1 = __webpack_require__(8);
 var metric_color_util_1 = __webpack_require__(150);
+var uint64_1 = __webpack_require__(52);
 __webpack_require__(146);
 
 var SegmentationMetricUserLayer = function (_segmentation_user_la) {
@@ -32475,6 +32476,18 @@ var SegmentationMetricUserLayer = function (_segmentation_user_la) {
                 x['selectedAlpha'] = this.selectedAlphaStash;
             }
             return x;
+        }
+    }, {
+        key: 'addSegment',
+        value: function addSegment(id) {
+            var segment = new uint64_1.Uint64();
+            segment.parseString(id.toString());
+            this.visibleSegments.add(segment);
+            if (this.visibleLayer !== this.segmentationLayer) {
+                //translate into metric coordinates
+                var metricSegment = this.metricLayer.getColorVal(segment);
+                this.metricLayer.displayState.visibleSegments.add(metricSegment);
+            }
         }
     }, {
         key: 'syncMetricVisibleSegments',

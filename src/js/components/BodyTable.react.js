@@ -3,6 +3,8 @@
 var React = require('react');
 var Popover = require('react-bootstrap/lib/Popover');
 var OverlayTrigger = require('react-bootstrap/lib/OverlayTrigger');
+var ReactRedux = require('react-redux');
+var connect = ReactRedux.connect;
 
 var SelectBodyFilter = React.createClass({
     render: function () {
@@ -18,24 +20,12 @@ var SelectBodyFilter = React.createClass({
 });
 
 
-var TableRow = React.createClass({
+var TableRowComp = React.createClass({
     render: function () {
-        var otherSegType = this.getOverlapBodyType(this.props.rowinfo[3]);
-        var popover = (
-            <Popover id={this.props.rowinfo[0] + 'popover'} title={otherSegType + " Bodies Overlapping " + this.props.rowinfo[0]}>
-                <ul>
-                    {this.props.rowinfo[2].map(function(el){
-                        return <li key={el[1]}>{el[1]}</li>
-                    })}
-                </ul>
-            </Popover>
-        );
         return (
             <tr>
                 <td>
-                    <OverlayTrigger placement="right" overlay={popover}>
-                      <a>{this.props.rowinfo[0]}</a>
-                    </OverlayTrigger>
+                    <a onClick={this.handleClick}>{this.props.rowinfo[0]}</a>
                 </td>
                 <td>{this.props.rowinfo[1]}</td>
             </tr>
@@ -51,14 +41,30 @@ var TableRow = React.createClass({
         }
         return '';
     },
-    buildPopupContent: function(overlap_array){
-        var content = '<ul>';
-        for(var i in overlap_array){
-            content += '<li>' + overlap_array[i][1] + '</li>';
-        }
-        return content + '</ul>';
-    },
+    handleClick: function(){
+        this.props.loadBodyModal(this.props.rowinfo[0],
+                                 this.props.rowinfo[2], 
+                                 this.getOverlapBodyType(this.props.rowinfo[3]));
+    }
 });
+var TableRowState = function(state){
+    return {};
+};
+
+var TableRowDispatch = function(dispatch){
+    return {
+        loadBodyModal: function(bodyID, overlapIDs, overlapSegmentationType) {
+            dispatch({
+                type: 'LOAD_BODY_MODAL',
+                overlapIDs: overlapIDs,
+                overlapSegmentationType: overlapSegmentationType,
+                modalSelectedBodyID: bodyID,
+            });
+        }
+    }
+};
+
+var TableRow = connect(TableRowState, TableRowDispatch)(TableRowComp)
 
 var TableInt = React.createClass({
     render: function () {

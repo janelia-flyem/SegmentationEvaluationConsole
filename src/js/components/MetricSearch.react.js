@@ -94,8 +94,8 @@ var MetricSearch = React.createClass({
 
 var MetricSearchState = function(state){
     return {
-        compType: state.compType,
-        metric_results: state.metric_results
+        compType: state.main.compType,
+        metric_results: state.main.metric_results
     }
 };
 
@@ -109,7 +109,7 @@ var MetricSearchDispatch = function(dispatch){
         },
         updateSkeletons: function(data){
             dispatch({
-                type: 'UPDATE_SKELETONS',
+                type: 'UPDATE_SKELETON_SOURCES',
                 skeletonMap: data
             });
 

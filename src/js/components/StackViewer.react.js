@@ -331,7 +331,7 @@ var StackViewer = React.createClass({
 
 var StackViewerState = function(state){
     return {
-        active: (state.ActiveTab==1 ? true : false)
+        active: (state.main.ActiveTab==1 ? true : false)
     }
 };
 

@@ -85,6 +85,11 @@ var NeuroglancerTab = React.createClass({
             window.viewer.display.onResize();
         }
 
+        if(props.ngSelectedBodyID !== null && props.ngSelectedBodyID !== this.props.ngSelectedBodyID){
+            this.props.disposeModal();
+            this.addSkeleton(props.ngSelectedBodyID, props.ngSelectedLayer);
+        }
+
     },
     specsMatch: function(specA, specB){
         return specA.type === specB.type &&
@@ -154,6 +159,14 @@ var NeuroglancerTab = React.createClass({
 
         return spec;
     },
+    addSkeleton(skeletonID, layerName){
+        var layer = viewer.layerManager.getLayerByName(layerName);
+        if(!layer){
+            return;
+        }
+        layer = layer.layer;
+        layer.addSegment(skeletonID);
+    },
     componentDidMount: function(){
         //call neuroglancer method that initializes the view
         this.node = ReactDOM.findDOMNode(this);
@@ -185,16 +198,23 @@ var NeuroglancerTab = React.createClass({
 
 var NeuroglancerState = function(state){
     return {
-        metric_results: state.metric_results,
-        active: (state.ActiveTab==2 ? true : false),
-        position: state.position,
-        compType: state.compType,
-        skeletonMap: state.skeletonMap
+        metric_results: state.main.metric_results,
+        active: (state.main.ActiveTab==2 ? true : false),
+        position: state.main.position,
+        compType: state.main.compType,
+        skeletonMap: state.main.skeletonMap,
+        ngSelectedBodyID: state.bodyModal.ngSelectedBodyID,
+        ngSelectedLayer: state.bodyModal.ngSelectedLayer
     }
 };
 
 var NeuroglancerDispatch = function(dispatch){
-    return {}
+    return {        
+        disposeModal: function() {
+            dispatch({
+                type: 'DISPOSE_BODY_MODAL',
+            });
+    }}
 };
 
 NeuroglancerTab = connect(NeuroglancerState, NeuroglancerDispatch)(NeuroglancerTab)
