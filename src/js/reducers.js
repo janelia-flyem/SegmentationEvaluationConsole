@@ -9,7 +9,9 @@ var initialState = {
     metric_results: null,
     ActiveTab: 1,
     position: null,
-    skeletonMap: null
+    skeletonMap: null,
+    stackData: null,
+    stacklayerReloadNeeded: false
 }
 
 var main = function(state, action){
@@ -44,6 +46,17 @@ var main = function(state, action){
             return Object.assign({}, state, {
                 skeletonMap: action.skeletonMap
             });
+        }
+        case 'UPDATE_STACK_DATA':{
+            return Object.assign({}, state, {
+                stackData: action.stackData,
+                stacklayerReloadNeeded: true
+            });
+        }
+        case 'RELOAD_STACK_LAYER':{
+            return Object.assign({}, state, {
+                stacklayerReloadNeeded: action.reloadNeeded
+            });   
         }
         default:{
             return state;

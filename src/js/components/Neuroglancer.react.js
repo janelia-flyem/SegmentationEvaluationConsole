@@ -30,9 +30,15 @@ var NeuroglancerTab = React.createClass({
             return;
         }
         var currentLayerSpecs = _.chain(viewer.layerManager.managedLayers)
-                                 .pluck('initialSpecification')
+                                 .pluck('initialSpecification').value()
+        var stackLayer = _.filter(currentLayerSpecs,function(spec){return spec.type === 'stack';})[0];
+        currentLayerSpecs = _.chain(currentLayerSpecs)
+                                 .filter(function(spec){return spec.type !== 'stack';})
                                  .map(function(spec){spec.found = false; return spec;}).value();
 
+        if(currentLayerSpecs.length === 0 && !!props.stackData){
+            this.updateCoordinates(props.stackData.stackMidpoint);
+        }
         //2. build the prospective specs (minus the metric data, as this incurs unnecessary computation at this stage)
         var server = props.metric_results.config['dvid-info']['dvid-server'];
         var uuid = props.metric_results.config['dvid-info']['uuid'];
@@ -84,10 +90,34 @@ var NeuroglancerTab = React.createClass({
             //trigger a redraw
             window.viewer.display.onResize();
         }
-
+        //select body
         if(props.ngSelectedBodyID !== null && props.ngSelectedBodyID !== this.props.ngSelectedBodyID){
             this.props.disposeModal();
             this.addSkeleton(props.ngSelectedBodyID, props.ngSelectedLayer);
+        }
+
+        //add stack overlay
+        if(props.stackData && props.stacklayerReloadNeeded){
+            if(stackLayer){
+                this.removeLayer(stackLayer)
+            }
+            //don't tie up the UI by adding stackview overlay.
+            //since the overlay is not initially displayed
+            setTimeout(function(stackData, addLayer){
+                var spec = {
+                    __name: 'stack overlay',
+                    source: 'dvid://stack' + Math.random(),//add a random number so neuroglancer will know this is new data.
+                    type: 'stack',                         //TODO: should instead use the metric name(s)
+                    stackData: stackData,
+                    dataScaler: 8,
+                    visible: false
+                }
+                //add the layer
+                addLayer(spec, {});
+            }.bind({}, props.stackData, this.addLayer), 0);
+
+            props.stacklayerRefreshComplete();
+
         }
 
     },
@@ -95,29 +125,6 @@ var NeuroglancerTab = React.createClass({
         return specA.type === specB.type &&
                specA.source === specB.source &&
                (specA.type === 'metric' ? specA.compType === specB.compType : true);
-    },
-    update_position_to_midpoint: function(metric_results){
-        var substacks = metric_results.data.subvolumes.ids
-        var max = [0,0,0];
-        var min = [Infinity,Infinity,Infinity];
-
-        for(var sid in substacks){
-            var currind = [substacks[sid].roi[0],substacks[sid].roi[1], substacks[sid].roi[2]];
-            _.each(currind, function(indval, i){
-                if(indval > max[i]){
-                    max[i] = indval;
-                }
-                if(indval < min[i]){
-                    min[i] = indval
-                }
-            });
-        }
-        var minmax = _.zip(min,max)
-        var midpoint = _.map(minmax, function(minmax, i){
-                return minmax[0] + ((minmax[1]-minmax[0])/2);
-        });
-
-        this.updateCoordinates(new Float32Array(midpoint));
     },
     addLayer: function(spec, props){
         //add metric data to the spec
@@ -204,7 +211,9 @@ var NeuroglancerState = function(state){
         compType: state.main.compType,
         skeletonMap: state.main.skeletonMap,
         ngSelectedBodyID: state.bodyModal.ngSelectedBodyID,
-        ngSelectedLayer: state.bodyModal.ngSelectedLayer
+        ngSelectedLayer: state.bodyModal.ngSelectedLayer,
+        stackData: state.main.stackData,
+        stacklayerReloadNeeded: state.main.stacklayerReloadNeeded
     }
 };
 
@@ -214,7 +223,14 @@ var NeuroglancerDispatch = function(dispatch){
             dispatch({
                 type: 'DISPOSE_BODY_MODAL',
             });
-    }}
+        },
+        stacklayerRefreshComplete: function(){
+            dispatch({
+                type: 'RELOAD_STACK_LAYER',
+                reloadNeeded: false
+            });
+        }
+    }
 };
 
 NeuroglancerTab = connect(NeuroglancerState, NeuroglancerDispatch)(NeuroglancerTab)

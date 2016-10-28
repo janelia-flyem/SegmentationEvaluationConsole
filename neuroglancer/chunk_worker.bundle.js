@@ -50,9 +50,9 @@ __webpack_require__(12);
 __webpack_require__(29);
 __webpack_require__(76);
 __webpack_require__(80);
-__webpack_require__(85);
 __webpack_require__(86);
-module.exports = __webpack_require__(88);
+__webpack_require__(87);
+module.exports = __webpack_require__(89);
 
 
 /***/ },
@@ -3372,17 +3372,52 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                 var layoutObject = getLayoutObject(chunkLayout);
                 var chunkSize = chunkLayout.size;
                 var offset = chunkLayout.offset;
+                //check to see if we have a stackChunkSource
+                var stackSource = undefined;
+                visibleSources.forEach(function (a, source) {
+                    if (source.spec.stack) {
+                        stackSource = source;
+                    }
+                });
+                if (stackSource) {
+                    //clone visibleSources
+                    visibleSources = new Map(visibleSources.entries());
+                    visibleSources.delete(stackSource);
+                    //get nm bounds
+                    var nmLowerBound = geom_1.vec3.create();
+                    var nmUpperBound = geom_1.vec3.create();
+                    var _sources = [stackSource];
+                    var spec = stackSource.spec;
+                    var nmWidth = spec.voxelSize[0] / spec.dataScaler;
+                    geom_1.vec3.scale(nmLowerBound, dataLowerBound, 1 / spec.dataScaler);
+                    geom_1.vec3.scale(nmUpperBound, dataUpperBound, 1 / spec.dataScaler);
+                    var positions = stackSource.parameters.positions;
+                    var nmCenter = geom_1.vec3.create();
+                    geom_1.vec3.scale(nmCenter, center, 1 / spec.dataScaler);
+                    var chunk_radius = Math.ceil(Math.sqrt(3 * Math.pow(nmWidth / 2, 2)));
+                    for (var _i2 = 1; _i2 < positions.length; _i2++) {
+                        //determine if chunk centered here is likely to intersect plane
+                        var position = geom_1.vec3.fromValues(positions[_i2][0], positions[_i2][1], positions[_i2][2]);
+                        var diff = geom_1.vec3.create();
+                        geom_1.vec3.sub(diff, position, nmCenter);
+                        var d = geom_1.vec3.dot(diff, planeNormal);
+                        //pretend chunk is a sphere of center-to-corner radius
+                        if (Math.abs(d) <= chunk_radius) {
+                            geom_1.vec3.add(position, position, geom_1.vec3.fromValues(nmWidth / 2, nmWidth / 2, nmWidth / 2));
+                            addChunk(chunkLayout, layoutObject, position, _sources); //lowerBound == positionInChunks === LUB point of chunk
+                        }
+                    }
+                }
                 var planeDistanceToOrigin = this.viewportPlaneDistanceToOrigin - geom_1.vec3.dot(offset, this.viewportAxes[2]);
                 computeSourcesChunkBounds(lowerBound, upperBound, visibleSources.keys());
                 if (DEBUG_CHUNK_INTERSECTIONS) {
                     console.log(`Initial sources chunk bounds: ${ geom_1.vec3.str(lowerBound) }, ${ geom_1.vec3.str(upperBound) }, data bounds: ${ geom_1.vec3.str(dataLowerBound) }, ${ geom_1.vec3.str(dataUpperBound) }, offset = ${ geom_1.vec3.str(offset) }, chunkSize = ${ geom_1.vec3.str(chunkSize) }`);
                 }
-                for (var _i2 = 0; _i2 < 3; ++_i2) {
-                    lowerBound[_i2] = Math.max(lowerBound[_i2], Math.floor((dataLowerBound[_i2] - offset[_i2]) / chunkSize[_i2]));
+                for (var _i3 = 0; _i3 < 3; ++_i3) {
+                    lowerBound[_i3] = Math.max(lowerBound[_i3], Math.floor((dataLowerBound[_i3] - offset[_i3]) / chunkSize[_i3])); //- 1;
                     //
-                    upperBound[_i2] = Math.min(upperBound[_i2], Math.floor((dataUpperBound[_i2] - offset[_i2]) / chunkSize[_i2] + 1));
+                    upperBound[_i3] = Math.min(upperBound[_i3], Math.floor((dataUpperBound[_i3] - offset[_i3]) / chunkSize[_i3] + 1)); // + 1;
                 }
-                // console.log('chunkBounds', lowerBound, upperBound);
                 // Checks whether [lowerBound, upperBound) intersects the viewport plane.
                 //
                 // positiveVertexDistanceToOrigin = dot(planeNormal, lowerBound +
@@ -3396,18 +3431,18 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                     var positiveVertexDistanceToOrigin = 0;
                     var negativeVertexDistanceToOrigin = 0;
                     // Check positive vertex.
-                    for (var _i3 = 0; _i3 < 3; ++_i3) {
-                        var chunkSizeValue = chunkSize[_i3];
-                        var normalValue = planeNormal[_i3];
-                        var lowerValue = lowerBound[_i3];
-                        var upperValue = upperBound[_i3];
-                        var diff = upperValue - lowerValue;
-                        var positiveOffset = positiveVertex[_i3] * diff;
+                    for (var _i4 = 0; _i4 < 3; ++_i4) {
+                        var chunkSizeValue = chunkSize[_i4];
+                        var normalValue = planeNormal[_i4];
+                        var lowerValue = lowerBound[_i4];
+                        var upperValue = upperBound[_i4];
+                        var _diff = upperValue - lowerValue;
+                        var positiveOffset = positiveVertex[_i4] * _diff;
                         // console.log(
                         //     normalValue, lowerValue, upperValue, diff, positiveOffset,
                         //     positiveVertexDistanceToOrigin, negativeVertexDistanceToOrigin);
                         positiveVertexDistanceToOrigin += normalValue * chunkSizeValue * (lowerValue + positiveOffset);
-                        negativeVertexDistanceToOrigin += normalValue * chunkSizeValue * (lowerValue + diff - positiveOffset);
+                        negativeVertexDistanceToOrigin += normalValue * chunkSizeValue * (lowerValue + _diff - positiveOffset);
                     }
                     if (DEBUG_CHUNK_INTERSECTIONS) {
                         console.log(`    planeNormal = ${ planeNormal }`);
@@ -3422,10 +3457,10 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                 fullyVisibleSources.length = 0;
                 partiallyVisibleSources.length = 0;
                 for (var source of visibleSources.keys()) {
-                    var spec = source.spec;
-                    var result = compareBounds(lowerBound, upperBound, spec.lowerChunkBound, spec.upperChunkBound);
+                    var _spec = source.spec;
+                    var result = compareBounds(lowerBound, upperBound, _spec.lowerChunkBound, _spec.upperChunkBound);
                     if (DEBUG_CHUNK_INTERSECTIONS) {
-                        console.log(`Comparing source bounds lowerBound=${ geom_1.vec3.str(lowerBound) }, upperBound=${ geom_1.vec3.str(upperBound) }, lowerChunkBound=${ geom_1.vec3.str(spec.lowerChunkBound) }, upperChunkBound=${ geom_1.vec3.str(spec.upperChunkBound) }, got ${ BoundsComparisonResult[result] }`, spec, source);
+                        console.log(`Comparing source bounds lowerBound=${ geom_1.vec3.str(lowerBound) }, upperBound=${ geom_1.vec3.str(upperBound) }, lowerChunkBound=${ geom_1.vec3.str(_spec.lowerChunkBound) }, upperChunkBound=${ geom_1.vec3.str(_spec.upperChunkBound) }, got ${ BoundsComparisonResult[result] }`, _spec, source);
                     }
                     switch (result) {
                         case BoundsComparisonResult.FULLY_INSIDE:
@@ -3453,8 +3488,8 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                         console.log(`Check bounds: [ ${ geom_1.vec3.str(lowerBound) }, ${ geom_1.vec3.str(upperBound) } ]`);
                     }
                     var volume = 1;
-                    for (var _i4 = 0; _i4 < 3; ++_i4) {
-                        volume *= Math.max(0, upperBound[_i4] - lowerBound[_i4]);
+                    for (var _i5 = 0; _i5 < 3; ++_i5) {
+                        volume *= Math.max(0, upperBound[_i5] - lowerBound[_i5]);
                     }
                     if (volume === 0) {
                         if (DEBUG_CHUNK_INTERSECTIONS) {
@@ -3471,6 +3506,7 @@ var SliceViewBase = function (_worker_rpc_1$SharedO) {
                     if (DEBUG_CHUNK_INTERSECTIONS) {
                         console.log('Within bounds: [' + geom_1.vec3.str(lowerBound) + ', ' + geom_1.vec3.str(upperBound) + ']');
                     }
+                    // console.log(`volume: ${volume} `);
                     if (volume === 1) {
                         addChunk(chunkLayout, layoutObject, lowerBound, fullyVisibleSources);
                         return;
@@ -3574,19 +3610,19 @@ function getNearIsotropicBlockSize(options) {
     function findNextDimension() {
         var minSize = Infinity;
         var minDimension = -1;
-        for (var _i5 = 0; _i5 < 3; ++_i5) {
-            if (chunkDataSize[_i5] >= maxChunkDataSize[_i5]) {
+        for (var _i6 = 0; _i6 < 3; ++_i6) {
+            if (chunkDataSize[_i6] >= maxChunkDataSize[_i6]) {
                 continue;
             }
-            var size = chunkDataSize[_i5] * voxelSize[_i5];
+            var size = chunkDataSize[_i6] * voxelSize[_i6];
             if (size < minSize) {
                 minSize = size;
-                minDimension = _i5;
+                minDimension = _i6;
             }
         }
         return minDimension;
     }
-    for (var _i6 = 0; _i6 < maxVoxelsPerChunkLog2; ++_i6) {
+    for (var _i7 = 0; _i7 < maxVoxelsPerChunkLog2; ++_i7) {
         var nextDim = findNextDimension();
         if (nextDim === -1) {
             break;
@@ -3624,6 +3660,8 @@ var VolumeChunkSpecification = function () {
     function VolumeChunkSpecification(options) {
         _classCallCheck(this, VolumeChunkSpecification);
 
+        this.stack = false;
+        this.dataScaler = undefined;
         var dataType = options.dataType;
         var _options$lowerVoxelBo3 = options.lowerVoxelBound;
         var lowerVoxelBound = _options$lowerVoxelBo3 === undefined ? geom_1.kZeroVec : _options$lowerVoxelBo3;
@@ -3658,6 +3696,10 @@ var VolumeChunkSpecification = function () {
             upperChunkBound[i] = Math.floor((upperVoxelBound[i] - 1) / chunkDataSize[i] + 1);
         }
         this.compressedSegmentationBlockSize = options.compressedSegmentationBlockSize;
+        if (options.stack) {
+            this.stack = options.stack;
+        }
+        this.dataScaler = options.dataScaler;
     }
 
     _createClass(VolumeChunkSpecification, [{
@@ -3674,7 +3716,9 @@ var VolumeChunkSpecification = function () {
                 lowerClipBound: this.lowerClipBound,
                 upperClipBound: this.upperClipBound,
                 baseVoxelOffset: this.baseVoxelOffset,
-                compressedSegmentationBlockSize: this.compressedSegmentationBlockSize
+                compressedSegmentationBlockSize: this.compressedSegmentationBlockSize,
+                stack: this.stack,
+                dataScaler: this.dataScaler
             };
         }
         /**
@@ -26178,6 +26222,7 @@ var decode_swc_skeleton_1 = __webpack_require__(82);
 var endian_1 = __webpack_require__(47);
 var geom_1 = __webpack_require__(15);
 var http_request_1 = __webpack_require__(33);
+var backend_4 = __webpack_require__(85);
 var TILE_CHUNK_DECODERS = new Map([[base_1.TileEncoding.JPEG, jpeg_1.decodeJpegChunk]]);
 var VolumeChunkSource = function (_backend_3$Parameteri) {
     _inherits(VolumeChunkSource, _backend_3$Parameteri);
@@ -26297,6 +26342,30 @@ exports.SkeletonSource = SkeletonSource;
 function decodeSkeletonChunk(chunk, result) {
     decode_swc_skeleton_1.decodeSwcSkeletonChunk(chunk, result, endian_1.Endianness.LITTLE);
 }
+var StackChunkSource = function (_backend_4$Parameteri) {
+    _inherits(StackChunkSource, _backend_4$Parameteri);
+
+    function StackChunkSource() {
+        _classCallCheck(this, StackChunkSource);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(StackChunkSource).apply(this, arguments));
+    }
+
+    _createClass(StackChunkSource, [{
+        key: "getColor",
+        value: function getColor(position /* vec3Key for chunk position */) {
+            var color = this.parameters.colors.get(position);
+            if (!color) {
+                color = new Float32Array([0, 0, 0, 0]);
+            }
+            return color;
+        }
+    }]);
+
+    return StackChunkSource;
+}(backend_4.ParameterizedStackChunkSource);
+StackChunkSource = __decorate([backend_1.registerChunkSource(base_1.StackParameters)], StackChunkSource);
+;
 
 /***/ },
 /* 81 */
@@ -26388,6 +26457,29 @@ var SkeletonSourceParameters = function (_DVIDSourceParameters3) {
 
 SkeletonSourceParameters.RPC_ID = 'dvid/SkeletonSource';
 exports.SkeletonSourceParameters = SkeletonSourceParameters;
+;
+
+var StackParameters = function () {
+    function StackParameters(positions, colors, stackID) {
+        _classCallCheck(this, StackParameters);
+
+        this.positions = positions;
+        this.colors = colors;
+        this.stackID = stackID;
+    }
+
+    _createClass(StackParameters, null, [{
+        key: 'stringify',
+        value: function stringify(parameters) {
+            return `dvid://stack/${ parameters.stackID }`;
+        }
+    }]);
+
+    return StackParameters;
+}();
+
+StackParameters.RPC_ID = 'dvid/StackChunkSource';
+exports.StackParameters = StackParameters;
 ;
 
 /***/ },
@@ -42886,6 +42978,81 @@ module.exports = function(module) {
 /* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var backend_1 = __webpack_require__(12);
+var geom_1 = __webpack_require__(15);
+
+var StackChunkSource = function (_backend_1$VolumeChun) {
+    _inherits(StackChunkSource, _backend_1$VolumeChun);
+
+    function StackChunkSource(rpc, options) {
+        _classCallCheck(this, StackChunkSource);
+
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(StackChunkSource).call(this, rpc, options));
+
+        _this.spec.stack = true;
+        return _this;
+    }
+
+    _createClass(StackChunkSource, [{
+        key: 'download',
+        value: function download(chunk) {
+            {
+                // chunkPosition must not be captured, since it will be invalidated by the next call to
+                // computeChunkBounds.
+                var chunkPosition = this.computeChunkBounds(chunk);
+                var chunkDataSize = chunk.chunkDataSize;
+                chunk.data = this.getColor(geom_1.vec3Key(chunk.chunkGridPosition));
+            }
+            chunk.downloadSucceeded();
+        }
+    }, {
+        key: 'getColor',
+        value: function getColor(position /* vec3Key for chunk position */) {
+            /* Usually, the color will need to be retrieved from parameters (override in ParameterizedStackChunkSource)
+               Otherwise, stack chunks will be randomly colored
+            */
+            new Float32Array([Math.random(), Math.random(), Math.random(), 1]);
+        }
+    }]);
+
+    return StackChunkSource;
+}(backend_1.VolumeChunkSource);
+
+exports.StackChunkSource = StackChunkSource;
+;
+
+var ParameterizedStackChunkSource = function (_StackChunkSource) {
+    _inherits(ParameterizedStackChunkSource, _StackChunkSource);
+
+    function ParameterizedStackChunkSource(rpc, options) {
+        _classCallCheck(this, ParameterizedStackChunkSource);
+
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(ParameterizedStackChunkSource).call(this, rpc, options));
+
+        _this2.parameters = options['parameters'];
+        return _this2;
+    }
+
+    return ParameterizedStackChunkSource;
+}(StackChunkSource);
+
+exports.ParameterizedStackChunkSource = ParameterizedStackChunkSource;
+;
+
+/***/ },
+/* 86 */
+/***/ function(module, exports, __webpack_require__) {
+
 /**
  * @license
  * Copyright 2016 Google Inc.
@@ -42906,7 +43073,7 @@ module.exports = function(module) {
 __webpack_require__(76);
 
 /***/ },
-/* 86 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -42943,7 +43110,7 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(87);
+var base_1 = __webpack_require__(88);
 var backend_2 = __webpack_require__(36);
 var backend_3 = __webpack_require__(12);
 var compressed_segmentation_1 = __webpack_require__(50);
@@ -43035,7 +43202,7 @@ MeshSource = __decorate([backend_1.registerChunkSource(base_1.MeshSourceParamete
 ;
 
 /***/ },
-/* 87 */
+/* 88 */
 /***/ function(module, exports) {
 
 /**
@@ -43105,7 +43272,7 @@ exports.MeshSourceParameters = MeshSourceParameters;
 ;
 
 /***/ },
-/* 88 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -43142,7 +43309,7 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     }return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var backend_1 = __webpack_require__(4);
-var base_1 = __webpack_require__(89);
+var base_1 = __webpack_require__(90);
 var backend_2 = __webpack_require__(36);
 var backend_3 = __webpack_require__(12);
 var jpeg_1 = __webpack_require__(51);
@@ -43236,7 +43403,7 @@ exports.MeshSource = MeshSource;
 ;
 
 /***/ },
-/* 89 */
+/* 90 */
 /***/ function(module, exports) {
 
 /**

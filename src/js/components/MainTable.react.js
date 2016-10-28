@@ -219,7 +219,7 @@ var MainTable = React.createClass({
         return (
             <div className="panel panel-info">
                 <div className="panel-heading"> Summary Stats -- {typename}</div>
-                <div className="panel-body stats" >
+                <div className="panel-body" >
                     <h5 className='stat-button-bar'>
                         <span>Compare:</span>
                         <RetrieveExp className="navbar-form" callback={this.updateComp} />

@@ -67,7 +67,7 @@ var MetricSearch = React.createClass({
             }.bind(this))
             .catch(function(err){
                 this.props.updateSkeletons(null)
-            });
+            }.bind(this));
     },
     handleMetricData: function(data){
         this.props.loadData(data);

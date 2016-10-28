@@ -196,6 +196,8 @@ var StackViewer = React.createClass({
         s.init();
         var stackviewer_el = $('#stack_roi')[0]
         stackviewer_el.addEventListener('mouseup', this.addNavButton, false)
+        payload["stackMidpoint"] = new Float32Array([minx + (maxx-minx)/2,miny + (maxy-miny)/2,minz + (maxz-minz)/2]);
+        this.props.updateStackData(payload);
     },
     addNavButton: function (event){
         //event handler registered to the stack_roi element. Adds the neuroglancer
@@ -245,6 +247,7 @@ var StackViewer = React.createClass({
         if(nextprops.active && this.stacksNeedUpdate){//update
             this.stacksNeedUpdate = false;
             this.loadSubstacks(nextprops.substacks, nextprops.comptype);
+            this.props.reloadNeuroglancerStackLayer();
         }
     },
     componentDidMount: function () {
@@ -331,7 +334,8 @@ var StackViewer = React.createClass({
 
 var StackViewerState = function(state){
     return {
-        active: (state.main.ActiveTab==1 ? true : false)
+        active: (state.main.ActiveTab==1 ? true : false),
+        stackData: state.main.stackData
     }
 };
 
@@ -341,6 +345,12 @@ var StackViewerDispatch = function(dispatch){
             dispatch({
                 type: 'UPDATE_POSITION',
                 position: position
+            });
+        },
+        updateStackData: function(stackData){
+            dispatch({
+                type: 'UPDATE_STACK_DATA',
+                stackData: stackData
             });
         }
     }
