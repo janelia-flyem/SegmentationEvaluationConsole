@@ -111,8 +111,8 @@ var bodyModal  = function(state, action){
 }
 
 var ConsoleReducers = combineReducers({
-    main,
-    bodyModal
+    main: main,
+    bodyModal: bodyModal
 });
 
 //export default

@@ -166,7 +166,7 @@ var NeuroglancerTab = React.createClass({
 
         return spec;
     },
-    addSkeleton(skeletonID, layerName){
+    addSkeleton: function(skeletonID, layerName){
         var layer = viewer.layerManager.getLayerByName(layerName);
         if(!layer){
             return;

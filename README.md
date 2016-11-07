@@ -12,9 +12,9 @@ The goal of this app is to provide insight into the places where segmentation su
 
 ##Installation and Usage
 
-To simply use the application, open dist/application.html with a web browser.  The distribution folder is updated regularly with code changes.  Examples can be found in the zipped file, examples.tgz.
+This application is hosted at http://emanalysis.janelia.org/segmentation_evaluation_console. Example segmentation files can be found in the zipped file, examples.tgz.
 
-For more detailed usage information, consult the corresponding wiki [https://github.com/janelia-flyem/SegmentationEvaluationConsole/wiki](https://github.com/janelia-flyem/SegmentationEvaluationConsole/wiki).
+For more detailed usage information, consult the corresponding [wiki](https://github.com/janelia-flyem/SegmentationEvaluationConsole/wiki).
 
 ##Developer Guide
 
@@ -26,17 +26,17 @@ This is single-page app written primarily in Javascript using Facebook's React t
     % grunt
 
 Installed js file located in build/js/bundle.js.  The application can be included
-on a webpage by anchoring to a div named 'segeval':
+on a webpage by anchoring to a div named 'segeval' and linking build/js/bundle.js and build/neuroglancer/main.bundle.js:
 
     % <div id="segeval"> </div>
 
-On chrome, the application must be served to avoid same-origin policy errors.
+On chrome, the application must be served to avoid same-origin policy errors with neuroglancer's web worker thread.
 Grunt automatically starts a server at localhost:3000, so simply navigate to this location in your browser with
 grunt running locally to view the application.
 
 ###Architectural Notes
 
-As noted, the application makes use of React components.  It also leverages 3rd party libraries extensively, such as [stack3d](https://github.com/janelia-flyem/stack3D) for visualizing the subvolumes in the image volume.
+As noted, the application makes use of React components.  It also leverages 3rd party libraries extensively, such as [stack3d](https://github.com/janelia-flyem/stack3D) for visualizing the subvolumes in the image volume and a fork of [neuroglancer](https://github.com/janelia-flyem/neuroglancer) for displaying images and segmentations.
 
 This application expects JSON files formatted in the same manner as produced by DVIDSparkServices (this can be downloaded from a DVID server or from file).  The file format is still going through rapid revision but it is possible to decouple this viewer from DVIDSparkServices.  In general, the file format defines different "types" of comparison each with a set of different metrics/stats for each type.
 
@@ -46,4 +46,5 @@ This application expects JSON files formatted in the same manner as produced by 
 * Make more robust to incorrect user input and deprecated file formats
 * Allow download of tables to CSV
 * Add new visualization widgets and make general plugin system to allow easy swapping (at both compile time and at the app level)
+* Include neuroglancer via browserify or webpack instead of directly committing and including the bundled code
 
