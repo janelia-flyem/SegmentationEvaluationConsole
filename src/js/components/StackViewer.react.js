@@ -124,10 +124,6 @@ var StackViewer = React.createClass({
 
             var volume = subobj["width"]*subobj["height"]*subobj["length"];
 
-            // ignore small volumes
-            //if (substacks[sid]["types"]["voxels:voxels"]["size"] < (volume/2)) {
-            //    continue;
-            //}
 
             // get stack extents
             if (x1 < minx) {
@@ -151,28 +147,16 @@ var StackViewer = React.createClass({
 
             // substack id
             subobj["id"] = String(sid);
-            
+
+            var valstat = this.getStat(substacks[sid], comptype);
+            subobj["status"] = valstat;
             // !! hacks into annotations for now
             //subobj["annotations"] = this.getROIStats(substacks[sid]);
             subobj["annotations"] = this.getROIStats(substacks[sid], comptype)
             // !! hack footer container into annotations for now as well
             subobj["annotations"] += '<div class="modal-footer"></div>'
 
-            // !! hacks into proofreader status for now
-            var valstat = this.getStat(substacks[sid], comptype);
-            // var statusval = 0;
-            // if (colorrange[2] > 0.000001) {
-            //     statusval = Math.floor((valstat - colorrange[0])/colorrange[2]);
-            // }
-            // if (this.state.metric == "rand") {
-            //     statusval = NumColors - statusval;
-            // }
-            // if (statusval == NumColors) {
-            //     statusval -= 1;
-            // }
 
-            // subobj["status"] = statusval;
-            subobj["status"] = valstat;
             payload["substacks"].push(subobj);
         }
 
@@ -183,8 +167,6 @@ var StackViewer = React.createClass({
         payload["colorInterpolate"] = ['White', 'Yellow', 'aquamarine', 'deepskyblue', 'mediumorchid'];
 
 
-        // make dimensions larger by 2x to zoom out
-        payload["stackDimensions"] = [(maxx-minx)*2,(maxy-miny)*2,(maxz-minz)*2];
         var cwidth = $("#stack_roi").width(); 
         payload["canvasDimenstions"] = [cwidth, cwidth];
 
@@ -222,14 +204,24 @@ var StackViewer = React.createClass({
         //get xyz coordinates from the modal dom
         var stack_info_divs = $('#stack3d_stats_modal .modal-body')[0].childNodes
         var coords = new Float32Array(3);
-
-        for(var i=1; i<4; i++){
-            coords[i-1] = parseInt(stack_info_divs[i].innerHTML.split(':')[1]);
+        var key, val;
+        for(var i=0; i<stack_info_divs.length; i++){
+            [key, val] = stack_info_divs[i].innerHTML.split(':')
+            if(key === "x"){
+                coords[0] = parseInt(val);
+            }
+            else if(key === "y"){
+                coords[1] = parseInt(val);
+            }
+            else if(key === "z"){
+                coords[2] = parseInt(val);
+            }
         }
 
         this.props.updateNeurogPos(new Float32Array(coords))
     },
     componentWillReceiveProps: function (nextprops) {
+        //stop and start animation to improve perf when view switches to neuroglancer tab
         if(this.props.active != nextprops.active){
             //visibility of the tab changed
             if(nextprops.active){
@@ -247,7 +239,6 @@ var StackViewer = React.createClass({
         if(nextprops.active && this.stacksNeedUpdate){//update
             this.stacksNeedUpdate = false;
             this.loadSubstacks(nextprops.substacks, nextprops.comptype);
-            this.props.reloadNeuroglancerStackLayer();
         }
     },
     componentDidMount: function () {

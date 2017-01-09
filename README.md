@@ -25,7 +25,7 @@ This is single-page app written primarily in Javascript using Facebook's React t
     % npm install
     % grunt
 
-Installed js file located in build/js/bundle.js.  The application can be included
+The main bundled js file located in build/js/bundle.js.  The application can be included
 on a webpage by anchoring to a div named 'segeval' and linking build/js/bundle.js and build/neuroglancer/main.bundle.js:
 
     % <div id="segeval"> </div>

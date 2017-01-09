@@ -1,6 +1,6 @@
 {
   "name": "segmentation-evaluation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Application to view EM segmentation results",
   "main": "./src/js/app.js",
   "scripts": {
