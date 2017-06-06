@@ -93,6 +93,8 @@ module.exports = function(grunt) {
                         dest: 'build/'
                     },
                     {
+                        expand: "true",
+                        cwd: 'node_modules',
                         src: 'neuroglancer/*',
                         dest: 'build/'
                     }
@@ -111,6 +113,8 @@ module.exports = function(grunt) {
                         dest: 'dist/index.html'
                     },
                     {
+                        expand: "true",
+                        cwd: 'node_modules',
                         src: 'neuroglancer/*',
                         dest: 'dist/'
                     }

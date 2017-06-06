@@ -96,29 +96,30 @@ var NeuroglancerTab = React.createClass({
             this.addSkeleton(props.ngSelectedBodyID, props.ngSelectedLayer);
         }
 
+        //NOTE: Uncomment this code when the stack feature is fixed in neuroglancer
         //add stack overlay
-        if(props.stackData && props.stacklayerReloadNeeded){
-            if(stackLayer){
-                this.removeLayer(stackLayer)
-            }
-            //don't tie up the UI by adding stackview overlay.
-            //since the overlay is not initially displayed
-            setTimeout(function(stackData, addLayer){
-                var spec = {
-                    __name: 'stack overlay',
-                    source: 'dvid://stack' + Math.random(),//add a random number so neuroglancer will know this is new data.
-                    type: 'stack',                         //TODO: should instead use the metric name(s)
-                    stackData: stackData,
-                    dataScaler: 8,
-                    visible: false
-                }
-                //add the layer
-                addLayer(spec, {});
-            }.bind({}, props.stackData, this.addLayer), 0);
+        // if(props.stackData && props.stacklayerReloadNeeded){
+        //     if(stackLayer){
+        //         this.removeLayer(stackLayer)
+        //     }
+        //     //don't tie up the UI by adding stackview overlay.
+        //     //since the overlay is not initially displayed
+        //     setTimeout(function(stackData, addLayer){
+        //         var spec = {
+        //             __name: 'stack overlay',
+        //             source: 'dvid://stack' + Math.random(),//add a random number so neuroglancer will know this is new data.
+        //             type: 'stack',                         //TODO: should instead use the metric name(s)
+        //             stackData: stackData,
+        //             dataScaler: 8,
+        //             visible: false
+        //         }
+        //         //add the layer
+        //         addLayer(spec, {});
+        //     }.bind({}, props.stackData, this.addLayer), 0);
 
-            props.stacklayerRefreshComplete();
+        //     props.stacklayerRefreshComplete();
 
-        }
+        // }
 
     },
     specsMatch: function(specA, specB){
@@ -188,7 +189,7 @@ var NeuroglancerTab = React.createClass({
               </div>
             </div>);
         ReactDOM.render(neurogBaseDom, this.node);
-        InitializeNeuroglancer({auto_show_layer_dialog:false});
+        InitializeNeuroglancer({auto_show_layer_dialog:false, source_folder:'neuroglancer/'});
         //update neuroglancer orientation
         window.viewer.perspectiveNavigationState.zoomFactor.value = 64;
         window.viewer.perspectiveNavigationState.pose.orientation.orientation = [-.2, .25, .05,.95]

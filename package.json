@@ -38,6 +38,7 @@
     "react-redux": "^4.4.5",
     "react-router": "^0.13.3",
     "redux": "^3.5.0",
-    "stack3d": "janelia-flyem/stack3D"
+    "stack3d": "janelia-flyem/stack3D",
+    "neuroglancer":"https://github.com/janelia-flyem/neuroglancer/releases/download/0.0.0-beta.1/dist-0.0.0-beta.1.tar.gz"
   }
 }
