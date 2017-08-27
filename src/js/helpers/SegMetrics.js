@@ -37,6 +37,10 @@ var SegMetrics = function (jsondata) {
         if (type == "connection-matrix") {
             continue;
         }
+        if (type === "connection-matrix2") {
+            continue
+        }
+        
         if (type != default_comp.toKey()) {
             this.comptypes.push(new CompType(type));
         }

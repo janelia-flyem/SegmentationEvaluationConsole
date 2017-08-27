@@ -20,9 +20,7 @@ document.getElementsByTagName("head")[0].appendChild(fileref);
 //var serviceloc = "http://127.0.0.1:8000/api/node/5b7/service/key";
 var store = Redux.createStore(ConsoleReducers)
 
-/* 
- * Renders component just to a DIV with DVIDServiceWidget.
-*/
+// Renders component just to a DIV with DVIDServiceWidget.
 function loadInterface() {
     var serviceloc,
         element = document.getElementById("segeval");

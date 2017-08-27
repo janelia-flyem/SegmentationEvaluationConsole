@@ -410,6 +410,57 @@ var RandSubvolumeStats = function (data, comptype) {
 module.exports.RandSubvolumeStats = RandSubvolumeStats;
 
 
+// Rand substack stats
+var SummaryStats = function (data, comptype) {
+    // assume that if this exists everything exists
+    if (!("summarystats" in data)) {
+        return null;
+    }
+    this.comptype = comptype;
+    this.payload = [];
+    var that = this;
+   
+    // find all stats with equal to comptype 
+    var allstats = data["summarystats"];
+    for (var statindx in allstats) {
+        var stat = allstats[statindx];
+        if (comptype.toKey() == stat.typename) {
+            this.payload.push(stat);
+        }
+    } 
+
+    this.toStringArr = function () {
+        var allstats = [];
+        for (var statindx in that.payload) {
+            var stat = that.payload[statindx];
+            if (stat["higher-better"]) {
+                allstats.push({name: stat.name, value: stat.val, comp_better_scores: better_score.LARGER});
+            } else {
+                allstats.push({name: stat.name, value: stat.val, comp_better_scores: better_score.SMALLER});
+            }
+        }
+        return allstats; 
+    };
+    this.toDescArr = function () {
+        var alldescs = [];
+        for (var statindx in that.payload) {
+            var stat = that.payload[statindx];
+            alldescs.push(stat.description);
+        }
+        return alldescs;
+    };
+
+    this.toJSON = function () {
+        return that.payload;
+    };
+    this.Compare = function(otherstat) {
+        // ?!
+        return true;
+    }
+};
+module.exports.SummaryStats = SummaryStats;
+
+
 
 
 
