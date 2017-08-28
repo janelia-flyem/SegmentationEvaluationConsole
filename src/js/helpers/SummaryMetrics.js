@@ -228,8 +228,8 @@ var ConnectivityStats = function (data, comptype) {
     this.Compare = function(otherstat) {
         if (that.payload["thresholds"].length > 0) {
             return [
-                Compare(that.payload[2][0], otherstat.payload[2][0], that.better_score_types[0]), // worse if more false
-                Compare(that.payload[2][1], otherstat.payload[2][1], that.better_score_types[1]) // worse if fewer true
+                Compare(that.payload["thresholds"][2][0], otherstat.payload["thresholds"][2][0], that.better_score_types[0]), // worse if more false
+                Compare(that.payload["thresholds"][2][1], otherstat.payload["thresholds"][2][1], that.better_score_types[1]) // worse if fewer true
             ] 
 
         } else {
@@ -454,8 +454,25 @@ var SummaryStats = function (data, comptype) {
         return that.payload;
     };
     this.Compare = function(otherstat) {
-        // ?!
-        return true;
+        var comp = [];
+
+        for (var statindx in that.payload) {
+            var stat = that.payload[statindx];
+            var name = stat.name;
+
+            for (var statindx2 in otherstat.payload) {
+                var stat2 = otherstat.payload[statindx2];
+                if (stat2.name === name) {
+                    if (stat["higher-better"]) {
+                        comp.push(Compare(stat.val, stat2.val, better_score.LARGER));
+                    } else {
+                        comp.push(Compare(stat.val, stat2.val, better_score.SMALLER));
+                    }
+                }
+            }
+
+        }
+        return comp;
     }
 };
 module.exports.SummaryStats = SummaryStats;
