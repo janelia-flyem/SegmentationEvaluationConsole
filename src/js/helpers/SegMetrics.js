@@ -72,7 +72,7 @@ var SegMetrics = function (jsondata) {
     // grab synapse info specially
     this.synapse_info = null;
 
-    // ?! should eventually have for different comptypes
+    // !! should eventually have for different comptypes
     // assume first synapse is the one for now
     for (var i = 0; i < this.comptypes.length; i++) {
         var type = this.comptypes[i];
@@ -116,6 +116,9 @@ var SegMetrics = function (jsondata) {
         if (statype == BestTest) {
             return BodyMetrics.BestTest(that.data, comptype);
         }
+
+        // handle any other request
+        return BodyMetrics.CustomBodies(that.data, statype, comptype);
     };
     
     // grab comparison types    
@@ -124,8 +127,18 @@ var SegMetrics = function (jsondata) {
     };
 
     // get body stat types
-    this.getBodyStatTypes = function () {
-        return that.bodymetrictypes;
+    this.getBodyStatTypes = function (comptype) {
+        // check for other generic body types
+        var metrictypes = that.bodymetrictypes;
+        if ("bodystats" in that.data) {
+            for (var idx in that.data.bodystats) {
+                if (that.data.bodystats[idx].typename === comptype) {
+                    metrictypes.push(that.data.bodystats[idx].name);
+                }
+            }
+        }
+
+        return metrictypes;
     }
 
     // get stat array

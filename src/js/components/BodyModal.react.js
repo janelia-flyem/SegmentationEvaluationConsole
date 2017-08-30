@@ -25,21 +25,40 @@ var BodyModal = React.createClass({
             this.requestSkeletonData(this.props.modalSelectedBodyID);
         }
 
+        // add custom content based on the body type selected
+        var ModelBody = <Modal.Body>
+                            <h5>Skeleton Info</h5>
+                            {SkeletonBtn}
+                            </Modal.Body>
+
+        if (this.props.overlapSegmentationType === "GTConn") {
+            ModelBody = <Modal.Body>
+                <ul>
+                <li>Total connections: {this.props.overlapIDs[0]}</li>
+                <li>Matches seg body {this.props.overlapIDs[1]}</li>
+                </ul>
+                <h5>Skeleton Info</h5>
+                {SkeletonBtn}
+            </Modal.Body>
+        } else if (this.props.overlapSegmentationType === "Test" || this.props.overlapSegmentationType === "Ground Truth") {
+            ModelBody = <Modal.Body>
+                <h5>Overlapping Bodies from {this.props.overlapSegmentationType} Segmentation</h5>
+                <ul>
+                {this.props.overlapIDs.map(function(el){
+                                                           return <li key={el[1]}>{el[1]}</li>
+                                                       })}
+            </ul>
+                <h5>Skeleton Info</h5>
+                {SkeletonBtn}
+            </Modal.Body>
+        }
+
         return (
             <Modal show={!!this.props.modalSelectedBodyID} onHide={this.props.disposeModal}>
                 <Modal.Header closeButton>
                     <Modal.Title> Details for Body {this.props.modalSelectedBodyID} </Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
-                    <h5>Overlapping Bodies from {this.props.overlapSegmentationType} Segmentation</h5>
-                     <ul>
-                        {this.props.overlapIDs.map(function(el){
-                             return <li key={el[1]}>{el[1]}</li>
-                         })}
-                    </ul>
-                    <h5>Skeleton Info</h5>
-                    {SkeletonBtn}
-                </Modal.Body>
+                {ModelBody} 
                 <Modal.Footer>
                     <Button onClick={this.props.disposeModal}>Close</Button>
                 </Modal.Footer>
@@ -52,13 +71,23 @@ var BodyModal = React.createClass({
         if(overlapSegmentationType === 'Ground Truth'){// this body is in the test segmentation
             var config = this.props.metric_results.config['dvid-info-comp'];
         }
-        var instance = this.props.skeletonMap.get(config['label-name']);
-        if(!instance){
+       
+        var instance = null; 
+        if (this.props.skeletonMap) {
+            instance = this.props.skeletonMap.get(config['label-name']);
+            if(!instance){
+                this.props.loadSkeleton({
+                    found: false
+                });
+                return;
+            }
+        } else {
             this.props.loadSkeleton({
                 found: false
             });
             return;
         }
+
         var l = instance.split('/');
         instance = l[l.length-1];
         var url = 'http://' + info['dvid-server'] + '/api/node/' + info['uuid'] + '/' + instance + '/key/' + bodyID + '_swc';

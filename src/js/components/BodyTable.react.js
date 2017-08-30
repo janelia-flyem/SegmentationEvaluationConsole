@@ -39,7 +39,7 @@ var TableRowComp = React.createClass({
         if(BodyTableType === 'Test'){
             return 'Ground Truth';
         }
-        return '';
+        return BodyTableType;
     },
     handleClick: function(){
         this.props.loadBodyModal(this.props.rowinfo[0],
@@ -101,8 +101,8 @@ var BodyTable = React.createClass({
         this.setState({curr_value: ev.target.value});
     },
     render: function () {
-            var bodymodes = this.props.metric_data.getBodyStatTypes();
             var typename = this.props.comptype.toString();
+            var bodymodes = this.props.metric_data.getBodyStatTypes(this.props.comptype.toKey());
 
             var bodystat = this.state.curr_value;
             if (!bodystat) {
