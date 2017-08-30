@@ -36,7 +36,7 @@ module.exports = function(grunt) {
     browserify: {
       app:          {
         options: {
-            transform:  [ require('grunt-react').browserify ]
+          transform:  [['babelify', {presets: ['es2015', 'react']}]]
         },
         src:        'src/js/app.js',
         dest:       'build/js/bundle.js'
