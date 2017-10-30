@@ -31,26 +31,32 @@ var BodyModal = React.createClass({
                             {SkeletonBtn}
                             </Modal.Body>
 
-        if (this.props.overlapSegmentationType === "GTConn") {
-            ModelBody = <Modal.Body>
+        // load overlap table
+        var overlapDIV = <div />;
+        if (this.props.debugInfo && this.props.debugInfo[1].length > 0) {
+            var overlapIDs = this.props.debugInfo[1];
+            overlapDIV = <div>
+                <h5>Overlapping Bodies from {this.props.overlapSegmentationType} Segmentation</h5>
                 <ul>
-                <li>Total connections: {this.props.overlapIDs[0]}</li>
-                <li>Matches seg body {this.props.overlapIDs[1]}</li>
+                {overlapIDs.map(function(el){
+                return <li key={el[1]}>{el[1]}</li>
+                })}
                 </ul>
                 <h5>Skeleton Info</h5>
                 {SkeletonBtn}
-            </Modal.Body>
-        } else if (this.props.overlapSegmentationType === "Test" || this.props.overlapSegmentationType === "Ground Truth") {
-            ModelBody = <Modal.Body>
-                <h5>Overlapping Bodies from {this.props.overlapSegmentationType} Segmentation</h5>
+                </div>
+        }
+
+        var auxInfo = <div />;
+        
+        // support auxiliary information for certain body stat types
+        if (this.props.statName === "GTConn") {
+            auxInfo = (<div>
                 <ul>
-                {this.props.overlapIDs.map(function(el){
-                                                           return <li key={el[1]}>{el[1]}</li>
-                                                       })}
-            </ul>
-                <h5>Skeleton Info</h5>
-                {SkeletonBtn}
-            </Modal.Body>
+                <li>Total connections: {this.props.debugInfo[0][0]}</li>
+                <li>Matches seg body {this.props.debugInfo[0][1]}</li>
+                </ul>
+            </div>);
         }
 
         return (
@@ -58,7 +64,10 @@ var BodyModal = React.createClass({
                 <Modal.Header closeButton>
                     <Modal.Title> Details for Body {this.props.modalSelectedBodyID} </Modal.Title>
                 </Modal.Header>
-                {ModelBody} 
+                <Modal.Body>
+                {auxInfo}
+                {overlapDIV}
+                </Modal.Body> 
                 <Modal.Footer>
                     <Button onClick={this.props.disposeModal}>Close</Button>
                 </Modal.Footer>
@@ -126,10 +135,11 @@ var BodyModal = React.createClass({
 
 var BodyModalState = function(state){
     return {
-        overlapIDs: state.bodyModal.overlapIDs,
+        debugInfo: state.bodyModal.debugInfo,
         overlapSegmentationType: state.bodyModal.overlapSegmentationType,
         ngSelectedBodyID: state.bodyModal.ngSelectedBodyID,
         modalSelectedBodyID: state.bodyModal.modalSelectedBodyID,
+        statName: state.bodyModal.statName,
         skeletonData: state.bodyModal.skeletonData,
         skeletonMap: state.main.skeletonMap,
         metric_results: state.main.metric_results

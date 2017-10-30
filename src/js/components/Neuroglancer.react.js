@@ -154,7 +154,11 @@ var NeuroglancerTab = React.createClass({
                         });
     },
     buildSourceSpec: function(server, uuid, name, type){
-        var sourceURL = 'dvid://http://' + server + '/' + uuid + '/' + name;
+        if (!server.startsWith("http")) {
+            server = "http://" + server;
+        }
+      
+        var sourceURL = 'dvid://' + server + '/' + uuid + '/' + name;
         var spec = {
                'type': type,
                'source': sourceURL,

@@ -68,10 +68,11 @@ var main = function(state, action){
 
 
 var initialBodyModalState ={
-    overlapIDs: [],
+    debugInfo: null,
     overlapSegmentationType: null,
     ngSelectedBodyID: null,
     modalSelectedBodyID: null,
+    statName: null,
     skeletonData: null,
     ngSelectedLayer: null
 }
@@ -82,9 +83,10 @@ var bodyModal  = function(state, action){
     switch(action.type){
         case 'LOAD_BODY_MODAL':{
             return Object.assign({}, state, {
-                overlapIDs: action.overlapIDs,
+                debugInfo: action.debugInfo,
                 overlapSegmentationType: action.overlapSegmentationType,
                 modalSelectedBodyID: action.modalSelectedBodyID,
+                statName: action.statName,
                 skeletonData: null
             });
         }

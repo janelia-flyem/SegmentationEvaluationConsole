@@ -25,9 +25,9 @@ var TableRowComp = React.createClass({
         return (
             <tr>
                 <td>
-                    <a onClick={this.handleClick}>{this.props.rowinfo[0]}</a>
+                    <a onClick={this.handleClick}>{this.props.rowinfo[0][0]}</a>
                 </td>
-                <td>{this.props.rowinfo[1]}</td>
+                <td>{this.props.rowinfo[0][1]}</td>
             </tr>
         );
     },
@@ -40,11 +40,12 @@ var TableRowComp = React.createClass({
             return 'Ground Truth';
         }
         return BodyTableType;
-    },
+    },  
     handleClick: function(){
-        this.props.loadBodyModal(this.props.rowinfo[0],
-                                 this.props.rowinfo[2], 
-                                 this.getOverlapBodyType(this.props.rowinfo[3]));
+        this.props.loadBodyModal(this.props.rowinfo[0][0],
+                                 this.props.rowinfo[1], 
+                                 this.getOverlapBodyType(this.props.rowinfo[0][3]),
+                                 this.props.rowinfo[0][2]);
     }
 });
 var TableRowState = function(state){
@@ -53,12 +54,13 @@ var TableRowState = function(state){
 
 var TableRowDispatch = function(dispatch){
     return {
-        loadBodyModal: function(bodyID, overlapIDs, overlapSegmentationType) {
+        loadBodyModal: function(bodyID, debugInfo, overlapSegmentationType, statName) {
             dispatch({
                 type: 'LOAD_BODY_MODAL',
-                overlapIDs: overlapIDs,
+                debugInfo: debugInfo,
                 overlapSegmentationType: overlapSegmentationType,
                 modalSelectedBodyID: bodyID,
+                statName: statName,
             });
         }
     }
@@ -104,8 +106,15 @@ var BodyTable = React.createClass({
             var typename = this.props.comptype.toString();
             var bodymodes = this.props.metric_data.getBodyStatTypes(this.props.comptype.toKey());
 
+            // see if mode is valid
             var bodystat = this.state.curr_value;
-            if (!bodystat) {
+            var found = false;
+            for (var i = 0; i < bodymodes.length; i++) {
+                if (bodymodes[i] === bodystat) {
+                    found = true;
+                }
+            }
+            if (!found) {
                 bodystat = bodymodes[0];
             }
 

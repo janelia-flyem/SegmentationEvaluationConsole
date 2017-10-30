@@ -20,9 +20,8 @@ var MetricViewer = React.createClass({
                 </div>
                 <div className="col-md-5">
                     <StackViewer
-                        rcomptype={this.props.compType}
                         comptype={this.props.compType.toKey()}
-                        substacks={this.props.metric_results.subvolumes["ids"]}
+                        substacks={this.props.metric_results.subvolumes}
                      />
                 </div>
             </div>

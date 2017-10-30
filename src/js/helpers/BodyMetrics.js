@@ -2,7 +2,7 @@
 
 // always want the largest first for the second component
 function compare_lists(a, b) {
-    return b[1] - a[1];
+    return b[0][1] - a[0][1];
 }
 
 // list generic body, stat, and description information
@@ -17,11 +17,45 @@ function CustomBodies (data, statname, comptype) {
         }
     }
 
+    if (!bodystats) {
+        return arr;
+    }
+
+    // find overlap info if it exists
+    var overlapinfo = null;
+    var tabletype = "Test"; 
+    if (bodystats.isgt) {
+        var tabletype = "GT";    
+        for (var idx in data.bodydebug) {
+            if ((data.bodydebug[idx].typename == comptype.toKey()) && (data.bodydebug[idx].name === "gtoverlap")) {
+                overlapinfo = data.bodydebug[idx].info;
+                break;
+            }
+        }
+    } else {
+        for (var idx in data.bodydebug) {
+            if ((data.bodydebug[idx].typename == comptype.toKey()) && (data.bodydebug[idx].name === "segoverlap")) {
+                overlapinfo = data.bodydebug[idx].info;
+                break;
+            }
+        }
+    }
+
     // populate body data
     var largest2smallest = true;
     if (bodystats) {
         for (var bodyid in bodystats.bodies) {
-            arr.push([ bodyid, bodystats.bodies[bodyid][0], bodystats.bodies[bodyid][1], statname]);
+            var debugbodies = [];
+            if (bodyid in overlapinfo) {
+                debugbodies = overlapinfo[bodyid];
+            }
+
+            // look for auxiliary data
+            var auxdata = null;
+            if (bodystats.bodies[bodyid].length > 1) {
+                auxdata = bodystats.bodies[bodyid][1];
+            }
+            arr.push([ [bodyid, bodystats.bodies[bodyid][0], statname, tabletype], [ auxdata, debugbodies] ] );
         }
     
         // sort order
@@ -39,54 +73,4 @@ function CustomBodies (data, statname, comptype) {
 }
 module.exports.CustomBodies = CustomBodies;
 
-// vi frag, max_overlap (0 if <50%), body id 
-function TestFrag (data, comptype) {
-    var arr = [];
-    // grab 1st field
-    var bodyinfo = data["types"][comptype.toKey()]["seg-bodies"];
-    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-seg"];
-    for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][0], overlapinfo[item], 'Test']);
 
-    }
-    return arr.sort(compare_lists)
-}
-module.exports.TestFrag = TestFrag;
-
-function BestTest (data, comptype) {
-    var arr = [];
-    // grab 2nd field
-    var bodyinfo = data["types"][comptype.toKey()]["seg-bodies"];
-    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-seg"];
-    for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][1], overlapinfo[item], 'Test']);
-    }
-    return arr.sort(compare_lists)
-}
-module.exports.BestTest = BestTest;
-
-// vi frag, vi tot, body id
-function GTFrag (data, comptype) {
-    var arr = [];
-    // grab 1st field
-    var bodyinfo = data["types"][comptype.toKey()]["gt-bodies"];
-    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-gt"];
-    for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][0], overlapinfo[item], 'GT']);
-    }
-    return arr.sort(compare_lists)
-}
-module.exports.GTFrag = GTFrag;
-
-
-function WorstGT (data, comptype) {
-    var arr = [];
-    // grab 2nd field 
-    var bodyinfo = data["types"][comptype.toKey()]["gt-bodies"];
-    var overlapinfo = data["types"][comptype.toKey()]["top-overlap-gt"];
-    for (var item in bodyinfo) {
-        arr.push([ item, bodyinfo[item][1], overlapinfo[item], 'GT']);
-    }
-    return arr.sort(compare_lists)
-}
-module.exports.WorstGT = WorstGT;

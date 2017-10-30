@@ -11,26 +11,73 @@ var NumColors = 10;
 
 var StackViewer = React.createClass({
     getInitialState: function () {
-         return {
-             fmergefsplit: "both", // fmerge, fsplit, or both
-             metric: "VI", // VI or rand
-             viewer: null
-         };
+         // find default metric 
+         var typename = this.props.comptype;
+         var defmetric = "";
+         for (var sid in this.props.substacks) {
+            var substackmetrics = this.props.substacks[sid];
+            // assume all substacks have the same stats
+            for (var mid = 0; mid < substackmetrics.length; mid++) {
+                var metricdata = substackmetrics[mid];
+                if ("display" in metricdata) {
+                    if (!metricdata["display"]) {
+                        continue;
+                    }
+                }
+                if (metricdata["name"] === "bbox") {
+                    continue;
+                }
+                if (metricdata["typename"] != typename) {
+                    continue;
+                }
+                defmetric = metricdata["name"];
+                break;
+            }
+            break; 
+        }
+         
+        return {
+            metric: defmetric,
+            viewer: null
+        };
     },
     getStat : function (substack, comptype) {
-        var fmerge = substack["types"][comptype][this.state.metric][0];
-        var fsplit = substack["types"][comptype][this.state.metric][1];
-        var total = fmerge;
-        if (this.state.fmergefsplit === "both") {
-            total = fmerge + fsplit;
-            if (this.state.metric == "rand") {
-                // compute unweighted fscore
-                total = (fmerge*fsplit) / (fmerge + fsplit);
+        for (var mid = 0; mid < substack.length; mid++) {
+            var metricdata = substack[mid];
+            if ((metricdata["name"] === this.state.metric) &&
+                (metricdata["typename"] === comptype)) {
+                return metricdata["val"];
+            }
+        } 
+
+        // should not reach
+        return 0;
+    },
+    getHigherBetter : function () {
+        for (var sid in this.props.substacks) {
+            var substackmetrics = this.props.substacks[sid];
+            for (var mid = 0; mid < substackmetrics.length; mid++) {
+                var metricdata = substackmetrics[mid];
+                if ((metricdata["name"] === this.state.metric) &&
+                        (metricdata["typename"] === this.props.comptype)) {
+                    return metricdata["higher-better"];
+                }
             } 
-        } else if (this.state.fmergefsplit === "fsplit") {
-            total = fsplit;
         }
-        return total;
+
+        // should not reach
+        return true;
+    },
+    getbbox : function (substack) {
+        for (var mid = 0; mid < substack.length; mid++) {
+            var metricdata = substack[mid];
+            if (metricdata["name"] === "bbox") {
+                return metricdata["val"];
+            }
+        } 
+
+        // should not reach
+        return null;
     },
     getColorRange: function(substacks, comptype) {
         var minval = 1000000000;
@@ -52,15 +99,14 @@ var StackViewer = React.createClass({
     },
     getROIStats : function (substack, comptype) {
         var output_str = "<br>";
-        for (var stat in substack["types"][comptype]) {
-             if (stat == "VI" || stat == "rand") {
-                 var res = substack["types"][comptype][stat];
-
-                 output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + res[0].toFixed(2) + " (false merge), " + res[1].toFixed(2) + " (false split) <br>");
-
-             } else {
-                 output_str += ("&nbsp&nbsp<b>" + stat + "</b>: " + JSON.stringify(substack["types"][comptype][stat]) + "<br>");
-             }
+        for (var mid = 0; mid < substack.length; mid++) {
+            var stat = substack[mid];
+            if (stat["name"] === "bbox") {
+                continue;
+            }
+            if (stat["typename"] === comptype) {
+                 output_str += ("&nbsp&nbsp<b>" + stat["name"] + "</b>: " + stat["val"] + "<br>");
+            }
         }
         
         return output_str;
@@ -81,7 +127,9 @@ var StackViewer = React.createClass({
 
         for (var i = 0; i < NumColors; i++) {
             var val = colorrange[0]+i*colorrange[2];
-            if (comptype == "rand") {
+           
+            // check order for type
+            if (this.getHigherBetter()) {
                 val = colorrange[1]-val;
             }
             colors[i]["name"] = val.toFixed(2);
@@ -105,14 +153,15 @@ var StackViewer = React.createClass({
 
         for (var sid in substacks) {
             var subobj = {};
-            
+            var bbox = this.getbbox(substacks[sid]);
+
             // load ROI info
-            var x1 =substacks[sid]["roi"][0];
-            var y1 =substacks[sid]["roi"][1];
-            var z1 =substacks[sid]["roi"][2];
-            var x2 =substacks[sid]["roi"][3];
-            var y2 =substacks[sid]["roi"][4];
-            var z2 =substacks[sid]["roi"][5];
+            var x1 = bbox[0];
+            var y1 = bbox[1];
+            var z1 = bbox[2];
+            var x2 = bbox[3];
+            var y2 = bbox[4];
+            var z2 = bbox[5];
 
             subobj["width"] = x2-x1;
             subobj["length"] = y2-y1;
@@ -123,7 +172,6 @@ var StackViewer = React.createClass({
             subobj["z"] = z1 + subobj["height"]/2;
 
             var volume = subobj["width"]*subobj["height"]*subobj["length"];
-
 
             // get stack extents
             if (x1 < minx) {
@@ -155,7 +203,6 @@ var StackViewer = React.createClass({
             subobj["annotations"] = this.getROIStats(substacks[sid], comptype)
             // !! hack footer container into annotations for now as well
             subobj["annotations"] += '<div class="modal-footer"></div>'
-
 
             payload["substacks"].push(subobj);
         }
@@ -249,20 +296,8 @@ var StackViewer = React.createClass({
             this.state.viewer.destroy();
         }
     },
-    useVI : function () {
-        this.setState({metric: "VI"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
-    },
-    useRand : function () {
-                  this.setState({metric: "rand"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
-    },
-    useCombined : function () {
-        this.setState({fmergefsplit: "both"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
-    },
-    useFmerge : function () {
-        this.setState({fmergefsplit: "fmerge"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
-    },
-    useFsplit : function () {
-        this.setState({fmergefsplit: "fsplit"}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
+    useStat : function (metric) {
+        this.setState({metric: metric}, function() { this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
     },
     downloadScreenshot: function () {
         if (this.state.viewer) {
@@ -271,27 +306,38 @@ var StackViewer = React.createClass({
     },
 
     render: function () {
-        var typename = this.props.rcomptype.toString();
 
-        // set active buttons
-        var randsel = "btn btn-default";
-        var visel = "btn btn-default";
-        if (this.state.metric == "VI") {
-            visel = "btn btn-default active";
-        } else {
-            randsel = "btn btn-default active";
+        // find all metric types for this comparison type
+        var typename = this.props.comptype;
+        var metrictypes = []
+        for (var sid in this.props.substacks) {
+            var substackmetrics = this.props.substacks[sid];
+            // assume all substacks have the same stats
+            for (var mid = 0; mid < substackmetrics.length; mid++) {
+                var metricdata = substackmetrics[mid];
+                if ("display" in metricdata) {
+                    if (!metricdata["display"]) {
+                        continue;
+                    }
+                }
+                if (metricdata["name"] === "bbox") {
+                    continue;
+                }
+                if (metricdata["typename"] != typename) {
+                    continue;
+                }
+                metrictypes.push(metricdata["name"]);
+            }
+            break; 
         }
-    
-        var fmsel = "btn btn-default";
-        var fssel = "btn btn-default";
-        var cosel = "btn btn-default";
-        if (this.state.fmergefsplit == "both") {
-            cosel = "btn btn-default active";
-        } else if (this.state.fmergefsplit == "fmerge") {
-            fmsel = "btn btn-default active";
-        } else {
-            fssel = "btn btn-default active";
-        }
+
+                /*for (var metric in metrictypes) {
+                    if (this.state.metric === metric) {
+                        <button type="button" className={"btn btn-default active"} onClick={this.useStat(metric)}>{metric}</button>
+                    } else {
+                        <button type="button" className={"btn btn-default"} onClick={this.useStat(metric)}>{metric}</button>
+                    }
+                }*/
 
         return (
             <div className="panel panel-info">
@@ -301,25 +347,22 @@ var StackViewer = React.createClass({
                 <span className="glyphicon glyphicon-download-alt" aria-hidden="true" ></span>
                 </button>
                 </div>
-               
+
                 <div className="panel-body row">
-                    <div className="col-md-6">
-                        <div className="btn-group" role="group" aria-label="metricsel">
-                            <button type="button" className={visel} onClick={this.useVI}>VI</button>
-                            <button type="button" className={randsel} onClick={this.useRand}>rand</button>
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="btn-group" role="group" aria-label="decompsel">
-                            <button type="button" className={cosel} onClick={this.useCombined}>Combined</button>
-                            <button type="button" className={fmsel} onClick={this.useFmerge}>False Merge</button>
-                            <button type="button" className={fssel} onClick={this.useFsplit}>False Split</button>
-                        </div>
-                    </div>
+                <div className="btn-group" role="group" aria-label="metricsel">
+                {metrictypes.map(function(metric, i) {
+                    if (this.state.metric === metric) {
+                        return (<button type="button" className={"btn btn-default active"} onClick={() => this.useStat(metric)}>{metric}</button>);
+                    } else {
+                        return (<button type="button" className={"btn btn-default"} onClick={() => this.useStat(metric)}>{metric}</button>);
+                    }
+                }, this)}
                 </div>
                 <div className="panel-body" id="stack_roi"></div>
+                </div>
             </div>
         );
+        
     }
 });
 
