@@ -156,12 +156,12 @@ var StackViewer = React.createClass({
             var bbox = this.getbbox(substacks[sid]);
 
             // load ROI info
-            var x1 = bbox[0];
+            var x1 = bbox[2];
             var y1 = bbox[1];
-            var z1 = bbox[2];
-            var x2 = bbox[3];
+            var z1 = bbox[0];
+            var x2 = bbox[5];
             var y2 = bbox[4];
-            var z2 = bbox[5];
+            var z2 = bbox[3];
 
             subobj["width"] = x2-x1;
             subobj["length"] = y2-y1;
