@@ -17,9 +17,11 @@ var CompInfo = React.createClass({
         }
 
         // write test seg config
-        output += "<br><i>Test Seg Config</i><br>";
-        for (var element in config["dvid-info-comp"]) {
-            output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info-comp"][element]) + "<br>");
+        if (config.hasOwnProperty("dvid-info-comp")) {
+            output += "<br><i>Test Seg Config</i><br>";
+            for (var element in config["dvid-info-comp"]) {
+                output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info-comp"][element]) + "<br>");
+            }
         }
 
         // write options

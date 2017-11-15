@@ -20,7 +20,10 @@ var NeuroglancerTab = React.createClass({
     },
     getLayerNames: function(metric_results){
        var config_ground_label = metric_results.config['dvid-info']['label-name']
-       var config_comp_label = metric_results.config['dvid-info-comp']['label-name']
+       var config_comp_label = ""; 
+       if (config.hasOwnProperty("dvid-info-comp")) {
+           config_comp_label = metric_results.config['dvid-info-comp']['label-name']
+       }
        return ['grayscale', config_ground_label, config_comp_label];
     },
     componentWillReceiveProps: function(props){

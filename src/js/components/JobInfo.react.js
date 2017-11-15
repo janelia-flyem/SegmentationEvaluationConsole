@@ -29,10 +29,12 @@ var JobInfo = React.createClass({
             output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info"][element]) + "<br>");
         }
 
+        if (config.hasOwnProperty("dvid-info-comp")) {
         // write test seg config
-        output += "<br><i>Test Seg Config</i><br>";
-        for (var element in config["dvid-info-comp"]) {
-            output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info-comp"][element]) + "<br>");
+            output += "<br><i>Test Seg Config</i><br>";
+            for (var element in config["dvid-info-comp"]) {
+                output += ("<b>" + element + "</b>" + ": " + JSON.stringify(config["dvid-info-comp"][element]) + "<br>");
+            }
         }
 
         // write options
@@ -47,9 +49,18 @@ var JobInfo = React.createClass({
     render: function () {
         var config = this.props.metric_data.getConfig();
         var gt_seg = config["dvid-info"]["label-name"];
-        var test_seg = config["dvid-info-comp"]["label-name"];
         var gt_uuid = config["dvid-info"].uuid.slice(0,6);
-        var seg_uuid = config["dvid-info-comp"].uuid.slice(0,6);
+        var test_seg = "no comparison";
+        var seg_uuid = "";
+
+        var infostr = "";
+        if (config.hasOwnProperty("dvid-info-comp")) {
+            test_seg = config["dvid-info-comp"]["label-name"];
+            seg_uuid = config["dvid-info-comp"].uuid.slice(0,6);
+            infostr = "GT: " + gt_seg + "#" + gt_uuid + "  Test: " + test_seg + "#" + seg_uuid + "  ";
+        } else {
+            infostr = "Self-check volume: " + gt_seg + "#" + gt_uuid;
+        }
 
         var comptypes = this.props.metric_data.getCompTypes();
 
@@ -71,7 +82,7 @@ var JobInfo = React.createClass({
         return (
             <form className="navbar-form navbar-right">
                 <div className="form-group">
-                <label>GT: {gt_seg + "#" + gt_uuid} Test: {test_seg + "#" + seg_uuid + "  "}
+                <label>{infostr}
                 </label></div> 
                 
                 <div className="form-group">

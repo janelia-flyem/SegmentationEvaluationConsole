@@ -46,7 +46,7 @@ function CustomBodies (data, statname, comptype) {
     if (bodystats) {
         for (var bodyid in bodystats.bodies) {
             var debugbodies = [];
-            if (bodyid in overlapinfo) {
+            if (overlapinfo && (bodyid in overlapinfo)) {
                 debugbodies = overlapinfo[bodyid];
             }
 
