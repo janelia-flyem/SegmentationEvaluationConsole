@@ -14,6 +14,7 @@ var StackViewer = React.createClass({
          // find default metric 
          var typename = this.props.comptype;
          var defmetric = "";
+         var ignorestacks = true;
          for (var sid in this.props.substacks) {
             var substackmetrics = this.props.substacks[sid];
             // assume all substacks have the same stats
@@ -38,7 +39,8 @@ var StackViewer = React.createClass({
          
         return {
             metric: defmetric,
-            viewer: null
+            viewer: null,
+            ignorestacks: true,
         };
     },
     getStat : function (substack, comptype) {
@@ -52,6 +54,24 @@ var StackViewer = React.createClass({
 
         // should not reach
         return 0;
+    },
+    ignoreStat : function (substack, comptype) {
+        if (!this.state.ignorestacks) {
+            return false;
+        }
+        
+        for (var mid = 0; mid < substack.length; mid++) {
+            var metricdata = substack[mid];
+            if ((metricdata["name"] === this.state.metric) &&
+                (metricdata["typename"] === comptype)) {
+                if ("ignore" in metricdata) {
+                    return metricdata["ignore"];        
+                }
+            }
+        } 
+
+        // should not reach
+        return true;
     },
     getHigherBetter : function () {
         for (var sid in this.props.substacks) {
@@ -84,6 +104,9 @@ var StackViewer = React.createClass({
         var maxval = 0;
 
         for (var sid in substacks) {
+            if (this.ignoreStat(substacks[sid], comptype)) {
+                continue;
+            }
             var total = this.getStat(substacks[sid], comptype);
             if (total < minval) {
                 minval = total;
@@ -152,6 +175,9 @@ var StackViewer = React.createClass({
         var colorrange = this.getColorRange(substacks, comptype);
 
         for (var sid in substacks) {
+            if (this.ignoreStat(substacks[sid], comptype)) {
+                continue;
+            }
             var subobj = {};
             var bbox = this.getbbox(substacks[sid]);
 
@@ -304,7 +330,9 @@ var StackViewer = React.createClass({
             this.state.viewer.screenshot();
         }
     },
-
+    showAll : function () {
+        this.setState({ignorestacks: !this.state.ignorestacks}, function() {this.loadSubstacks(this.props.substacks, this.props.comptype)}.bind(this));
+    },
     render: function () {
 
         // find all metric types for this comparison type
@@ -339,6 +367,13 @@ var StackViewer = React.createClass({
                     }
                 }*/
 
+        var showall = <button type="button" className={"btn btn-default"} onClick={() => this.showAll()}>Show All</button>;
+
+        if (!this.state.ignorestacks) {
+            showall = <button type="button" className={"btn btn-default"} onClick={() => this.showAll()}>Hide Small</button>;
+
+        }
+
         return (
             <div className="panel panel-info">
                 <div className="panel-heading">
@@ -358,8 +393,11 @@ var StackViewer = React.createClass({
                     }
                 }, this)}
                 </div>
-                <div className="panel-body" id="stack_roi"></div>
                 </div>
+                <div className="panel-body row">
+                {showall} 
+                </div>
+                <div className="panel-body" id="stack_roi"></div>
             </div>
         );
         
