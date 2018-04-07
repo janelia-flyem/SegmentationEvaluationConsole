@@ -21,6 +21,13 @@ function CustomBodies (data, statname, comptype) {
         return arr;
     }
 
+    var ccremap = {};
+    if ("connected-components" in data) {
+        for (var remapid in data["connected-components"]) {
+            ccremap[parseInt(remapid)] = data["connected-components"][remapid];
+        }
+    }
+
     // find overlap info if it exists
     var overlapinfo = null;
     var tabletype = "Test"; 
@@ -49,13 +56,24 @@ function CustomBodies (data, statname, comptype) {
             if (overlapinfo && (bodyid in overlapinfo)) {
                 debugbodies = overlapinfo[bodyid];
             }
+            
+            for (var i = 0; i < debugbodies.length; i++) {
+                if (debugbodies[i][1] in ccremap) {
+                    debugbodies[i][1] = String(ccremap[debugbodies[i][1]]) + "*";
+                }
+            }
 
             // look for auxiliary data
             var auxdata = null;
             if (bodystats.bodies[bodyid].length > 1) {
                 auxdata = bodystats.bodies[bodyid][1];
             }
-            arr.push([ [bodyid, bodystats.bodies[bodyid][0], statname, tabletype], [ auxdata, debugbodies] ] );
+            var remapbody = bodyid;
+            if (bodyid in ccremap) {
+                remapbody = String(ccremap[bodyid]) + "*";
+            }
+
+            arr.push([ [remapbody, bodystats.bodies[bodyid][0], statname, tabletype], [ auxdata, debugbodies] ] );
         }
     
         // sort order
