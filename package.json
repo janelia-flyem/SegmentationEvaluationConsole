@@ -35,13 +35,13 @@
     "dvid": "latest",
     "grunt-env": "^0.4.4",
     "jquery": "^2.1.4",
+    "neuroglancer": "https://github.com/janelia-flyem/neuroglancer/releases/download/0.0.0-beta.5/dist-0.0.0-beta.5.tar.gz",
     "react": "^0.14",
     "react-bootstrap": "^0.29.5",
     "react-dom": "^0.14.5",
     "react-redux": "^4.4.5",
     "react-router": "^0.13.3",
     "redux": "^3.5.0",
-    "stack3d": "janelia-flyem/stack3D",
-    "neuroglancer": "https://github.com/janelia-flyem/neuroglancer/releases/download/0.0.0-beta.4/dist-0.0.0-beta.5.tar.gz"
+    "stack3d": "janelia-flyem/stack3D"
   }
 }
